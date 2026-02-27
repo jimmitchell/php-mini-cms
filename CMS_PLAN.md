@@ -9,7 +9,7 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 - PHP admin panel + build engine; pure HTML output for visitors
 - SQLite for content metadata; Markdown source stored in the database
 - Smart incremental rebuilds — only changed content re-renders
-- Apache shared hosting compatible
+- Deployed on a Linux VPS (Digital Ocean / Hetzner); Nginx + PHP-FPM
 - Single admin user (credentials in config file)
 - Posts and static pages, both authored in Markdown
 - Media uploads: images, video, audio
@@ -22,8 +22,11 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 
 | Concern | Choice | Rationale |
 |---|---|---|
-| Language | PHP 8.1+ | Widely available on shared hosting |
+| Language | PHP 8.3 | Current stable; ships in Ubuntu 24.04 PPA |
+| Web server | Nginx 1.24+ | Efficient static file serving; PHP-FPM for admin |
+| PHP process | PHP-FPM 8.3 | Standard Nginx/PHP integration |
 | Database | SQLite 3 (via PDO) | Zero-config, file-based, no server needed |
+| TLS | Let's Encrypt + Certbot | Free, auto-renewing certificates |
 | Markdown | `league/commonmark` | CommonMark compliant, actively maintained |
 | Admin editor | EasyMDE (SimpleMDE fork) | Browser-based Markdown editor, no build step |
 | Dependency management | Composer | Standard for PHP |
@@ -36,7 +39,7 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 ## Directory Structure
 
 ```
-project-root/               ← lives inside public_html (or equivalent)
+/var/www/cms/               ← document root on VPS (owned by deploy user, readable by www-data)
 │
 ├── admin/                  ← Admin panel (PHP, password-protected)
 │   ├── index.php           ← Login page / dashboard redirect
@@ -53,13 +56,13 @@ project-root/               ← lives inside public_html (or equivalent)
 │       ├── admin.js
 │       └── easymde.min.*   ← Markdown editor (vendored)
 │
-├── content/                ← BLOCKED from web (.htaccess)
+├── content/                ← BLOCKED: Nginx denies all access
 │   └── media/              ← Uploaded files (images, video, audio)
 │
-├── data/                   ← BLOCKED from web (.htaccess)
+├── data/                   ← BLOCKED: Nginx denies all access
 │   └── cms.db              ← SQLite database
 │
-├── src/                    ← BLOCKED from web (.htaccess)
+├── src/                    ← BLOCKED: Nginx denies all access
 │   ├── Auth.php
 │   ├── Builder.php
 │   ├── Database.php
@@ -69,16 +72,16 @@ project-root/               ← lives inside public_html (or equivalent)
 │   ├── Feed.php
 │   └── Helpers.php
 │
-├── templates/              ← BLOCKED from web (.htaccess)
+├── templates/              ← BLOCKED: Nginx denies all access
 │   ├── base.php            ← Shared HTML shell
 │   ├── post.php            ← Single post
 │   ├── page.php            ← Static page
 │   ├── index.php           ← Post listing / pagination
 │   └── feed.php            ← RSS/Atom XML
 │
-├── vendor/                 ← BLOCKED from web (.htaccess)
+├── vendor/                 ← BLOCKED: Nginx denies all access
 │
-├── media/                  ← PUBLIC symlink (or copy) into content/media/
+├── media/                  ← PUBLIC — served via Nginx alias to content/media/
 │
 ├── posts/                  ← Generated: one subdir per post
 │   └── {slug}/
@@ -94,13 +97,12 @@ project-root/               ← lives inside public_html (or equivalent)
 ├── index.html              ← Generated: post listing page 1
 ├── feed.xml                ← Generated: RSS/Atom feed
 │
-├── config.php              ← BLOCKED from web; site config + admin credentials
+├── config.php              ← BLOCKED: Nginx denies access; site config + admin credentials
 ├── composer.json
-├── composer.lock
-└── .htaccess               ← Routing + security rules
+└── composer.lock
 ```
 
-> **Note on `media/`:** Uploaded files live in `content/media/` (blocked). The public `media/` directory is either an Apache `Alias` directive or a symlink pointing there. This keeps uploads out of the blocked source tree while serving them publicly.
+> **Note on `media/`:** Uploaded files live in `content/media/` (blocked from web). Nginx's `alias` directive maps `/media/` requests directly to `content/media/` inside the server block — no symlinks or rewrites needed. This is cleaner and more explicit than an Apache Alias or RewriteRule fallback.
 
 ---
 
@@ -284,29 +286,92 @@ Any due posts are flipped to `published` and their rebuild is triggered automati
 
 ---
 
-## URL Structure & `.htaccess`
+## URL Structure & Nginx Configuration
 
-Generated output uses directory-based pretty URLs. Apache's `DirectoryIndex index.html` serves them automatically — no rewrites needed for static pages.
+Generated output uses directory-based pretty URLs (e.g. `/posts/my-slug/`). Nginx's `index index.html` directive serves these automatically — no rewrites needed for static content.
 
-The `.htaccess` at the project root handles two concerns:
+All routing, security blocks, PHP-FPM proxying, and media aliasing live in the Nginx server block. There is no `.htaccess` file.
 
-```apacheconf
-# 1. Block sensitive directories from direct web access
-RedirectMatch 403 ^/(src|data|content|templates|vendor|config\.php)(/|$)
+### `/etc/nginx/sites-available/cms`
 
-# 2. Route /admin/* requests through PHP
-#    (Apache serves .php files in admin/ normally; no special rewrite needed
-#     unless the host strips PHP extensions — handled below)
+```nginx
+server {
+    listen 80;
+    server_name example.com www.example.com;
+    return 301 https://$host$request_uri;
+}
 
-# 3. Allow /media/* to serve from content/media/ via Alias (set in vhost or .htaccess)
-#    If Alias isn't available, use a RewriteRule:
-RewriteEngine On
-RewriteRule ^media/(.*)$ content/media/$1 [L]
+server {
+    listen 443 ssl http2;
+    server_name example.com www.example.com;
 
-# 4. Canonical trailing slash for generated dirs
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME}/index.html -f
-RewriteRule ^(.+[^/])$ /$1/ [R=301,L]
+    root /var/www/cms;
+    index index.html;
+
+    # TLS — managed by Certbot
+    ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+    include             /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Security headers
+    add_header X-Frame-Options           "SAMEORIGIN"   always;
+    add_header X-Content-Type-Options    "nosniff"      always;
+    add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy        "geolocation=()" always;
+
+    # ── Block sensitive directories ───────────────────────────────────────────
+    location ~* ^/(src|data|content|templates|vendor)(/|$) {
+        deny all;
+        return 403;
+    }
+    location = /config.php {
+        deny all;
+        return 403;
+    }
+
+    # ── Media uploads (served from content/media/, not web root) ─────────────
+    location /media/ {
+        alias /var/www/cms/content/media/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # ── Admin panel — PHP-FPM ─────────────────────────────────────────────────
+    location /admin/ {
+        try_files $uri $uri/ =404;
+        location ~ \.php$ {
+            include        fastcgi_params;
+            fastcgi_pass   unix:/run/php/php8.3-fpm.sock;
+            fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        }
+    }
+
+    # ── Static HTML output ────────────────────────────────────────────────────
+    location / {
+        try_files $uri $uri/ $uri/index.html =404;
+
+        # Cache static output aggressively; admin rebuilds invalidate on write
+        expires 1h;
+        add_header Cache-Control "public";
+    }
+
+    # ── Feed ──────────────────────────────────────────────────────────────────
+    location = /feed.xml {
+        add_header Content-Type "application/atom+xml; charset=utf-8";
+    }
+
+    # Deny hidden files
+    location ~ /\. {
+        deny all;
+    }
+}
+```
+
+**Enable the site:**
+```bash
+ln -s /etc/nginx/sites-available/cms /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
 ```
 
 ---
@@ -403,7 +468,7 @@ RewriteRule ^(.+[^/])$ /$1/ [R=301,L]
 | Session | Regenerate session ID on login; `HttpOnly` + `SameSite=Strict` cookie |
 | CSRF | Token in every admin form; verified on every POST |
 | Brute-force | IP-based lockout after N failures (stored in SQLite) |
-| File access | `.htaccess` 403 on `src/`, `data/`, `content/`, `templates/`, `vendor/`, `config.php` |
+| File access | Nginx `deny all` location blocks on `src/`, `data/`, `content/`, `templates/`, `vendor/`, `config.php` |
 | File upload | MIME type whitelist server-side; no executable extensions allowed; files stored outside web root in `content/media/` |
 | SQL injection | PDO prepared statements throughout |
 | XSS | All admin output passed through `htmlspecialchars()`; Markdown rendered to HTML then sanitised before output (league/commonmark's default escaping) |
@@ -419,7 +484,7 @@ RewriteRule ^(.+[^/])$ /$1/ [R=301,L]
 - [ ] `Database` class + schema creation + migration runner
 - [ ] `Auth` class (login, session check, CSRF helpers)
 - [ ] Admin login page + session guard middleware
-- [ ] `.htaccess` security rules
+- [ ] Nginx server block with security location blocks
 
 ### Phase 2 — Content Management
 - [ ] `Post` and `Page` models
@@ -432,7 +497,7 @@ RewriteRule ^(.+[^/])$ /$1/ [R=301,L]
 - [ ] `Media` class (upload, validate, delete, list)
 - [ ] Admin: media library UI
 - [ ] Media insert helper in post/page editor sidebar
-- [ ] `content/media/` → public `media/` routing in `.htaccess`
+- [ ] `content/media/` → public `media/` routing via Nginx `alias`
 
 ### Phase 4 — Static Build System
 - [ ] `Builder` class: render post, page, index, feed
@@ -462,10 +527,15 @@ RewriteRule ^(.+[^/])$ /$1/ [R=301,L]
 - [ ] Setup script to hash initial admin password
 
 ### Phase 8 — Hardening & Deployment
-- [ ] Audit `.htaccess` on a real Apache host
-- [ ] Confirm `content/media/` → `media/` routing works (Alias vs RewriteRule fallback)
-- [ ] Test with PHP `display_errors = Off`
-- [ ] Write a brief `INSTALL.md` (upload files, run `composer install`, set password hash, visit `/admin/`)
+- [ ] Provision VPS (Ubuntu 24.04), install Nginx + PHP 8.3-FPM, Composer, Certbot
+- [ ] Configure Nginx server block; test with `nginx -t`
+- [ ] Obtain TLS certificate via Certbot (`certbot --nginx`)
+- [ ] Set up UFW: allow 22 (SSH), 80, 443; deny everything else
+- [ ] Configure fail2ban for SSH and Nginx auth failures
+- [ ] Set filesystem permissions: `www-data` write access to `data/`, `content/media/`, and output dirs
+- [ ] Confirm PHP `display_errors = Off` in `/etc/php/8.3/fpm/php.ini`
+- [ ] Set up automated SQLite backups (daily `data/cms.db` copy to offsite or DO Spaces)
+- [ ] Write a brief `INSTALL.md` (clone repo, `composer install`, set password hash, configure Nginx, visit `/admin/`)
 
 ---
 
@@ -481,6 +551,152 @@ RewriteRule ^(.+[^/])$ /$1/ [R=301,L]
 ```
 
 EasyMDE is included as vendored static assets in `admin/assets/` (no npm build step required).
+
+---
+
+## VPS Server Requirements & Setup
+
+### Minimum Server Spec
+
+| Resource | Minimum | Recommended |
+|---|---|---|
+| CPU | 1 vCPU | 1 vCPU |
+| RAM | 512 MB | 1 GB |
+| Disk | 10 GB SSD | 25 GB SSD |
+| OS | Ubuntu 22.04 LTS | **Ubuntu 24.04 LTS** |
+
+Both Digital Ocean's cheapest droplet ($6/mo, 1 vCPU / 1 GB RAM) and Hetzner's CX22 (€4/mo, 2 vCPU / 4 GB RAM) comfortably exceed the minimum. Hetzner is better value if you're in Europe.
+
+---
+
+### Server Software Stack
+
+```
+Ubuntu 24.04 LTS
+├── Nginx 1.24+           (apt: nginx)
+├── PHP 8.3-FPM           (apt: php8.3-fpm php8.3-cli php8.3-sqlite3
+│                               php8.3-mbstring php8.3-fileinfo php8.3-curl)
+├── Composer 2.x          (install via getcomposer.org installer)
+├── Certbot               (snap: certbot --nginx plugin)
+├── UFW                   (pre-installed; configure firewall rules)
+└── fail2ban              (apt: fail2ban)
+```
+
+**PHP extensions required:**
+
+| Extension | Package | Purpose |
+|---|---|---|
+| `pdo_sqlite` | `php8.3-sqlite3` | SQLite database |
+| `fileinfo` | `php8.3-fileinfo` | Upload MIME validation |
+| `mbstring` | `php8.3-mbstring` | Required by league/commonmark |
+| `session` | built-in | Admin sessions |
+| `hash` | built-in | Content-hash diffing |
+| `json` | built-in | Config/settings |
+| `openssl` | built-in | Session security |
+
+---
+
+### Key `php.ini` / PHP-FPM Pool Settings
+
+Edit `/etc/php/8.3/fpm/php.ini` and the pool file at `/etc/php/8.3/fpm/pool.d/www.conf`:
+
+```ini
+; /etc/php/8.3/fpm/php.ini
+upload_max_filesize = 50M
+post_max_size       = 55M
+max_execution_time  = 60
+memory_limit        = 128M
+display_errors      = Off
+log_errors          = On
+error_log           = /var/log/php8.3-fpm.log
+```
+
+```ini
+; /etc/php/8.3/fpm/pool.d/www.conf  (relevant lines)
+user  = www-data
+group = www-data
+listen = /run/php/php8.3-fpm.sock
+```
+
+---
+
+### Filesystem Permissions
+
+```bash
+# Application files owned by a deploy user (not www-data)
+chown -R deploy:www-data /var/www/cms
+
+# Directories the web server must write to
+chmod 775 /var/www/cms/data
+chmod 775 /var/www/cms/content/media
+
+# Output directories (Nginx/PHP-FPM writes generated HTML here)
+chmod 775 /var/www/cms
+find /var/www/cms/posts /var/www/cms/page -type d -exec chmod 775 {} \;
+
+# Everything else: readable by www-data, not writable
+find /var/www/cms/src /var/www/cms/templates /var/www/cms/vendor -type f -exec chmod 644 {} \;
+```
+
+---
+
+### Firewall (UFW)
+
+```bash
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow 22/tcp      # SSH
+ufw allow 80/tcp      # HTTP (redirects to HTTPS)
+ufw allow 443/tcp     # HTTPS
+ufw enable
+```
+
+---
+
+### TLS Certificate (Let's Encrypt)
+
+```bash
+snap install --classic certbot
+ln -s /snap/bin/certbot /usr/bin/certbot
+certbot --nginx -d example.com -d www.example.com
+# Certbot auto-installs cert paths into the Nginx config and sets up auto-renewal
+```
+
+Auto-renewal is handled by a systemd timer installed by Certbot — no cron entry needed.
+
+---
+
+### fail2ban
+
+Two jails to configure in `/etc/fail2ban/jail.local`:
+
+```ini
+[sshd]
+enabled  = true
+maxretry = 5
+bantime  = 1h
+
+[nginx-http-auth]
+enabled  = true
+```
+
+The admin login rate-limiting (stored in SQLite) operates at the application layer as a complementary measure.
+
+---
+
+### Automated SQLite Backup
+
+SQLite databases are a single file. A simple daily backup to a remote location:
+
+```bash
+# /etc/cron.daily/cms-backup
+#!/bin/bash
+DATE=$(date +%Y%m%d)
+sqlite3 /var/www/cms/data/cms.db ".backup '/var/backups/cms/cms-$DATE.db'"
+find /var/backups/cms -name "*.db" -mtime +30 -delete
+```
+
+For off-site backup, pipe to `rclone` (DO Spaces / Hetzner Object Storage) or use the VPS provider's automated snapshot feature.
 
 ---
 
