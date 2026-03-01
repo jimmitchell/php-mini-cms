@@ -251,5 +251,9 @@ if (!function_exists('_e')) {
 
 }());
 </script>
+<?php $tinylyticsCode = $settings['tinylytics_code'] ?? ''; ?>
+<?php if ($tinylyticsCode !== ''): ?>
+<script src="https://tinylytics.app/embed/<?= _e($tinylyticsCode) ?>.js" defer></script>
+<?php endif; ?>
 </body>
 </html>

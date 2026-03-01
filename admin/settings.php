@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'mastodon_handle'    => trim($_POST['mastodon_handle']    ?? ''),
         'mastodon_instance'  => rtrim(trim($_POST['mastodon_instance'] ?? ''), '/'),
         'mastodon_token'     => trim($_POST['mastodon_token']     ?? ''),
+        'tinylytics_code'    => trim($_POST['tinylytics_code']    ?? ''),
     ];
 
     if ($fields['site_title'] === '') {
@@ -196,6 +197,20 @@ $flash     = $auth->getFlash();
                 Create a token in your Mastodon account under
                 Preferences → Development → New application.
                 Only the <code>write:statuses</code> scope is needed.
+            </p>
+        </div>
+
+        <div class="panel">
+            <h2>Analytics</h2>
+
+            <label for="tinylytics_code">Tinylytics site ID</label>
+            <input type="text" id="tinylytics_code" name="tinylytics_code"
+                   value="<?= Helpers::e($_POST['tinylytics_code'] ?? $settings['tinylytics_code'] ?? '') ?>"
+                   placeholder="MMxGnYf8Pf5h66K_eim4"
+                   style="max-width:280px">
+            <p class="form-hint">
+                Your Tinylytics site ID. When set, the tracking script is added to every page.
+                Leave blank to disable tracking.
             </p>
         </div>
 
