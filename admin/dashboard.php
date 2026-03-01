@@ -47,6 +47,14 @@ $drafts = $db->select(
       ORDER BY updated_at DESC"
 );
 
+// All scheduled posts, soonest first.
+$scheduled = $db->select(
+    "SELECT id, title, published_at
+       FROM posts
+      WHERE status = 'scheduled'
+      ORDER BY published_at ASC"
+);
+
 $siteTitle = $db->getSetting('site_title', 'My CMS');
 $csrf      = $auth->csrfToken();
 
@@ -121,6 +129,22 @@ $csrf      = $auth->csrfToken();
                     <?= htmlspecialchars($post['title']) ?>
                 </a>
                 <span class="meta">Updated <?= htmlspecialchars($post['updated_at']) ?></span>
+            </li>
+            <?php endforeach; ?>
+        </ul>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($scheduled): ?>
+    <section class="panel">
+        <h2>Scheduled</h2>
+        <ul class="item-list">
+            <?php foreach ($scheduled as $post): ?>
+            <li>
+                <a href="/admin/post-edit.php?id=<?= (int) $post['id'] ?>">
+                    <?= htmlspecialchars($post['title']) ?>
+                </a>
+                <span class="meta">Publishes <?= htmlspecialchars($post['published_at']) ?></span>
             </li>
             <?php endforeach; ?>
         </ul>

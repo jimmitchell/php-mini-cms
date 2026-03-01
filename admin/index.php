@@ -43,7 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$csrf = $auth->csrfToken();
+$csrf      = $auth->csrfToken();
+$siteTitle = $db->getSetting('site_title', 'My CMS');
 
 ?>
 <!DOCTYPE html>
@@ -57,7 +58,7 @@ $csrf = $auth->csrfToken();
 <body class="login-page">
 
 <div class="login-box">
-    <h1>CMS Admin</h1>
+    <h1>Login to <?= htmlspecialchars($siteTitle) ?></h1>
 
     <?php if ($error !== ''): ?>
         <p class="alert alert--error"><?= htmlspecialchars($error) ?></p>

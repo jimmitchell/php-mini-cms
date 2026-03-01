@@ -134,6 +134,10 @@ class Builder
 
         // Remove stale paginated pages beyond the new total.
         $this->removeStalePaginationPages($pages);
+
+        // Keep the search index and page in sync with published posts.
+        $this->buildSearchIndex();
+        $this->buildSearchPage();
     }
 
     /**
@@ -147,7 +151,45 @@ class Builder
     }
 
     /**
-     * Full site rebuild: all published posts, pages, index, feed.
+     * Write search.json — an array of published posts for client-side search.
+     */
+    public function buildSearchIndex(): void
+    {
+        $posts   = Post::findAll($this->db, 'published');
+        $siteUrl = rtrim($this->settings['site_url'] ?? '', '/');
+        $locale  = $this->settings['locale']   ?? '';
+        $tz      = $this->settings['timezone'] ?? '';
+
+        $data = [];
+        foreach ($posts as $post) {
+            $excerpt  = $post->effectiveExcerpt();
+            $data[] = [
+                'title'   => $post->title,
+                'url'     => $siteUrl . '/posts/' . rawurlencode($post->slug) . '/',
+                'excerpt' => $excerpt !== null ? strip_tags($excerpt) : '',
+                'date'    => $post->published_at
+                    ? Helpers::formatDate($post->published_at, 'M j, Y', $locale, $tz)
+                    : '',
+            ];
+        }
+
+        $this->writeFile(
+            $this->outputDir . '/search.json',
+            json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        );
+    }
+
+    /**
+     * Write search/index.html — the static search results page.
+     */
+    public function buildSearchPage(): void
+    {
+        $rendered = $this->render('search.php', []);
+        $this->writeFile($this->outputDir . '/search/index.html', $rendered);
+    }
+
+    /**
+     * Full site rebuild: all published posts, pages, index, feed, search.
      */
     public function buildAll(): void
     {

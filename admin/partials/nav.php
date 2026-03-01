@@ -9,11 +9,13 @@ $navItems = [
     '/admin/pages.php'     => 'Pages',
     '/admin/media.php'     => 'Media',
     '/admin/settings.php'  => 'Settings',
+    '/admin/account.php'   => 'Account',
 ];
 ?>
 <nav class="admin-nav">
     <div class="admin-nav__brand">
         <a href="/admin/dashboard.php"><?= htmlspecialchars($siteTitle) ?></a>
+        <a href="/" target="_blank" class="admin-nav__view-site">View site</a>
     </div>
     <ul class="admin-nav__links">
         <?php foreach ($navItems as $href => $label): ?>
@@ -26,8 +28,7 @@ $navItems = [
         <?php endforeach; ?>
     </ul>
     <div class="admin-nav__actions">
-        <a href="/" target="_blank" class="btn-link">View site</a>
-        <form method="post" action="/admin/logout.php" style="display:inline">
+        <form method="post" action="/admin/logout.php">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($auth->csrfToken()) ?>">
             <button type="submit" class="btn-link">Log out</button>
         </form>

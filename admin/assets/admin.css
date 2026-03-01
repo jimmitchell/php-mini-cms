@@ -59,6 +59,12 @@ body.login-page {
     text-align: center;
 }
 
+.login-box button[type="submit"] {
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: center;
+}
+
 /* ── Admin layout ─────────────────────────────────────────────────────────── */
 body.admin-page {
     display: flex;
@@ -83,12 +89,23 @@ body.admin-page {
     border-bottom: 1px solid rgba(255,255,255,.1);
     font-weight: 600;
     font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
 }
 
 .admin-nav__brand a {
     color: #fff;
     text-decoration: none;
 }
+
+.admin-nav__view-site {
+    font-size: .75rem;
+    font-weight: 400;
+    opacity: .65;
+}
+
+.admin-nav__view-site:hover { opacity: 1; }
 
 .admin-nav__links {
     list-style: none;
@@ -112,9 +129,14 @@ body.admin-page {
 .admin-nav__actions {
     padding: 1rem;
     border-top: 1px solid rgba(255,255,255,.1);
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
+}
+
+.admin-nav__actions form { width: 100%; }
+
+.admin-nav__actions .btn-link {
+    width: 100%;
+    text-align: center;
+    display: block;
 }
 
 .btn-link {
@@ -429,7 +451,8 @@ button[type="submit"]:hover,
 }
 
 /* ── Actions column ───────────────────────────────────────────────────────── */
-.actions { display: flex; gap: .4rem; align-items: center; }
+.actions { display: flex; gap: .4rem; align-items: center; justify-content: flex-end; }
+th:last-child { text-align: right; }
 
 /* ── Editor page layout ───────────────────────────────────────────────────── */
 .editor-layout {

@@ -36,6 +36,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $action = $_POST['action'] ?? 'draft';
 
+    // Handle delete before any save logic.
+    if ($action === 'delete') {
+        if ($post && $post->id) {
+            $wasPublished = $post->status === 'published';
+            $post->delete();
+            $post->status = 'draft'; // so buildPost() takes the removal path
+            $builder->buildPost($post); // removes the generated file
+            if ($wasPublished) {
+                $builder->buildIndex();
+                $builder->buildFeed();
+            }
+            $auth->flash('Post deleted.', 'info');
+            header('Location: /admin/posts.php');
+            exit;
+        }
+    }
+
     // Populate from form.
     if ($post === null) {
         $post = new Post($db);
@@ -69,8 +86,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         // Parse the manual publish date if provided.
+        // Interpret the input as local time in the configured timezone so it
+        // round-trips correctly when displayed back in the list.
         $publishDateInput = trim($_POST['publish_date'] ?? '');
-        $publishTs        = ($publishDateInput !== '') ? strtotime($publishDateInput) : false;
+        $publishTs        = false;
+        if ($publishDateInput !== '') {
+            $cfgTzSave = $db->getSetting('timezone', '');
+            if ($cfgTzSave !== '') {
+                $dtParsed  = \DateTime::createFromFormat('Y-m-d\TH:i', $publishDateInput, new \DateTimeZone($cfgTzSave));
+                $publishTs = $dtParsed !== false ? $dtParsed->getTimestamp() : false;
+            }
+            if ($publishTs === false) {
+                $publishTs = strtotime($publishDateInput);
+            }
+        }
 
         // Apply status logic.
         match ($action) {
@@ -158,23 +187,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Handle delete ─────────────────────────────────────────────────────────────
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
-    // Already auth-checked above; CSRF verified at top of POST block.
-    if ($post && $post->id) {
-        $wasPublished = $post->status === 'published';
-        $post->delete();
-        $builder->buildPost($post); // removes the generated file
-        if ($wasPublished) {
-            $builder->buildIndex();
-            $builder->buildFeed();
-        }
-        $auth->flash('Post deleted.', 'info');
-        header('Location: /admin/posts.php');
-        exit;
-    }
-}
 
 $flash     = $auth->getFlash();
 $flashMsg  = $flash['message'] ?? '';
@@ -196,7 +208,18 @@ $mediaItems = $db->select(
 
 $siteUrl   = $db->getSetting('site_url', '');
 $siteTitle = $db->getSetting('site_title', 'My CMS');
+$cfgTz     = $db->getSetting('timezone', '');
 $csrf      = $auth->csrfToken();
+
+// Convert stored UTC publish date to local time for the datetime-local input.
+$pubInputVal = '';
+if ($post->published_at) {
+    $dt = new \DateTime($post->published_at, new \DateTimeZone('UTC'));
+    if ($cfgTz !== '') {
+        $dt->setTimezone(new \DateTimeZone($cfgTz));
+    }
+    $pubInputVal = $dt->format('Y-m-d\TH:i');
+}
 
 ?>
 <!DOCTYPE html>
@@ -285,7 +308,7 @@ $csrf      = $auth->csrfToken();
 
                     <label for="publish_date" style="margin-top:0">Publish date</label>
                     <input type="datetime-local" id="publish_date" name="publish_date"
-                           value="<?= $post->published_at ? Helpers::e(date('Y-m-d\TH:i', strtotime($post->published_at))) : '' ?>">
+                           value="<?= Helpers::e($pubInputVal) ?>">
                     <p class="form-hint">Leave blank to use the current time. A future date will schedule the post.</p>
 
                     <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem">

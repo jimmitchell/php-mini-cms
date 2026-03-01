@@ -28,20 +28,21 @@ class Page
 
     /**
      * Return all pages, optionally filtered by status.
-     * Ordered by nav_order ASC, then title ASC.
+     * Ordered by nav_order ASC (0 sorts last), then title ASC.
      *
      * @return self[]
      */
     public static function findAll(Database $db, ?string $status = null): array
     {
+        $order = "ORDER BY CASE WHEN nav_order = 0 THEN 1 ELSE 0 END ASC, nav_order ASC, title ASC";
         if ($status !== null) {
             $rows = $db->select(
-                "SELECT * FROM pages WHERE status = :status ORDER BY nav_order ASC, title ASC",
+                "SELECT * FROM pages WHERE status = :status $order",
                 ['status' => $status]
             );
         } else {
             $rows = $db->select(
-                "SELECT * FROM pages ORDER BY nav_order ASC, title ASC"
+                "SELECT * FROM pages $order"
             );
         }
 

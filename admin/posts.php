@@ -53,6 +53,7 @@ $counts = $db->selectOne(
 );
 
 $siteTitle = $db->getSetting('site_title', 'My CMS');
+$timezone  = $db->getSetting('timezone', '');
 $csrf      = $auth->csrfToken();
 $flash     = $auth->getFlash();
 $flashMsg  = $flash['message'] ?? '';
@@ -126,7 +127,7 @@ $flashType = $flash['type']    ?? 'success';
                     </span>
                 </td>
                 <td class="meta">
-                    <?= $post->published_at ? Helpers::formatDate($post->published_at, 'M j, Y') : '—' ?>
+                    <?= $post->published_at ? Helpers::formatDate($post->published_at, 'M j, Y g:i a', '', $timezone) : '—' ?>
                 </td>
                 <td>
                     <div class="actions">
