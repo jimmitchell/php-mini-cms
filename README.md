@@ -41,7 +41,7 @@ cd php-mini-cms
 # Start PHP-FPM + Nginx
 docker compose up --build
 
-# In a second terminal: create your admin password and initialise the DB
+# In a second terminal: create your admin password and initialize the DB
 docker compose exec php php bin/setup.php
 ```
 
@@ -61,7 +61,7 @@ git clone https://github.com/yourname/php-mini-cms.git /var/www/cms
 cd /var/www/cms
 composer install --no-dev --optimize-autoloader
 
-# Initialise (prompts for password, seeds DB)
+# Initialize (prompts for password, seeds DB)
 php bin/setup.php
 
 # Permissions
@@ -153,7 +153,7 @@ Published pages are output to `pages/{slug}/index.html` and served at `/{slug}/`
 
 ### Media
 
-Files are uploaded to `content/media/` and served through a Nginx alias at `/media/`. Filenames are sanitised to `{stem}_{8hex}.{canonical_ext}`. Accepted MIME types: JPEG, PNG, GIF, WebP, SVG, MP4, WebM, MP3, OGG. Maximum size: 50 MB.
+Files are uploaded to `content/media/` and served through a Nginx alias at `/media/`. Filenames are sanitized to `{stem}_{8hex}.{canonical_ext}`. Accepted MIME types: JPEG, PNG, GIF, WebP, SVG, MP4, WebM, MP3, OGG. Maximum size: 50 MB.
 
 ---
 
@@ -163,7 +163,7 @@ The Markdown renderer uses [league/commonmark](https://commonmark.thephpleague.c
 
 - CommonMark + GitHub-flavored Markdown (tables, strikethrough, task lists)
 - Footnotes
-- Server-side syntax highlighting via [scrivo/highlight.php](https://github.com/scrivo/highlight.php) using the **xcode-dark** colour palette
+- Server-side syntax highlighting via [scrivo/highlight.php](https://github.com/scrivo/highlight.php) using the **xcode-dark** color palette
 - Raw HTML pass-through (trusted admin only — allows embedding `<video>` and `<audio>`)
 
 Fenced code blocks with a language tag are highlighted automatically:
@@ -219,7 +219,7 @@ Stale pagination pages and unpublished post/page files are removed automatically
 
 ## Theme & Styling
 
-The public theme is a single file, `theme.css`, with no build step. It uses CSS custom properties for all colours:
+The public theme is a single file, `theme.css`, with no build step. It uses CSS custom properties for all colors:
 
 | Variable | Light | Dark |
 |----------|-------|------|
@@ -230,7 +230,7 @@ The public theme is a single file, `theme.css`, with no build step. It uses CSS 
 | `--color-code-bg` | `#f3f4f6` | `#2a2a2a` |
 | `--color-link` | `#2563eb` | `#60a5fa` |
 
-Dark mode activates automatically when the system preference is `dark`. The toggle button in the header overrides this and persists the choice in `localStorage`. An inline script in `<head>` applies the stored preference before the stylesheet loads, preventing any flash of the wrong colour scheme.
+Dark mode activates automatically when the system preference is `dark`. The toggle button in the header overrides this and persists the choice in `localStorage`. An inline script in `<head>` applies the stored preference before the stylesheet loads, preventing any flash of the wrong color scheme.
 
 The body typeface is [Inter](https://rsms.me/inter/) (self-hosted WOFF2, OFL license).
 
