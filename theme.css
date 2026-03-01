@@ -336,6 +336,12 @@ audio { width: 100%; }
     color:      #dfdfe0;
 }
 
+/* In dark mode the page bg is #181818 — bump the code block to be clearly distinct */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .prose pre.syntax-hl { background: #2c2c2e; }
+}
+[data-theme="dark"] .prose pre.syntax-hl { background: #2c2c2e; }
+
 /* Copy button adjustments for dark code blocks */
 .code-block--dark .code-copy          { color: #6c7986; }
 .code-block--dark .code-copy:hover    { color: #dfdfe0; border-color: #3a3a3c; background: #2c2c2e; }
