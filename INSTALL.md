@@ -72,6 +72,12 @@ chmod 775 /var/www/cms/content/media
 
 # Web root writable so the Builder can write generated HTML
 chmod 775 /var/www/cms
+
+# If generated HTML files already exist (e.g. copied from dev), make them group-writable
+# so PHP-FPM (www-data) can overwrite them on rebuild
+chmod -R g+w /var/www/cms/posts
+chmod -R g+w /var/www/cms/pages
+chmod g+w /var/www/cms/index.html /var/www/cms/feed.xml 2>/dev/null || true
 ```
 
 ---
@@ -91,6 +97,18 @@ error_log           = /var/log/php8.3-fpm.log
 ```
 
 Restart FPM: `systemctl restart php8.3-fpm`
+
+Also set `umask` in the PHP-FPM pool config so generated files are group-writable (required for the web process to overwrite static HTML on rebuild):
+
+```bash
+# Edit /etc/php/8.3/fpm/pool.d/www.conf
+# Add or update:
+umask = 002
+```
+
+```bash
+systemctl restart php8.3-fpm
+```
 
 ---
 

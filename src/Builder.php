@@ -196,6 +196,10 @@ class Builder
         $this->refreshContext();
         $this->migrateOldPagePaths();
 
+        // Clear stored hashes so every file is force-regenerated.
+        $this->db->exec("UPDATE posts SET content_hash = NULL");
+        $this->db->exec("UPDATE pages SET content_hash = NULL");
+
         foreach (Post::findAll($this->db) as $post) {
             $this->buildPost($post);
         }
