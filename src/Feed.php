@@ -61,6 +61,14 @@ class Feed
             $postUrl = $siteUrl . '/posts/' . rawurlencode($post['slug']) . '/';
             $html    = $this->converter->convert($post['content'])->getContent();
 
+            $tinylyticsCode = $this->settings['tinylytics_code'] ?? '';
+            if ($tinylyticsCode !== '') {
+                $pixelUrl = 'https://tinylytics.app/pixel/' . rawurlencode($tinylyticsCode)
+                    . '.gif?path=' . rawurlencode('/posts/' . $post['slug'] . '/');
+                $html .= '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES | ENT_XML1, 'UTF-8') . '"'
+                    . ' alt="" style="width:1px;height:1px;border:0;" />';
+            }
+
             $xml .= '  <entry>' . "\n";
             $xml .= '    <title>' . $this->x($post['title']) . '</title>' . "\n";
             $xml .= '    <link href="' . $this->x($postUrl) . '" rel="alternate" type="text/html"/>' . "\n";

@@ -16,6 +16,7 @@ composer.phar
 /posts/
 /page/
 /pages/
+/search/
 
 # Proxima Nova font files (commercial license — do not commit)
 /fonts/ProximaNova*
