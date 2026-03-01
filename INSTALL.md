@@ -6,7 +6,7 @@
 |---|---|
 | OS | Ubuntu 22.04 LTS (24.04 recommended) |
 | PHP | 8.1 (8.3 recommended) |
-| PHP extensions | `pdo_sqlite`, `fileinfo`, `mbstring`, `gd` (with FreeType) |
+| PHP extensions | `pdo_sqlite`, `fileinfo`, `mbstring`, `gd` (with FreeType), `curl`, `intl` |
 | Web server | Nginx 1.18+ |
 | PHP process manager | PHP-FPM |
 | Composer | 2.x |
@@ -16,8 +16,21 @@
 ## 1 — System packages and PHP extensions
 
 ```bash
-# GD with FreeType is required for OG image generation
-apt-get install -y php8.3-gd libfreetype6-dev
+apt-get install -y \
+  nginx \
+  php8.3-fpm \
+  php8.3-cli \
+  php8.3-sqlite3 \
+  php8.3-mbstring \
+  php8.3-fileinfo \
+  php8.3-gd \
+  php8.3-curl \
+  php8.3-intl \
+  libfreetype6-dev \
+  git \
+  sqlite3 \
+  unzip \
+  curl
 systemctl restart php8.3-fpm
 ```
 
