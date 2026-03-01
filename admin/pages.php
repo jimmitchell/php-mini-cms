@@ -1,0 +1,126 @@
+<?php
+
+declare(strict_types=1);
+
+require __DIR__ . '/bootstrap.php';
+$auth->check();
+
+use CMS\Page;
+use CMS\Helpers;
+
+// Handle quick-delete from the list.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
+    $auth->verifyCsrf($_POST['csrf_token'] ?? '');
+    $page = Page::findById($db, (int) ($_POST['id'] ?? 0));
+    if ($page) {
+        $page->delete();
+        $builder->buildPage($page);
+    }
+    header('Location: /admin/pages.php');
+    exit;
+}
+
+$statusFilter = $_GET['status'] ?? 'all';
+$pages        = Page::findAll($db, $statusFilter === 'all' ? null : $statusFilter);
+
+$counts = $db->selectOne(
+    "SELECT
+        COUNT(*) AS total,
+        SUM(CASE WHEN status='published' THEN 1 ELSE 0 END) AS published,
+        SUM(CASE WHEN status='draft'     THEN 1 ELSE 0 END) AS draft
+     FROM pages"
+);
+
+$siteTitle = $db->getSetting('site_title', 'My CMS');
+$csrf      = $auth->csrfToken();
+
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pages — <?= Helpers::e($siteTitle) ?></title>
+    <link rel="stylesheet" href="/admin/assets/admin.css">
+</head>
+<body class="admin-page">
+
+<?php require __DIR__ . '/partials/nav.php'; ?>
+
+<main class="admin-main">
+    <header class="page-header">
+        <h1>Pages</h1>
+        <a href="/admin/page-edit.php" class="btn">+ New page</a>
+    </header>
+
+    <div class="toolbar">
+        <div class="filter-tabs">
+            <?php
+            $tabs = [
+                'all'       => 'All (' . ($counts['total'] ?? 0) . ')',
+                'published' => 'Published (' . ($counts['published'] ?? 0) . ')',
+                'draft'     => 'Draft (' . ($counts['draft'] ?? 0) . ')',
+            ];
+            foreach ($tabs as $key => $label): ?>
+            <a href="/admin/pages.php?status=<?= $key ?>"
+               class="<?= $statusFilter === $key ? 'active' : '' ?>">
+                <?= Helpers::e($label) ?>
+            </a>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+    <div class="panel" style="padding:0">
+        <?php if (empty($pages)): ?>
+            <p style="padding:1.5rem; color:var(--color-muted)">No pages found.</p>
+        <?php else: ?>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Slug</th>
+                    <th>Nav order</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($pages as $page): ?>
+            <tr>
+                <td>
+                    <a href="/admin/page-edit.php?id=<?= $page->id ?>">
+                        <?= Helpers::e($page->title) ?>
+                    </a>
+                </td>
+                <td class="meta">/<?= Helpers::e($page->slug) ?>/</td>
+                <td class="meta"><?= $page->nav_order ?></td>
+                <td>
+                    <span class="badge badge--<?= $page->status ?>">
+                        <?= $page->status ?>
+                    </span>
+                </td>
+                <td>
+                    <div class="actions">
+                        <a href="/admin/page-edit.php?id=<?= $page->id ?>" class="btn btn--sm btn--secondary">Edit</a>
+                        <?php if ($page->status === 'published'): ?>
+                        <a href="/<?= Helpers::e($page->slug) ?>/" target="_blank" class="btn btn--sm btn--secondary">View</a>
+                        <?php endif; ?>
+                        <form method="post" action="/admin/pages.php"
+                              onsubmit="return confirm('Delete &quot;<?= addslashes(htmlspecialchars($page->title)) ?>&quot;?')">
+                            <input type="hidden" name="csrf_token" value="<?= Helpers::e($csrf) ?>">
+                            <input type="hidden" name="action"     value="delete">
+                            <input type="hidden" name="id"         value="<?= $page->id ?>">
+                            <button type="submit" class="btn btn--sm btn--danger">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+    </div>
+</main>
+
+</body>
+</html>

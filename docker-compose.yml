@@ -1,0 +1,24 @@
+services:
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www/cms
+    # Run as current host user so generated files aren't owned by root
+    user: "${UID:-1000}:${GID:-1000}"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/cms:ro
+      # Media uploads need write access for the alias to work correctly
+      - ./content/media:/var/www/cms/content/media
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+    restart: unless-stopped

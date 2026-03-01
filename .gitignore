@@ -1,0 +1,27 @@
+# Composer
+/vendor/
+composer.phar
+/composer # local composer binary
+
+# Runtime config — contains credentials; never commit
+/config.php
+
+# Database and uploaded media (runtime data — not committed)
+/data/
+/content/media/
+
+# Generated static output — rebuilt by the CMS; not tracked
+/index.html
+/feed.xml
+/posts/
+/page/
+/pages/
+
+# Proxima Nova font files (commercial license — do not commit)
+/fonts/ProximaNova*
+
+# Editor temp files
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

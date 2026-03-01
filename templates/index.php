@@ -1,0 +1,72 @@
+<?php
+/**
+ * Post listing / pagination template.
+ * Variables: $posts (Post[]), $currentPage, $totalPages, $totalPosts,
+ *            $settings, $navPages, $siteUrl, $render
+ */
+
+use CMS\Helpers;
+
+$siteTitle   = $settings['site_title']       ?? 'My CMS';
+$description = $settings['site_description'] ?? '';
+$suffix      = $currentPage > 1 ? ' — Page ' . $currentPage : '';
+$pageTitle   = $siteTitle . $suffix;
+$canonical   = rtrim($siteUrl, '/') . ($currentPage === 1 ? '/' : '/page/' . $currentPage . '/');
+$ogType      = 'website';
+
+ob_start();
+?>
+<div class="post-list">
+    <?php if (empty($posts)): ?>
+    <p class="post-list__empty">Nothing published yet. Check back soon.</p>
+    <?php else: ?>
+
+    <?php foreach ($posts as $post): ?>
+    <?php $postUrl = rtrim($siteUrl, '/') . '/posts/' . rawurlencode($post->slug) . '/'; ?>
+    <article class="post-card">
+        <h2 class="post-card__title">
+            <a href="<?= htmlspecialchars($postUrl) ?>"><?= htmlspecialchars($post->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
+        </h2>
+        <?php if ($post->published_at): ?>
+        <time class="post-card__date" datetime="<?= htmlspecialchars($post->published_at) ?>">
+            <?= Helpers::formatDate($post->published_at, 'l, F j, Y', $settings['locale'] ?? '', $settings['timezone'] ?? '') ?>
+        </time>
+        <?php endif; ?>
+        <?php $cardExcerpt = $post->effectiveExcerpt(); ?>
+        <?php if ($cardExcerpt !== null): ?>
+        <p class="post-card__excerpt"><?= htmlspecialchars(strip_tags($cardExcerpt), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></p>
+        <?php endif; ?>
+        <a href="<?= htmlspecialchars($postUrl) ?>" class="post-card__more">Read more →</a>
+    </article>
+    <?php endforeach; ?>
+
+    <?php endif; ?>
+</div>
+
+<?php if ($totalPages > 1): ?>
+<nav class="pagination" aria-label="Pagination">
+    <?php if ($currentPage > 1): ?>
+    <a href="<?= $currentPage === 2 ? htmlspecialchars(rtrim($siteUrl, '/') . '/') : htmlspecialchars(rtrim($siteUrl, '/') . '/page/' . ($currentPage - 1) . '/') ?>"
+       class="pagination__prev">← Newer</a>
+    <?php else: ?>
+    <span class="pagination__prev pagination__prev--disabled">← Newer</span>
+    <?php endif; ?>
+
+    <span class="pagination__info">Page <?= $currentPage ?> of <?= $totalPages ?></span>
+
+    <?php if ($currentPage < $totalPages): ?>
+    <a href="<?= htmlspecialchars(rtrim($siteUrl, '/') . '/page/' . ($currentPage + 1) . '/') ?>"
+       class="pagination__next">Older →</a>
+    <?php else: ?>
+    <span class="pagination__next pagination__next--disabled">Older →</span>
+    <?php endif; ?>
+</nav>
+<?php endif; ?>
+<?php
+$bodyContent = ob_get_clean();
+$wideLayout  = true;
+
+echo $render('base.php', compact(
+    'pageTitle', 'description', 'canonical', 'ogType', 'bodyContent',
+    'settings', 'navPages', 'siteUrl', 'render', 'wideLayout'
+));
