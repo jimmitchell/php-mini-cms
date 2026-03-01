@@ -47,7 +47,7 @@ docker compose exec php php bin/setup.php
 
 Visit **http://localhost:8080/admin/** and log in.
 
-The setup script prompts for a password, writes the bcrypt hash to `config.php`, and seeds the SQLite database. Generated HTML, uploaded media, and the database are written to the project directory (not inside the container), so they persist across restarts.
+The setup script prompts for a username and password, writes both to `config.php`, and seeds the SQLite database. Generated HTML, uploaded media, and the database are written to the project directory (not inside the container), so they persist across restarts.
 
 ---
 
