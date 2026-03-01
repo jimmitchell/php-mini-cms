@@ -15,7 +15,8 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **OG images** — auto-generated 1200×630 PNG per post (requires GD + FreeType)
 - **Mastodon integration** — optional auto-toot on first publish
 - **Dark / light mode** — system-preference aware with manual toggle; no flash on load
-- **Single admin user** — bcrypt password, CSRF protection, IP-based rate limiting
+- **Search** — client-side full-text search of posts at `/search/`; no server-side PHP required
+- **Single admin user** — bcrypt password, CSRF protection, IP-based rate limiting; password changeable from within the admin panel
 - **Docker-ready** — one command to run locally
 
 ---
@@ -121,6 +122,7 @@ Runtime settings (site title, description, URL, footer text, pagination, Mastodo
 | Page editor | `/admin/page-edit.php` | Same as post editor + nav order field |
 | Media | `/admin/media.php` | Upload (drag-and-drop), library, copy URL to clipboard |
 | Settings | `/admin/settings.php` | Site identity, content options, Mastodon credentials |
+| Account | `/admin/account.php` | Change admin password |
 
 ### Security
 
@@ -147,7 +149,7 @@ The paginated index (`index.html`, `page/2/index.html`, …) and `feed.xml` are 
 
 ### Pages
 
-Pages work the same as posts but without scheduling. The **nav order** field controls whether a page appears in the site header navigation and in what order (`0` = hidden).
+Pages work the same as posts but without scheduling. The **nav order** field controls whether a page appears in the site header navigation and in what order (`0` = hidden from nav and sorted to the bottom of the pages list).
 
 Published pages are output to `pages/{slug}/index.html` and served at `/{slug}/` via an Nginx named location fallback.
 
@@ -175,6 +177,14 @@ echo "Hello, world!";
 ````
 
 Code blocks without a language tag receive auto-detection and fall back to plain output if detection fails.
+
+---
+
+## Search
+
+The CMS generates a `/search.json` file alongside every index rebuild. The search page at `/search/` fetches this file client-side and filters posts by title and excerpt — no server-side PHP or external service required.
+
+A magnifying-glass icon in the site header links to the search page. Results display as post cards with title, date, and excerpt.
 
 ---
 
@@ -207,6 +217,8 @@ The handle also adds a `fediverse:creator` meta tag to every page and renders a 
 /page/2/                → page/2/index.html   (paginated index)
 /posts/{slug}/          → posts/{slug}/index.html
 /pages/{slug}/          → pages/{slug}/index.html  (via Nginx @page fallback)
+/search/                → search/index.html   (client-side search page)
+/search.json            → search index (title, excerpt, date, URL for all published posts)
 /feed.xml               → Atom 1.0 feed
 /media/{filename}       → content/media/ alias
 /theme.css              → public stylesheet
@@ -266,7 +278,8 @@ php-mini-cms/
 │   ├── base.php
 │   ├── index.php
 │   ├── page.php
-│   └── post.php
+│   ├── post.php
+│   └── search.php
 ├── config.php              # Credentials + paths (not committed)
 ├── composer.json
 ├── docker-compose.yml
