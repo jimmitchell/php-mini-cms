@@ -41,7 +41,7 @@ php bin/setup.php
 
 The script will:
 - Prompt for an admin password and write its bcrypt hash into `config.php`
-- Create the `data/` directory and initialise the SQLite database
+- Create the `data/` directory and initialize the SQLite database
 - Optionally set the site title and URL
 
 ---
@@ -145,7 +145,7 @@ chmod +x /etc/cron.daily/cms-backup
 
 ## Local development (Docker)
 
-See [Docker quick-start](#docker-quick-start) below.
+See the steps below.
 
 ```bash
 docker compose up --build
