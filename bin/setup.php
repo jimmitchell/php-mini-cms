@@ -7,8 +7,8 @@
  * Usage:
  *   php bin/setup.php
  *
- * Generates a bcrypt password hash and writes it into config.php,
- * then initialises the database schema.
+ * Prompts for an admin username and password, writes both into config.php,
+ * then initializes the database schema.
  */
 
 define('CMS_ROOT', dirname(__DIR__));
@@ -24,12 +24,22 @@ if (!class_exists(\CMS\Database::class)) {
     exit(1);
 }
 
-// ── Prompt for password ───────────────────────────────────────────────────────
+// ── Prompt for username ───────────────────────────────────────────────────────
 
 echo "\n=== PHP Mini CMS Setup ===\n\n";
 
-$username = $config['admin']['username'] ?? 'admin';
-echo "Admin username: {$username}\n";
+$currentUsername = $config['admin']['username'] ?? 'admin';
+$username = '';
+while ($username === '') {
+    echo "Admin username [{$currentUsername}]: ";
+    $input = trim((string) fgets(STDIN));
+    $username = $input !== '' ? $input : $currentUsername;
+    if ($username === '') {
+        echo "Username cannot be empty. Please try again.\n";
+    }
+}
+
+// ── Prompt for password ───────────────────────────────────────────────────────
 
 $password = '';
 while ($password === '') {
@@ -68,30 +78,45 @@ if ($password !== $confirm) {
 
 $hash = password_hash($password, PASSWORD_BCRYPT);
 
-// ── Write hash into config.php ────────────────────────────────────────────────
+// ── Write username and hash into config.php ───────────────────────────────────
 
 $configPath    = CMS_ROOT . '/config.php';
 $configContent = file_get_contents($configPath);
 
-// Replace the empty password_hash value.
+// Write username.
+$updatedUsername = preg_replace(
+    "/'username'\s*=>\s*'[^']*'/",
+    "'username' => '" . addslashes($username) . "'",
+    $configContent
+);
+
+if ($updatedUsername === null || $updatedUsername === $configContent) {
+    echo "\nCould not auto-update username in config.php. Set it manually:\n";
+    echo "    'username' => '" . addslashes($username) . "',\n";
+    $updatedUsername = $configContent;
+} else {
+    echo "\nUsername written to config.php.\n";
+}
+
+// Write password hash.
 // Use preg_replace_callback so the bcrypt hash ($2y$10$...) is never
 // interpreted as a regex backreference by the replacement engine.
 $updated = preg_replace_callback(
     "/'password_hash'\s*=>\s*'[^']*'/",
     fn($m) => "'password_hash' => '{$hash}'",
-    $configContent
+    $updatedUsername
 );
 
-if ($updated === null || $updated === $configContent) {
+if ($updated === null || $updated === $updatedUsername) {
     // Fallback: just print the hash for manual pasting.
-    echo "\nCould not auto-update config.php. Paste this hash manually:\n";
+    echo "Could not auto-update password_hash in config.php. Paste this hash manually:\n";
     echo "    'password_hash' => '{$hash}',\n";
 } else {
     file_put_contents($configPath, $updated);
-    echo "\nPassword hash written to config.php.\n";
+    echo "Password hash written to config.php.\n";
 }
 
-// ── Initialise database ───────────────────────────────────────────────────────
+// ── Initialize database ───────────────────────────────────────────────────────
 
 $dataDir = $config['paths']['data'];
 if (!is_dir($dataDir)) {
@@ -100,7 +125,7 @@ if (!is_dir($dataDir)) {
 }
 
 $db = new \CMS\Database($dataDir . '/cms.db');
-echo "Database schema initialised.\n";
+echo "Database schema initialized.\n";
 
 // ── Seed default settings if not already present ──────────────────────────────
 

@@ -40,6 +40,7 @@ php bin/setup.php
 ```
 
 The script will:
+- Prompt for an admin username and write it into `config.php`
 - Prompt for an admin password and write its bcrypt hash into `config.php`
 - Create the `data/` directory and initialize the SQLite database
 - Optionally set the site title and URL
