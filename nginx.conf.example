@@ -78,6 +78,7 @@ server {
 
     # Date-based post URLs: /YYYY/MM/DD/{slug}/ → posts/YYYY/MM/DD/{slug}/index.html
     location ~ "^/[0-9]{4}/[0-9]{2}/[0-9]{2}/" {
+        rewrite "^/([0-9]{4}/[0-9]{2}/[0-9]{2}/.+\.[^/]+)$" /posts/$1 break;
         rewrite ^/(.+?)/?$ /posts/$1/index.html break;
         expires 1h;
         add_header Cache-Control          "public"        always;
