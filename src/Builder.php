@@ -229,8 +229,9 @@ class Builder
             return file_exists($ogPath) ? $siteUrl . '/' . $datePath . '/og.png' : '';
         }
 
-        $siteTitle = $this->settings['site_title'] ?? '';
-        $ogHash    = hash('sha256', $siteTitle . '|' . $post->title);
+        $siteTitle  = $this->settings['site_title'] ?? '';
+        $fontStamp  = (string) (@filemtime($this->fontDir . '/NunitoSans-Bold.ttf') ?: 0);
+        $ogHash     = hash('sha256', $fontStamp . '|' . $siteTitle . '|' . $post->title);
 
         if ($ogHash !== $post->og_image_hash || !file_exists($ogPath)) {
             try {
