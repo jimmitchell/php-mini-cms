@@ -133,7 +133,7 @@ $flashType = $flash['type']    ?? 'success';
                     <div class="actions">
                         <a href="/admin/post-edit.php?id=<?= $post->id ?>" class="btn btn--sm btn--secondary">Edit</a>
                         <?php if ($post->status === 'published'): ?>
-                        <a href="/posts/<?= Helpers::e($post->slug) ?>/" target="_blank" class="btn btn--sm btn--secondary">View</a>
+                        <a href="/<?= Helpers::e(Post::datePath($post->published_at, $post->slug)) ?>/" target="_blank" class="btn btn--sm btn--secondary">View</a>
                         <?php endif; ?>
                         <form method="post" action="/admin/posts.php"
                               onsubmit="return confirm('Delete &quot;<?= addslashes(htmlspecialchars($post->title)) ?>&quot;?')">

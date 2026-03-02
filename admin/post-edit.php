@@ -147,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Syndicate to Mastodon on first publish (unless opted out).
         if ($isFirstPublish) {
             $siteUrlForToot = $db->getSetting('site_url', '');
-            $postUrl        = rtrim($siteUrlForToot, '/') . '/posts/' . rawurlencode($post->slug) . '/';
+            $postUrl        = rtrim($siteUrlForToot, '/') . '/' . Post::datePath($post->published_at, $post->slug) . '/';
             $excerpt        = ($post->effectiveExcerpt() !== null)
                 ? strip_tags($post->effectiveExcerpt())
                 : Helpers::truncate($post->content, 280);
@@ -240,7 +240,7 @@ if ($post->published_at) {
     <header class="page-header">
         <h1><?= $isNew ? 'New Post' : 'Edit Post' ?></h1>
         <?php if (!$isNew && $post->status === 'published'): ?>
-        <a href="/posts/<?= Helpers::e($post->slug) ?>/" target="_blank" class="btn btn--secondary">View post</a>
+        <a href="/<?= Helpers::e(Post::datePath($post->published_at, $post->slug)) ?>/" target="_blank" class="btn btn--secondary">View post</a>
         <?php endif; ?>
     </header>
 
@@ -269,7 +269,7 @@ if ($post->published_at) {
 
                 <label for="slug">Slug</label>
                 <div style="display:flex;gap:.5rem;align-items:center">
-                    <span style="color:var(--color-muted);font-size:.85rem;white-space:nowrap">/posts/</span>
+                    <span style="color:var(--color-muted);font-size:.85rem;white-space:nowrap">/<?= date('Y/m/d', strtotime($post->published_at ?? 'now')) ?>/</span>
                     <input type="text" id="slug" name="slug"
                            value="<?= Helpers::e($post->slug) ?>"
                            placeholder="auto-generated"

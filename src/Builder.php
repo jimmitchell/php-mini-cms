@@ -52,7 +52,7 @@ class Builder
      */
     public function buildPost(Post $post): void
     {
-        $dir  = $this->outputDir . '/posts/' . $post->slug;
+        $dir  = $this->outputDir . '/posts/' . Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug);
         $path = $dir . '/index.html';
 
         if ($post->status !== 'published') {
@@ -165,7 +165,7 @@ class Builder
             $excerpt  = $post->effectiveExcerpt();
             $data[] = [
                 'title'   => $post->title,
-                'url'     => $siteUrl . '/posts/' . rawurlencode($post->slug) . '/',
+                'url'     => $siteUrl . '/' . Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug) . '/',
                 'excerpt' => $excerpt !== null ? strip_tags($excerpt) : '',
                 'date'    => $post->published_at
                     ? Helpers::formatDate($post->published_at, 'M j, Y', $locale, $tz)
@@ -195,6 +195,7 @@ class Builder
     {
         $this->refreshContext();
         $this->migrateOldPagePaths();
+        $this->migrateOldPostPaths();
 
         // Clear stored hashes so every file is force-regenerated.
         $this->db->exec("UPDATE posts SET content_hash = NULL");
@@ -219,18 +220,19 @@ class Builder
      */
     private function buildOgImage(Post $post): string
     {
-        $ogPath = $this->outputDir . '/posts/' . $post->slug . '/og.png';
-        $siteUrl = rtrim($this->settings['site_url'] ?? '', '/');
+        $datePath = Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug);
+        $ogPath   = $this->outputDir . '/posts/' . $datePath . '/og.png';
+        $siteUrl  = rtrim($this->settings['site_url'] ?? '', '/');
 
         if (!extension_loaded('gd')) {
             // Return existing URL if the image was previously generated.
-            return file_exists($ogPath) ? $siteUrl . '/posts/' . $post->slug . '/og.png' : '';
+            return file_exists($ogPath) ? $siteUrl . '/' . $datePath . '/og.png' : '';
         }
 
         $siteTitle = $this->settings['site_title'] ?? '';
         $ogHash    = hash('sha256', $siteTitle . '|' . $post->title);
 
-        if ($ogHash !== $post->og_image_hash) {
+        if ($ogHash !== $post->og_image_hash || !file_exists($ogPath)) {
             try {
                 $og = new OgImage($this->fontDir);
                 $og->generate($siteTitle, $post->title, $ogPath);
@@ -241,7 +243,38 @@ class Builder
             }
         }
 
-        return file_exists($ogPath) ? $siteUrl . '/posts/' . $post->slug . '/og.png' : '';
+        return file_exists($ogPath) ? $siteUrl . '/' . $datePath . '/og.png' : '';
+    }
+
+    /**
+     * Remove post output files that were written as posts/{slug}/index.html
+     * before URLs were changed to posts/{year}/{month}/{day}/{slug}/index.html.
+     * Safe to call repeatedly — only removes flat (non-date) slug directories.
+     */
+    private function migrateOldPostPaths(): void
+    {
+        $postsDir = $this->outputDir . '/posts';
+        if (!is_dir($postsDir)) {
+            return;
+        }
+
+        $migrated = false;
+        foreach (scandir($postsDir) as $entry) {
+            // Skip dots and any entry that looks like a 4-digit year (new format).
+            if ($entry === '.' || $entry === '..' || is_numeric($entry)) {
+                continue;
+            }
+            $oldDir = $postsDir . '/' . $entry;
+            if (is_dir($oldDir) && file_exists($oldDir . '/index.html')) {
+                $this->removeFile($oldDir . '/index.html');
+                $this->removeFile($oldDir . '/og.png');
+                $migrated = true;
+            }
+        }
+
+        if ($migrated) {
+            $this->db->exec("UPDATE posts SET content_hash = NULL, built_at = NULL, og_image_hash = NULL");
+        }
     }
 
     /**

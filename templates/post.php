@@ -12,7 +12,7 @@ $effectiveExcerpt = $post->effectiveExcerpt();
 $description = $effectiveExcerpt !== null
     ? strip_tags($effectiveExcerpt)
     : Helpers::truncate($html, 160);
-$canonical   = rtrim($siteUrl, '/') . '/posts/' . rawurlencode($post->slug) . '/';
+$canonical   = rtrim($siteUrl, '/') . '/' . CMS\Post::datePath($post->published_at, $post->slug) . '/';
 $ogType      = 'article';
 
 ob_start();
@@ -36,12 +36,12 @@ ob_start();
 <nav class="post-nav" aria-label="Post navigation">
     <div class="post-nav__prev">
         <?php if ($prevPost): ?>
-        <a class="post-nav__link" href="/posts/<?= rawurlencode($prevPost->slug) ?>/"><span class="post-nav__arrow">←</span><span><?= htmlspecialchars($prevPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span></a>
+        <a class="post-nav__link" href="/<?= CMS\Post::datePath($prevPost->published_at, $prevPost->slug) ?>/"><span class="post-nav__arrow">←</span><span><?= htmlspecialchars($prevPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span></a>
         <?php endif; ?>
     </div>
     <div class="post-nav__next">
         <?php if ($nextPost): ?>
-        <a class="post-nav__link" href="/posts/<?= rawurlencode($nextPost->slug) ?>/"><span><?= htmlspecialchars($nextPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span><span class="post-nav__arrow">→</span></a>
+        <a class="post-nav__link" href="/<?= CMS\Post::datePath($nextPost->published_at, $nextPost->slug) ?>/"><span><?= htmlspecialchars($nextPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span><span class="post-nav__arrow">→</span></a>
         <?php endif; ?>
     </div>
 </nav>

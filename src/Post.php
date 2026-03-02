@@ -218,6 +218,18 @@ class Post
         return trim($text);
     }
 
+    // ── URL helpers ───────────────────────────────────────────────────────────
+
+    /**
+     * Returns the date + slug path segment used in public URLs and file paths.
+     * e.g. "2026/03/01/my-post-slug"  (no leading or trailing slash)
+     */
+    public static function datePath(string $published_at, string $slug): string
+    {
+        $ts = strtotime($published_at);
+        return date('Y/m/d', $ts) . '/' . $slug;
+    }
+
     // ── Adjacent post navigation ──────────────────────────────────────────────
 
     /**

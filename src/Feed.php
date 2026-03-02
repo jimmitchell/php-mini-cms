@@ -58,13 +58,13 @@ class Feed
         $xml .= '  <generator uri="https://github.com/php-mini-cms">php-mini-cms</generator>' . "\n";
 
         foreach ($posts as $post) {
-            $postUrl = $siteUrl . '/posts/' . rawurlencode($post['slug']) . '/';
+            $postUrl = $siteUrl . '/' . Post::datePath($post['published_at'], $post['slug']) . '/';
             $html    = $this->converter->convert($post['content'])->getContent();
 
             $tinylyticsCode = $this->settings['tinylytics_code'] ?? '';
             if ($tinylyticsCode !== '') {
                 $pixelUrl = 'https://tinylytics.app/pixel/' . rawurlencode($tinylyticsCode)
-                    . '.gif?path=' . rawurlencode('/posts/' . $post['slug'] . '/');
+                    . '.gif?path=' . rawurlencode('/' . Post::datePath($post['published_at'], $post['slug']) . '/');
                 $html .= '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES | ENT_XML1, 'UTF-8') . '"'
                     . ' alt="" style="width:1px;height:1px;border:0;" />';
             }
