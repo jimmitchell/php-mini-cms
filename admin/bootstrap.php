@@ -28,6 +28,14 @@ if (random_int(1, 100) === 1) {
     $db->exec("DELETE FROM login_attempts WHERE attempted_at < datetime('now', '-24 hours')");
 }
 
+// Regenerate theme.min.css if it is missing or theme.css has been modified.
+$_themeCss    = CMS_ROOT . '/theme.css';
+$_themeMinCss = CMS_ROOT . '/theme.min.css';
+if (file_exists($_themeCss) && (!file_exists($_themeMinCss) || filemtime($_themeCss) > filemtime($_themeMinCss))) {
+    $builder->buildCss();
+}
+unset($_themeCss, $_themeMinCss);
+
 // Promote any scheduled posts whose publish time has passed and rebuild them.
 $promotedIds = \CMS\Post::promoteScheduled($db);
 foreach ($promotedIds as $pid) {

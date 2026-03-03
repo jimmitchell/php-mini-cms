@@ -7,6 +7,7 @@ namespace CMS;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
+use League\CommonMark\Extension\CommonMark\Node\Inline\Image;
 use League\CommonMark\Extension\Footnote\FootnoteExtension;
 use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
 use League\CommonMark\MarkdownConverter;
@@ -39,6 +40,7 @@ class Builder
         $env->addExtension(new GithubFlavoredMarkdownExtension());
         $env->addExtension(new FootnoteExtension());
         $env->addRenderer(FencedCode::class, new HighlightFencedCodeRenderer());
+        $env->addRenderer(Image::class, new ImageRenderer($this->mediaDir));
         $this->md = new MarkdownConverter($env);
 
         $this->refreshContext();
@@ -189,11 +191,28 @@ class Builder
     }
 
     /**
+     * Generate theme.min.css from theme.css.
+     * Safe to call repeatedly — skips silently if theme.css is absent.
+     */
+    public function buildCss(): void
+    {
+        $src  = $this->outputDir . '/theme.css';
+        $dest = $this->outputDir . '/theme.min.css';
+
+        if (!file_exists($src)) {
+            return;
+        }
+
+        $this->writeFile($dest, $this->minifyCss((string) file_get_contents($src)));
+    }
+
+    /**
      * Full site rebuild: all published posts, pages, index, feed, search.
      */
     public function buildAll(): void
     {
         $this->refreshContext();
+        $this->buildCss();
         $this->migrateOldPagePaths();
         $this->migrateOldPostPaths();
 
@@ -338,7 +357,65 @@ class Builder
         if (!is_dir($dir)) {
             mkdir($dir, 0775, true);
         }
+        if (str_ends_with($path, '.html')) {
+            $content = $this->minifyHtml($content);
+        }
         file_put_contents($path, $content);
+    }
+
+    /**
+     * Strip insignificant whitespace from HTML output.
+     * Protects <pre>, <script>, and <style> blocks verbatim.
+     */
+    private function minifyHtml(string $html): string
+    {
+        $tokens = [];
+        $i      = 0;
+
+        // Preserve blocks where whitespace is significant.
+        $html = preg_replace_callback(
+            '/<(pre|script|style|textarea)(\s[^>]*)?>[\s\S]*?<\/\1>/i',
+            static function (array $m) use (&$tokens, &$i): string {
+                $key          = "\x02BLOCK{$i}\x03";
+                $tokens[$key] = $m[0];
+                $i++;
+                return $key;
+            },
+            $html
+        );
+
+        // Remove HTML comments (keep IE conditionals: <!--[if ...>).
+        $html = preg_replace('/<!--(?!\[if\s)[\s\S]*?-->/i', '', $html);
+
+        // Strip leading whitespace (indentation) from every line.
+        $html = preg_replace('/^\s+/m', '', $html);
+
+        // Collapse runs of blank lines to nothing.
+        $html = preg_replace('/\n{2,}/', "\n", $html);
+
+        // Restore protected blocks.
+        return strtr(trim($html), $tokens);
+    }
+
+    /**
+     * Minify a CSS string: strip comments, collapse whitespace,
+     * remove spaces around structural characters.
+     */
+    private function minifyCss(string $css): string
+    {
+        // Remove /* ... */ comments.
+        $css = preg_replace('/\/\*[\s\S]*?\*\//', '', $css);
+
+        // Collapse all whitespace (spaces, tabs, newlines) to a single space.
+        $css = preg_replace('/\s+/', ' ', $css);
+
+        // Remove spaces around structural characters.
+        $css = preg_replace('/\s*([{}:;,>+~])\s*/', '$1', $css);
+
+        // Drop the redundant semicolon before a closing brace.
+        $css = str_replace(';}', '}', $css);
+
+        return trim($css);
     }
 
     private function removeFile(string $path): void

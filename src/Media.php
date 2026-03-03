@@ -79,6 +79,12 @@ class Media
             throw new RuntimeException('Could not save the uploaded file.');
         }
 
+        // 5a. Generate a WebP companion for JPEG/PNG uploads (non-fatal).
+        $ext = self::ALLOWED_MIME[$mimeType];
+        if (in_array($ext, ['jpg', 'jpeg', 'png'], true)) {
+            $this->generateWebp($destPath);
+        }
+
         // 6. Insert DB record.
         $id = $this->db->insert('media', [
             'filename'      => $safeName,
@@ -111,6 +117,12 @@ class Media
         $path = $this->storageDir . '/' . basename($row['filename']);
         if (file_exists($path)) {
             unlink($path);
+        }
+
+        // Remove WebP companion if one was generated.
+        $webpPath = (string) preg_replace('/\.[^.]+$/', '.webp', $path);
+        if ($webpPath !== $path && file_exists($webpPath)) {
+            unlink($webpPath);
         }
 
         $this->db->delete('media', 'id = :id', ['id' => $id]);
@@ -199,6 +211,39 @@ class Media
         }
 
         return $candidate;
+    }
+
+    /**
+     * Generate a .webp companion file alongside a JPEG or PNG source.
+     * Silently skips if GD is unavailable or conversion fails.
+     */
+    private function generateWebp(string $sourcePath): void
+    {
+        if (!extension_loaded('gd')) {
+            return;
+        }
+
+        $ext   = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        $image = match ($ext) {
+            'jpg', 'jpeg' => @imagecreatefromjpeg($sourcePath),
+            'png'         => @imagecreatefrompng($sourcePath),
+            default       => false,
+        };
+
+        if ($image === false) {
+            return;
+        }
+
+        // Preserve PNG transparency.
+        if ($ext === 'png') {
+            imagepalettetotruecolor($image);
+            imagealphablending($image, true);
+            imagesavealpha($image, true);
+        }
+
+        $destPath = (string) preg_replace('/\.[^.]+$/', '.webp', $sourcePath);
+        @imagewebp($image, $destPath, 82);
+        imagedestroy($image);
     }
 
     private function phpUploadError(int $code): string

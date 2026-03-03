@@ -14,7 +14,7 @@ class Database
     private PDO $pdo;
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 5;
+    private const SCHEMA_VERSION = 6;
 
     public function __construct(string $dbPath)
     {
@@ -169,6 +169,10 @@ class Database
             $this->applySchemaV5();
         }
 
+        if ($current < 6) {
+            $this->applySchemaV6();
+        }
+
         if ($current < self::SCHEMA_VERSION) {
             $this->upsertSetting('schema_version', (string) self::SCHEMA_VERSION);
         }
@@ -270,6 +274,13 @@ class Database
         // Hash of (site_title | post_title) used when the OG image was last generated.
         // NULL means no OG image has been generated yet.
         $this->pdo->exec("ALTER TABLE posts ADD COLUMN og_image_hash TEXT");
+    }
+
+    private function applySchemaV6(): void
+    {
+        // Track Bluesky crossposting — mirrors tooted_at / mastodon_skip.
+        $this->pdo->exec("ALTER TABLE posts ADD COLUMN bluesky_at   DATETIME");
+        $this->pdo->exec("ALTER TABLE posts ADD COLUMN bluesky_skip INTEGER NOT NULL DEFAULT 0");
     }
 
     /** Insert or update a single settings row. */

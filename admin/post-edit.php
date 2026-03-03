@@ -8,6 +8,7 @@ $auth->check();
 use CMS\Post;
 use CMS\Helpers;
 use CMS\Mastodon;
+use CMS\Bluesky;
 
 $post    = null;
 $isNew   = true;
@@ -18,6 +19,11 @@ $flash   = '';
 $mastodonInstance = $db->getSetting('mastodon_instance');
 $mastodonToken    = $db->getSetting('mastodon_token');
 $hasMastodon      = $mastodonInstance !== '' && $mastodonToken !== '';
+
+// Bluesky config — loaded once, used in POST handler and template.
+$blueskyHandle      = $db->getSetting('bluesky_handle');
+$blueskyAppPassword = $db->getSetting('bluesky_app_password');
+$hasBluesky         = $blueskyHandle !== '' && $blueskyAppPassword !== '';
 
 // Load existing post if ?id= given.
 if (isset($_GET['id'])) {
@@ -132,8 +138,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $post->status = 'draft';
         }
 
-        // Persist the user's opt-out choice so the checkbox stays unchecked on re-edit.
+        // Persist the user's opt-out choices so checkboxes stay unchecked on re-edit.
         $post->mastodon_skip = empty($_POST['send_to_mastodon']) ? 1 : 0;
+        $post->bluesky_skip  = empty($_POST['send_to_bluesky'])  ? 1 : 0;
 
         // Only toot on first publish (not when the result is 'scheduled').
         $isFirstPublish = $post->status === 'published'
@@ -141,6 +148,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             && $post->tooted_at === null
             && $hasMastodon
             && $post->mastodon_skip === 0;
+
+        // Only post to Bluesky on first publish (same idempotency pattern).
+        $isFirstBluesky = $post->status === 'published'
+            && $action === 'publish'
+            && $post->bluesky_at === null
+            && $hasBluesky
+            && $post->bluesky_skip === 0;
 
         $post->save();
 
@@ -154,6 +168,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $mastodon = new Mastodon($mastodonInstance, $mastodonToken);
             if ($mastodon->tootPost($post->title, $excerpt, $postUrl)) {
                 $post->markTooted();
+            }
+        }
+
+        // Syndicate to Bluesky on first publish (unless opted out).
+        if ($isFirstBluesky) {
+            $siteUrlForBsky = $db->getSetting('site_url', '');
+            $postUrl        = rtrim($siteUrlForBsky, '/') . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+            $excerpt        = ($post->effectiveExcerpt() !== null)
+                ? strip_tags($post->effectiveExcerpt())
+                : Helpers::truncate($post->content, 280);
+            $bluesky = new Bluesky($blueskyHandle, $blueskyAppPassword);
+            if ($bluesky->postToBluesky($post->title, $excerpt, $postUrl)) {
+                $post->markBluesky();
             }
         }
 
@@ -304,6 +331,16 @@ if ($post->published_at) {
                     </label>
                     <?php elseif ($hasMastodon && $post->tooted_at !== null): ?>
                     <p class="form-hint" style="margin-bottom:.75rem">&#10003; Already shared to Mastodon</p>
+                    <?php endif; ?>
+
+                    <?php if ($hasBluesky && $post->bluesky_at === null): ?>
+                    <label style="display:flex;gap:.5rem;align-items:center;font-size:.875rem;font-weight:400;margin-bottom:.75rem">
+                        <input type="checkbox" name="send_to_bluesky" value="1"
+                               <?= $post->bluesky_skip === 0 ? 'checked' : '' ?>>
+                        Post to Bluesky on publish
+                    </label>
+                    <?php elseif ($hasBluesky && $post->bluesky_at !== null): ?>
+                    <p class="form-hint" style="margin-bottom:.75rem">&#10003; Already shared to Bluesky</p>
                     <?php endif; ?>
 
                     <label for="publish_date" style="margin-top:0">Publish date</label>

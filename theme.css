@@ -22,37 +22,40 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-    --color-text:    #1a1a1a;
-    --color-muted:   #6b7280;
-    --color-border:  #e5e7eb;
-    --color-bg:      #ffffff;
-    --color-code-bg: #f3f4f6;
-    --color-link:    #2563eb;
-    --max-content:   720px;
-    --max-wide:      900px;
+    --color-text:       #1a1a1a;
+    --color-muted:      #6b7280;
+    --color-border:     #e5e7eb;
+    --color-bg:         #ffffff;
+    --color-chrome-bg:  #fafafa;
+    --color-code-bg:    #f3f4f6;
+    --color-link:       #2563eb;
+    --max-content:      800px;
+    --max-wide:         900px;
 }
 
 /* ── Dark mode tokens ──────────────────────────────────────────────────────── */
 /* Applied when the system prefers dark AND the user hasn't manually forced light */
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-        --color-text:    #e5e7eb;
-        --color-muted:   #9ca3af;
-        --color-border:  #374151;
-        --color-bg:      #181818;
-        --color-code-bg: #2a2a2a;
-        --color-link:    #60a5fa;
+        --color-text:       #e5e7eb;
+        --color-muted:      #9ca3af;
+        --color-border:     #374151;
+        --color-bg:         #181818;
+        --color-chrome-bg:  #0e0e0e;
+        --color-code-bg:    #2a2a2a;
+        --color-link:       #60a5fa;
     }
 }
 
 /* Applied when the user has manually toggled dark mode */
 [data-theme="dark"] {
-    --color-text:    #e5e7eb;
-    --color-muted:   #9ca3af;
-    --color-border:  #374151;
-    --color-bg:      #181818;
-    --color-code-bg: #2a2a2a;
-    --color-link:    #60a5fa;
+    --color-text:       #e5e7eb;
+    --color-muted:      #9ca3af;
+    --color-border:     #374151;
+    --color-bg:         #181818;
+    --color-chrome-bg:  #0e0e0e;
+    --color-code-bg:    #2a2a2a;
+    --color-link:       #60a5fa;
 }
 
 html { font-size: 17px; scroll-behavior: smooth; }
@@ -64,7 +67,12 @@ body {
     color: var(--color-text);
     background: var(--color-bg);
     -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
+
+.site-main { flex: 1; width: 100%; }
 
 a {
     color: var(--color-link);
@@ -86,6 +94,7 @@ audio { width: 100%; }
 .site-header {
     border-bottom: 1px solid var(--color-border);
     padding: 1.1rem 1.5rem;
+    background: var(--color-chrome-bg);
 }
 
 .site-header__inner {
@@ -559,9 +568,9 @@ audio { width: 100%; }
 .site-footer {
     border-top: 1px solid var(--color-border);
     padding: 1.5rem;
-    margin-top: 4rem;
     font-size: .85rem;
     color: var(--color-muted);
+    background: var(--color-chrome-bg);
 }
 
 .site-footer__inner {
@@ -596,6 +605,15 @@ audio { width: 100%; }
 }
 .site-footer__mastodon:hover { color: #6364ff; }
 .site-footer__mastodon svg  { width: 1rem; height: 1rem; }
+
+.site-footer__bluesky {
+    display: flex;
+    align-items: center;
+    color: var(--color-muted);
+    text-decoration: none;
+}
+.site-footer__bluesky:hover { color: #0085ff; }
+.site-footer__bluesky svg  { width: 1rem; height: 1rem; }
 
 /* ── Lightbox ─────────────────────────────────────────────────────────────── */
 .lightbox {
@@ -646,8 +664,8 @@ audio { width: 100%; }
 
 @media (max-width: 600px) {
     html { font-size: 16px; }
-    .post__title { font-size: 1.5rem; }
-    .post-card__title { font-size: 1.1rem; }
-    .site-header { padding: .9rem 1rem; }
+    .post__title { font-size: 1.6rem; }
+    .post-card__title { font-size: 1.2rem; }
+    .site-header { padding: 1rem; }
     .site-main { margin: 2rem auto; }
 }

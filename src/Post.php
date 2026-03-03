@@ -19,6 +19,8 @@ class Post
     public ?string $content_hash = null;
     public ?string $tooted_at    = null;
     public int     $mastodon_skip = 0;
+    public ?string $bluesky_at   = null;
+    public int     $bluesky_skip  = 0;
     public ?string $og_image_hash = null;
 
     private Database $db;
@@ -79,6 +81,7 @@ class Post
             'status'        => $this->status,
             'published_at'  => $this->published_at,
             'mastodon_skip' => $this->mastodon_skip,
+            'bluesky_skip'  => $this->bluesky_skip,
             'updated_at'    => date('Y-m-d H:i:s'),
         ];
 
@@ -129,6 +132,22 @@ class Post
         $this->db->update(
             'posts',
             ['og_image_hash' => $hash],
+            'id = :id',
+            ['id' => $this->id]
+        );
+    }
+
+    /**
+     * Record that this post was successfully posted to Bluesky.
+     */
+    public function markBluesky(): void
+    {
+        $now            = date('Y-m-d H:i:s');
+        $this->bluesky_at = $now;
+
+        $this->db->update(
+            'posts',
+            ['bluesky_at' => $now],
             'id = :id',
             ['id' => $this->id]
         );
@@ -322,6 +341,8 @@ class Post
         $post->content_hash = $row['content_hash'] ?? null;
         $post->tooted_at     = $row['tooted_at'] ?? null;
         $post->mastodon_skip = (int) ($row['mastodon_skip'] ?? 0);
+        $post->bluesky_at    = $row['bluesky_at']   ?? null;
+        $post->bluesky_skip  = (int) ($row['bluesky_skip']  ?? 0);
         $post->og_image_hash = $row['og_image_hash'] ?? null;
         return $post;
     }

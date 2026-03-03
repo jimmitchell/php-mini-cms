@@ -21,6 +21,9 @@ $siteTitle   = $settings['site_title']       ?? 'My CMS';
 $footerText  = $settings['footer_text']      ?? '';
 $ogImageUrl  = $ogImageUrl  ?? '';
 
+// Bluesky profile URL (stored as-is).
+$blueskyUrl = $settings['bluesky_url'] ?? '';
+
 // Mastodon: parse @user@instance handle into a profile URL + meta value.
 $mastodonUrl  = '';
 $mastodonMeta = '';
@@ -75,7 +78,7 @@ if (!function_exists('_e')) {
           href="<?= _e($siteUrl . '/feed.xml') ?>">
     <!-- Anti-FOUC: apply saved/system theme before CSS renders to avoid flash -->
     <script>(function(){var t=localStorage.getItem('theme');if(t==='dark'||(t===null&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}else if(t==='light'){document.documentElement.setAttribute('data-theme','light');}})();</script>
-    <link rel="stylesheet" href="/theme.css">
+    <link rel="stylesheet" href="/theme.min.css">
 </head>
 <body>
 
@@ -121,6 +124,12 @@ if (!function_exists('_e')) {
             <a href="<?= _e($mastodonUrl) ?>" class="site-footer__mastodon"
                rel="me noopener" target="_blank" aria-label="Mastodon">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M23.193 7.879c0-5.206-3.411-6.732-3.411-6.732C18.062.357 15.108.025 12.041 0h-.076c-3.069.025-6.02.357-7.74 1.147 0 0-3.411 1.526-3.411 6.732 0 1.192-.023 2.618.015 4.129.124 5.092.934 10.109 5.641 11.355 2.17.574 4.034.695 5.535.612 2.722-.15 4.25-.972 4.25-.972l-.09-1.975s-1.945.613-4.13.539c-2.165-.074-4.449-.233-4.801-2.891a5.499 5.499 0 0 1-.048-.745s2.125.52 4.818.643c1.646.075 3.19-.096 4.758-.283 3.007-.359 5.625-2.212 5.954-3.905.517-2.665.475-6.507.475-6.507zm-4.024 6.709h-2.497v-6.12c0-2.666-3.43-2.769-3.43.37v3.35H10.76v-3.35c0-3.139-3.43-3.036-3.43-.37v6.12H4.833c0-6.546-.28-7.919.985-9.374 1.388-1.55 4.28-1.652 5.561.327l.635 1.046.635-1.046c1.282-1.98 4.172-1.878 5.562-.327 1.265 1.455.985 2.828.985 9.374z" fill="currentColor"/></svg>
+            </a>
+            <?php endif; ?>
+            <?php if ($blueskyUrl !== ''): ?>
+            <a href="<?= _e($blueskyUrl) ?>" class="site-footer__bluesky"
+               rel="noopener" target="_blank" aria-label="Bluesky">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z" fill="currentColor"/></svg>
             </a>
             <?php endif; ?>
             <a href="<?= _e($siteUrl . '/feed.xml') ?>" class="site-footer__feed" aria-label="RSS feed">

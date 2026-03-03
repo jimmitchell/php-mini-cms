@@ -24,7 +24,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'mastodon_handle'    => trim($_POST['mastodon_handle']    ?? ''),
         'mastodon_instance'  => rtrim(trim($_POST['mastodon_instance'] ?? ''), '/'),
         'mastodon_token'     => trim($_POST['mastodon_token']     ?? ''),
-        'tinylytics_code'    => trim($_POST['tinylytics_code']    ?? ''),
+        'bluesky_url'          => rtrim(trim($_POST['bluesky_url']          ?? ''), '/'),
+        'bluesky_handle'       => trim($_POST['bluesky_handle']       ?? ''),
+        'bluesky_app_password' => trim($_POST['bluesky_app_password'] ?? ''),
+        'tinylytics_code'      => trim($_POST['tinylytics_code']      ?? ''),
     ];
 
     if ($fields['site_title'] === '') {
@@ -48,8 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         foreach ($fields as $key => $value) {
-            // Don't overwrite a saved token when the field is left blank.
+            // Don't overwrite saved secrets when the field is left blank.
             if ($key === 'mastodon_token' && $value === '') {
+                continue;
+            }
+            if ($key === 'bluesky_app_password' && $value === '') {
                 continue;
             }
             $db->upsertSetting($key, $value);
@@ -197,6 +203,41 @@ $flash     = $auth->getFlash();
                 Create a token in your Mastodon account under
                 Preferences → Development → New application.
                 Only the <code>write:statuses</code> scope is needed.
+            </p>
+        </div>
+
+        <div class="panel">
+            <h2>Bluesky</h2>
+
+            <label for="bluesky_url">Your Bluesky profile URL</label>
+            <input type="url" id="bluesky_url" name="bluesky_url"
+                   value="<?= Helpers::e($_POST['bluesky_url'] ?? $settings['bluesky_url'] ?? '') ?>"
+                   placeholder="https://bsky.app/profile/username.bsky.social"
+                   style="max-width:400px">
+            <p class="form-hint">
+                When set, a Bluesky link is shown in the site footer.
+                Example: <code>https://bsky.app/profile/username.bsky.social</code>
+            </p>
+
+            <label for="bluesky_handle">Handle</label>
+            <input type="text" id="bluesky_handle" name="bluesky_handle"
+                   value="<?= Helpers::e($_POST['bluesky_handle'] ?? $settings['bluesky_handle'] ?? '') ?>"
+                   placeholder="username.bsky.social"
+                   style="max-width:280px">
+            <p class="form-hint">
+                Used for crossposting. Format: <code>username.bsky.social</code>
+            </p>
+
+            <label for="bluesky_app_password">App password</label>
+            <input type="password" id="bluesky_app_password" name="bluesky_app_password"
+                   value=""
+                   placeholder="<?= ($settings['bluesky_app_password'] ?? '') !== '' ? '(saved — leave blank to keep)' : 'Paste your app password here' ?>"
+                   autocomplete="new-password"
+                   style="max-width:360px">
+            <p class="form-hint">
+                Create one in Bluesky under Settings → Privacy and Security → App Passwords.
+                Never use your main password. When both Handle and App password are set,
+                new posts will be automatically shared on first publish.
             </p>
         </div>
 
