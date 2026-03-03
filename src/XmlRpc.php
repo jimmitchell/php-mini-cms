@@ -119,6 +119,10 @@ class XmlRpc
         }
 
         if (is_array($value)) {
+            // Empty array → always encode as array (range(0,-1) bug workaround)
+            if (count($value) === 0) {
+                return '<value><array><data></data></array></value>';
+            }
             // Associative → struct; sequential → array
             if (array_keys($value) !== range(0, count($value) - 1)) {
                 $members = '';
