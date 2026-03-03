@@ -6,7 +6,7 @@
 |---|---|
 | OS | Ubuntu 22.04 LTS (24.04 recommended) |
 | PHP | 8.1 (8.3 recommended) |
-| PHP extensions | `pdo_sqlite`, `fileinfo`, `mbstring`, `gd` (with FreeType), `curl`, `intl` |
+| PHP extensions | `pdo_sqlite`, `fileinfo`, `mbstring`, `simplexml`, `gd` (with FreeType), `curl`, `intl` |
 | Web server | Nginx 1.18+ |
 | PHP process manager | PHP-FPM |
 | Composer | 2.x |
@@ -23,6 +23,7 @@ apt-get install -y \
   php8.3-sqlite3 \
   php8.3-mbstring \
   php8.3-fileinfo \
+  php8.3-xml \
   php8.3-gd \
   php8.3-curl \
   php8.3-intl \
@@ -33,6 +34,8 @@ apt-get install -y \
   curl
 systemctl restart php8.3-fpm
 ```
+
+> **`php8.3-xml` is required** — it provides the `SimpleXML` extension used by the XML-RPC API (`/admin/xmlrpc.php`). It is a separate package from `php8.3-fpm` and will not be pulled in automatically.
 
 ---
 
@@ -158,6 +161,18 @@ Click **Settings** to enter your site URL, then **Rebuild entire site** on the d
 
 ---
 
+## 10 — MarsEdit setup (optional)
+
+The CMS exposes a WordPress-compatible XML-RPC API. To connect MarsEdit:
+
+1. **Add Blog** → choose **WordPress**
+2. **Endpoint URL:** `https://example.com/admin/xmlrpc.php`
+3. **Username / Password:** your admin credentials
+
+MarsEdit will show **Posts** and **Pages** sections. All CRUD operations and media uploads work from the client. The same endpoint also supports the MetaWeblog API for other clients.
+
+---
+
 ## Automated SQLite backup
 
 ```bash
@@ -177,8 +192,6 @@ chmod +x /etc/cron.daily/cms-backup
 
 ## Local development (Docker)
 
-See the steps below.
-
 ```bash
 docker compose up --build
 # Then in a second terminal:
@@ -197,3 +210,21 @@ git pull
 composer install --no-dev --optimize-autoloader
 # Log in to admin and click "Rebuild entire site"
 ```
+
+---
+
+## PHP extension reference
+
+| Extension | Package | Purpose |
+|---|---|---|
+| `pdo_sqlite` | `php8.3-sqlite3` | SQLite database |
+| `fileinfo` | `php8.3-fileinfo` | Upload MIME validation |
+| `mbstring` | `php8.3-mbstring` | Required by league/commonmark |
+| `simplexml` | `php8.3-xml` | XML-RPC API request parsing |
+| `gd` | `php8.3-gd` | OG image generation (requires FreeType) |
+| `curl` | `php8.3-curl` | Mastodon & Bluesky API calls |
+| `intl` | `php8.3-intl` | Locale-aware string handling |
+| `session` | built-in | Admin sessions |
+| `hash` | built-in | Content-hash diffing |
+| `json` | built-in | Config/settings |
+| `openssl` | built-in | Session security |

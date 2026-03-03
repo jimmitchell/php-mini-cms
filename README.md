@@ -9,11 +9,13 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Static output** — generates plain HTML files; public pages need no PHP at serve time
 - **Markdown editor** — EasyMDE with GitHub-flavored Markdown, footnotes, and server-side syntax highlighting (xcode-dark palette)
 - **Posts & pages** — separate content types; pages can appear in site navigation
+- **Date-based post URLs** — posts live at `/YYYY/MM/DD/{slug}/` for clean, chronological permalinks
 - **Scheduling** — set a future publish date; posts promote automatically on next admin load
 - **Media library** — drag-and-drop uploads with MIME validation; images, video, and audio supported (50 MB limit)
 - **Atom feed** — generated automatically at `/feed.xml`
 - **OG images** — auto-generated 1200×630 PNG per post (requires GD + FreeType)
-- **Mastodon integration** — optional auto-toot on first publish
+- **Mastodon & Bluesky** — optional auto-post on first publish; per-post skip checkbox for each platform
+- **MarsEdit support** — full WordPress XML-RPC API at `/admin/xmlrpc.php`; write and publish from MarsEdit with post and page management
 - **Dark / light mode** — system-preference aware with manual toggle; no flash on load
 - **Search** — client-side full-text search of posts at `/search/`; no server-side PHP required
 - **Single admin user** — bcrypt password, CSRF protection, IP-based rate limiting; password changeable from within the admin panel
@@ -26,10 +28,12 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 | Component | Version |
 |-----------|---------|
 | PHP | 8.1+ (8.3 recommended) |
-| Extensions | `pdo_sqlite`, `mbstring`, `gd` (with FreeType for OG images) |
+| Extensions | `pdo_sqlite`, `mbstring`, `simplexml`, `gd` (with FreeType for OG images) |
 | Nginx | 1.18+ |
 | Composer | 2.x |
 | SQLite | 3.x (bundled with PHP) |
+
+> **Note:** `simplexml` is in the `php8.3-xml` package on Ubuntu/Debian — it is not automatically installed with `php8.3-fpm`. See [INSTALL.md](INSTALL.md).
 
 ---
 
@@ -106,7 +110,7 @@ return [
 ];
 ```
 
-Runtime settings (site title, description, URL, footer text, pagination, Mastodon credentials, etc.) are stored in the SQLite `settings` table and edited through **Admin → Settings**.
+Runtime settings (site title, description, URL, footer text, pagination, Mastodon/Bluesky credentials, analytics, etc.) are stored in the SQLite `settings` table and edited through **Admin → Settings**.
 
 ---
 
@@ -116,19 +120,20 @@ Runtime settings (site title, description, URL, footer text, pagination, Mastodo
 |------|------|-------------|
 | Login | `/admin/` | Single-user login with rate limiting |
 | Dashboard | `/admin/dashboard.php` | Stats, scheduled posts due soon, full site rebuild |
-| Posts | `/admin/posts.php` | List with status filter tabs, inline delete |
+| Posts | `/admin/posts.php` | List with status filter tabs, title search, inline delete |
 | Post editor | `/admin/post-edit.php` | Title, slug, Markdown editor, status, schedule date |
 | Pages | `/admin/pages.php` | List with inline delete |
 | Page editor | `/admin/page-edit.php` | Same as post editor + nav order field |
 | Media | `/admin/media.php` | Upload (drag-and-drop), library, copy URL to clipboard |
-| Settings | `/admin/settings.php` | Site identity, content options, Mastodon credentials |
+| Settings | `/admin/settings.php` | Site identity, content options, social/analytics credentials |
 | Account | `/admin/account.php` | Change admin password |
+| XML-RPC API | `/admin/xmlrpc.php` | WordPress-compatible API for MarsEdit and similar clients |
 
 ### Security
 
 - CSRF token on every form POST
 - Passwords hashed with bcrypt (`PASSWORD_BCRYPT`)
-- IP-based login rate limiting: 5 attempts → 15-minute lockout
+- IP-based login rate limiting: 5 attempts → 15-minute lockout (applies to XML-RPC auth too)
 - Sessions: `HttpOnly`, `Secure`, `SameSite=Strict`
 - Nginx blocks direct access to `src/`, `templates/`, `data/`, `content/`, `vendor/`, and `config.php`
 - Separate Content-Security-Policy headers for admin (allows `unsafe-inline` for EasyMDE) and public pages (strict)
@@ -142,8 +147,8 @@ Runtime settings (site title, description, URL, footer text, pagination, Mastodo
 Posts have a **status** of `draft`, `published`, or `scheduled`. Saving a post as `published` immediately triggers a static build for that post. Scheduling sets a future `published_at` date; scheduled posts are promoted to `published` automatically the next time any admin page loads.
 
 Each published post generates:
-- `posts/{slug}/index.html` — the post page
-- `posts/{slug}/og.png` — Open Graph image (if GD is available)
+- `posts/YYYY/MM/DD/{slug}/index.html` — the post page, served at `/YYYY/MM/DD/{slug}/`
+- `posts/YYYY/MM/DD/{slug}/og.png` — Open Graph image (if GD is available)
 
 The paginated index (`index.html`, `page/2/index.html`, …) and `feed.xml` are rebuilt on publish and when settings change.
 
@@ -196,33 +201,53 @@ The feed is generated at `/feed.xml` and includes the most recent N posts (confi
 
 ## Open Graph Images
 
-When PHP's GD extension is compiled with FreeType support, the CMS generates a 1200×630 PNG for each published post. The image includes the post title and site name rendered in Inter. Images are cached by a hash of the title + site name; they regenerate only when either changes.
+When PHP's GD extension is compiled with FreeType support, the CMS generates a 1200×630 PNG for each published post. The image includes the post title and site name rendered in Nunito Sans. Images are cached by a hash of the title + site name; they regenerate only when either changes.
 
-The font files at `fonts/` must be present. The Docker image includes FreeType.
+The font files at `fonts/og/` must be present. The Docker image includes FreeType.
 
 ---
 
-## Mastodon Integration
+## Mastodon & Bluesky Integration
+
+### Mastodon
 
 Set your handle (`@user@instance.social`), instance URL, and an API access token in **Settings → Mastodon**. The token only needs the `write:statuses` scope. When both fields are saved, new posts are automatically tooted on first publish. Individual posts have a **Skip Mastodon** checkbox to suppress tooting.
 
 The handle also adds a `fediverse:creator` meta tag to every page and renders a Mastodon icon link in the footer.
+
+### Bluesky
+
+Set your Bluesky handle and an app password in **Settings → Bluesky**. New posts are automatically cross-posted on first publish. Individual posts have a **Skip Bluesky** checkbox.
+
+Both platforms are independent — you can enable one, both, or neither.
+
+---
+
+## MarsEdit Integration
+
+The CMS exposes a WordPress-compatible XML-RPC API at `/admin/xmlrpc.php`. In MarsEdit:
+
+1. **Add Blog** → choose **WordPress**
+2. **Endpoint URL:** `https://example.com/admin/xmlrpc.php`
+3. **Username / Password:** your admin credentials
+
+MarsEdit will show both a **Posts** and a **Pages** section. All post and page CRUD operations, media uploads, and the media library work from MarsEdit. The endpoint also supports the MetaWeblog API (for clients that prefer it) at the same URL.
 
 ---
 
 ## Static Output Structure
 
 ```
-/                       → index.html          (page 1 of post index)
-/page/2/                → page/2/index.html   (paginated index)
-/posts/{slug}/          → posts/{slug}/index.html
-/pages/{slug}/          → pages/{slug}/index.html  (via Nginx @page fallback)
-/search/                → search/index.html   (client-side search page)
-/search.json            → search index (title, excerpt, date, URL for all published posts)
-/feed.xml               → Atom 1.0 feed
-/media/{filename}       → content/media/ alias
-/theme.css              → public stylesheet
-/fonts/                 → Inter web font files
+/                           → index.html              (page 1 of post index)
+/page/2/                    → page/2/index.html        (paginated index)
+/YYYY/MM/DD/{slug}/         → posts/YYYY/MM/DD/{slug}/index.html
+/{slug}/                    → pages/{slug}/index.html  (via Nginx @page fallback)
+/search/                    → search/index.html        (client-side search page)
+/search.json                → search index (title, excerpt, date, URL for all published posts)
+/feed.xml                   → Atom 1.0 feed
+/media/{filename}           → content/media/ alias
+/theme.css                  → public stylesheet
+/fonts/                     → Nunito Sans web font files
 ```
 
 Stale pagination pages and unpublished post/page files are removed automatically on rebuild.
@@ -244,7 +269,7 @@ The public theme is a single file, `theme.css`, with no build step. It uses CSS 
 
 Dark mode activates automatically when the system preference is `dark`. The toggle button in the header overrides this and persists the choice in `localStorage`. An inline script in `<head>` applies the stored preference before the stylesheet loads, preventing any flash of the wrong color scheme.
 
-The body typeface is [Inter](https://rsms.me/inter/) (self-hosted WOFF2, OFL license).
+The body typeface is [Nunito Sans](https://fonts.google.com/specimen/Nunito+Sans) (self-hosted WOFF2, OFL license).
 
 ---
 
@@ -254,16 +279,18 @@ The body typeface is [Inter](https://rsms.me/inter/) (self-hosted WOFF2, OFL lic
 php-mini-cms/
 ├── admin/                  # Admin panel PHP pages
 │   ├── assets/             # Admin CSS, JS, EasyMDE, Font Awesome
-│   └── partials/           # Shared nav partial
+│   ├── partials/           # Shared nav partial
+│   └── xmlrpc.php          # WordPress/MetaWeblog XML-RPC API endpoint
 ├── bin/
 │   └── setup.php           # CLI installer (password hash + DB init)
 ├── content/
 │   └── media/              # Uploaded files (not committed)
 ├── data/                   # SQLite database (not committed)
 ├── docker/                 # Docker-specific Nginx config, PHP ini, entrypoint
-├── fonts/                  # Inter WOFF2 files + OG image font
+├── fonts/                  # Nunito Sans WOFF2 files + OG image fonts (fonts/og/)
 ├── src/                    # PHP source classes (namespace CMS\)
 │   ├── Auth.php
+│   ├── Bluesky.php
 │   ├── Builder.php
 │   ├── Database.php
 │   ├── Feed.php
@@ -273,7 +300,8 @@ php-mini-cms/
 │   ├── Media.php
 │   ├── OgImage.php
 │   ├── Page.php
-│   └── Post.php
+│   ├── Post.php
+│   └── XmlRpc.php
 ├── templates/              # Public HTML templates
 │   ├── base.php
 │   ├── index.php

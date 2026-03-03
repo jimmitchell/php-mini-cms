@@ -27,6 +27,10 @@ declare(strict_types=1);
  *                    metaWeblog.newMediaObject
  */
 
+// Read the raw request body BEFORE bootstrap.php starts a session or does
+// anything that could consume php://input on some PHP-FPM configurations.
+$_xmlrpcBody = file_get_contents('php://input');
+
 require __DIR__ . '/bootstrap.php';
 // Note: $auth->check() is intentionally NOT called.
 // XML-RPC authenticates per-request via the username/password params.
@@ -48,6 +52,11 @@ function xmlrpc_fault(int $code, string $msg): never
     exit;
 }
 
+// Guard: simplexml is in the php8.3-xml package (separate from php8.3-fpm).
+if (!function_exists('simplexml_load_string')) {
+    xmlrpc_fault(500, 'Server error: simplexml extension not installed (apt install php8.3-xml).');
+}
+
 // ── Only accept POST ──────────────────────────────────────────────────────────
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -56,11 +65,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 // ── Parse request ─────────────────────────────────────────────────────────────
 
-$body = file_get_contents('php://input');
+$body = $_xmlrpcBody;
+unset($_xmlrpcBody);
 try {
     $req = XmlRpc::parseRequest($body ?: '');
-} catch (\Throwable) {
-    xmlrpc_fault(400, 'Bad Request: invalid XML');
+} catch (\Throwable $e) {
+    xmlrpc_fault(400, 'Bad Request: ' . $e->getMessage());
 }
 
 $method = $req['method'];
