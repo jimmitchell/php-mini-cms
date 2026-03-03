@@ -12,6 +12,7 @@ composer.phar
 
 # Generated static output — rebuilt by the CMS; not tracked
 /index.html
+/404.html
 /feed.xml
 /theme.min.css
 /search.json

@@ -137,9 +137,10 @@ class Builder
         // Remove stale paginated pages beyond the new total.
         $this->removeStalePaginationPages($pages);
 
-        // Keep the search index and page in sync with published posts.
+        // Keep the search index, search page, and 404 in sync with published posts.
         $this->buildSearchIndex();
         $this->buildSearchPage();
+        $this->build404();
     }
 
     /**
@@ -188,6 +189,15 @@ class Builder
     {
         $rendered = $this->render('search.php', []);
         $this->writeFile($this->outputDir . '/search/index.html', $rendered);
+    }
+
+    /**
+     * Render and write 404.html — the themed not-found page.
+     */
+    public function build404(): void
+    {
+        $rendered = $this->render('404.php', []);
+        $this->writeFile($this->outputDir . '/404.html', $rendered);
     }
 
     /**

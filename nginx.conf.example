@@ -23,6 +23,9 @@ server {
     include             /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
 
+    # ── Custom error pages ────────────────────────────────────────────────────
+    error_page 404 /404.html;
+
     # ── Block sensitive directories ───────────────────────────────────────────
     location ~* ^/(src|data|content|templates|vendor)(/|$) {
         deny all;
