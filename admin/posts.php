@@ -26,7 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 }
 
 $statusFilter = $_GET['status'] ?? 'all';
+$search       = trim($_GET['q'] ?? '');
 $posts        = Post::findAll($db, $statusFilter === 'all' ? null : $statusFilter);
+
+// Apply title search filter.
+if ($search !== '') {
+    $posts = array_values(array_filter($posts, fn($p) => stripos($p->title, $search) !== false));
+}
 
 // When showing all statuses, float drafts to the top.
 if ($statusFilter === 'all') {
@@ -91,18 +97,32 @@ $flashType = $flash['type']    ?? 'success';
                 'draft'     => 'Draft (' . ($counts['draft'] ?? 0) . ')',
                 'scheduled' => 'Scheduled (' . ($counts['scheduled'] ?? 0) . ')',
             ];
-            foreach ($tabs as $key => $label): ?>
-            <a href="/admin/posts.php?status=<?= $key ?>"
+            foreach ($tabs as $key => $label):
+                $tabHref = '/admin/posts.php?status=' . $key . ($search !== '' ? '&q=' . urlencode($search) : '');
+            ?>
+            <a href="<?= $tabHref ?>"
                class="<?= $statusFilter === $key ? 'active' : '' ?>">
                 <?= Helpers::e($label) ?>
             </a>
             <?php endforeach; ?>
         </div>
+        <form method="get" action="/admin/posts.php" class="search-form" role="search">
+            <?php if ($statusFilter !== 'all'): ?>
+            <input type="hidden" name="status" value="<?= Helpers::e($statusFilter) ?>">
+            <?php endif; ?>
+            <input type="search" name="q" value="<?= Helpers::e($search) ?>"
+                   placeholder="Search posts…" class="search-input" aria-label="Search posts">
+            <?php if ($search !== ''): ?>
+            <a href="/admin/posts.php?status=<?= Helpers::e($statusFilter) ?>" class="search-clear" aria-label="Clear search">✕</a>
+            <?php endif; ?>
+        </form>
     </div>
 
     <div class="panel" style="padding:0">
         <?php if (empty($posts)): ?>
-            <p style="padding:1.5rem; color:var(--color-muted)">No posts found.</p>
+            <p style="padding:1.5rem; color:var(--color-muted)">
+                <?= $search !== '' ? 'No posts match &ldquo;' . Helpers::e($search) . '&rdquo;.' : 'No posts found.' ?>
+            </p>
         <?php else: ?>
         <table class="data-table">
             <thead>

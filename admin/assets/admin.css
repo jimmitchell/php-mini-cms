@@ -424,6 +424,40 @@ button[type="submit"]:hover,
     flex-wrap: wrap;
 }
 
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: .25rem;
+    margin-left: auto;
+}
+
+.search-input {
+    padding: .35rem .6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: .875rem;
+    background: var(--color-bg);
+    color: var(--color-text);
+    width: 220px;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 20%, transparent);
+}
+
+.search-clear {
+    font-size: .8rem;
+    color: var(--color-muted);
+    text-decoration: none;
+    line-height: 1;
+    padding: .2rem .3rem;
+    border-radius: var(--radius);
+}
+
+.search-clear:hover { color: var(--color-text); }
+
 .filter-tabs {
     display: flex;
     gap: .25rem;
