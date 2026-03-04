@@ -5,6 +5,16 @@ declare(strict_types=1);
 namespace CMS;
 
 /**
+ * Marker class for XML-RPC dateTime.iso8601 values.
+ * Pass an instance to XmlRpc::encodeValue() to emit the correct typed element
+ * instead of encoding the string as a plain <string>.
+ */
+class DateTimeValue
+{
+    public function __construct(public readonly string $iso) {}
+}
+
+/**
  * Minimal XML-RPC parser and response encoder for the MetaWeblog API.
  *
  * All methods are static — no instantiation needed.
@@ -98,6 +108,10 @@ class XmlRpc
      */
     public static function encodeValue(mixed $value): string
     {
+        if ($value instanceof DateTimeValue) {
+            return '<value><dateTime.iso8601>' . htmlspecialchars($value->iso, ENT_XML1, 'UTF-8') . '</dateTime.iso8601></value>';
+        }
+
         if ($value === null) {
             return '<value><string></string></value>';
         }

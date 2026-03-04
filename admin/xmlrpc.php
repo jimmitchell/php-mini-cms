@@ -19,13 +19,17 @@ declare(strict_types=1);
  *   WordPress API  : wp.getUsersBlogs, wp.getOptions, wp.getAuthors,
  *                    wp.getPostFormats, wp.getTaxonomies, wp.getTerms,
  *                    wp.getPosts, wp.getPost, wp.newPost, wp.editPost, wp.deletePost,
- *                    wp.getPages, wp.getPage, wp.newPage, wp.editPage, wp.deletePage,
+ *                    wp.getPages, wp.getPageList, wp.getPageStatusList, wp.getPage, wp.newPage, wp.editPage, wp.deletePage,
  *                    wp.getMediaLibrary, wp.uploadFile
  *   MetaWeblog API : blogger.getUsersBlogs, metaWeblog.getRecentPosts,
  *                    metaWeblog.getPost, metaWeblog.newPost, metaWeblog.editPost,
  *                    metaWeblog.deletePost, metaWeblog.getCategories,
  *                    metaWeblog.newMediaObject
  */
+
+// PHP errors must never appear in an XML-RPC response — they corrupt the XML.
+// Errors are still logged server-side; they just won't break the response body.
+ini_set('display_errors', '0');
 
 // Read the raw request body BEFORE bootstrap.php starts a session or does
 // anything that could consume php://input on some PHP-FPM configurations.
@@ -41,6 +45,25 @@ use CMS\Mastodon;
 use CMS\Page;
 use CMS\Post;
 use CMS\XmlRpc;
+
+// ── ID space ──────────────────────────────────────────────────────────────────
+// Posts and pages have separate auto-increment sequences, so IDs can collide.
+// The unified wp.*Post methods use a large offset for page IDs so MarsEdit can
+// tell them apart without ambiguity.  Offset must exceed any realistic post count.
+define('PAGE_ID_OFFSET', 1_000_000);
+
+// ── Debug logging ─────────────────────────────────────────────────────────────
+// To enable: touch data/xmlrpc.log  (file must exist; logging stops when deleted)
+// To view:   tail -f data/xmlrpc.log
+// To disable: rm data/xmlrpc.log
+
+function xmlrpc_debug(string $msg): void
+{
+    $logPath = dirname(__DIR__) . '/data/xmlrpc.log';
+    if (file_exists($logPath)) {
+        file_put_contents($logPath, date('H:i:s.') . substr((string) microtime(), 2, 3) . ' ' . $msg . "\n", FILE_APPEND | LOCK_EX);
+    }
+}
 
 // ── Output setup ──────────────────────────────────────────────────────────────
 
@@ -75,6 +98,8 @@ try {
 
 $method = $req['method'];
 $params = $req['params'];
+
+xmlrpc_debug("→ $method (" . count($params) . " params)");
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -127,7 +152,7 @@ function postToStruct(Post $post, string $siteUrl): array
         'description' => $post->content,
         'mt_excerpt'  => $post->excerpt ?? '',
         'wp_slug'     => $post->slug,
-        'dateCreated' => XmlRpc::isoDate($pubAt),
+        'dateCreated' => new \CMS\DateTimeValue(XmlRpc::isoDate($pubAt)),
         'link'        => $url,
         'permaLink'   => $url,
         'categories'  => [],
@@ -197,7 +222,7 @@ function applyStruct(Post $post, array $struct, bool $publish, string $timezone)
             $post->published_at = $pubAt;
         }
     } else {
-        $effectivePubAt = $pubAt ?? date('Y-m-d H:i:s');
+        $effectivePubAt = $pubAt ?? $post->published_at ?? date('Y-m-d H:i:s');
         $post->published_at = $effectivePubAt;
         $post->status = strtotime($effectivePubAt) > time() ? 'scheduled' : 'published';
     }
@@ -360,18 +385,26 @@ function wpPostToStruct(Post $post, string $siteUrl): array
     $pubAt = $post->published_at ?? $post->created_at;
     $url   = rtrim($siteUrl, '/') . '/' . Post::datePath($pubAt, $post->slug) . '/';
 
+    // WordPress requires post_status='publish' only for past-dated posts.
+    // If a post is 'published' in our DB but its date is still in the future,
+    // return 'future' so MarsEdit shows it in Scheduled (avoids display confusion).
+    $wpStat = wpStatus($post->status);
+    if ($wpStat === 'publish' && $pubAt && strtotime($pubAt) > time()) {
+        $wpStat = 'future';
+    }
+
     return [
         'post_id'           => (string) $post->id,
         'post_title'        => $post->title,
         'post_content'      => $post->content,
         'post_excerpt'      => $post->excerpt ?? '',
         'post_name'         => $post->slug,
-        'post_status'       => wpStatus($post->status),
+        'post_status'       => $wpStat,
         'post_type'         => 'post',
-        'post_date'         => XmlRpc::isoDate($pubAt),
-        'post_date_gmt'     => XmlRpc::isoDate($pubAt),
-        'post_modified'     => XmlRpc::isoDate($post->updated_at),
-        'post_modified_gmt' => XmlRpc::isoDate($post->updated_at),
+        'post_date'         => new \CMS\DateTimeValue(XmlRpc::isoDate($pubAt)),
+        'post_date_gmt'     => new \CMS\DateTimeValue(XmlRpc::isoDate($pubAt)),
+        'post_modified'     => new \CMS\DateTimeValue(XmlRpc::isoDate($post->updated_at)),
+        'post_modified_gmt' => new \CMS\DateTimeValue(XmlRpc::isoDate($post->updated_at)),
         'link'              => $url,
         'guid'              => $url,
         'post_author'       => '1',
@@ -438,7 +471,8 @@ function applyWpPostStruct(Post $post, array $struct, string $timezone): void
         }
     } else {
         // 'publish', 'future', or anything else → attempt to publish/schedule.
-        $effectivePubAt     = $pubAt ?? date('Y-m-d H:i:s');
+        // Preserve the existing published_at when no date is supplied (edit case).
+        $effectivePubAt     = $pubAt ?? $post->published_at ?? date('Y-m-d H:i:s');
         $post->published_at = $effectivePubAt;
         $post->status       = strtotime($effectivePubAt) > time() ? 'scheduled' : 'published';
     }
@@ -452,16 +486,16 @@ function wpPageToStruct(Page $page, string $siteUrl): array
     $url = rtrim($siteUrl, '/') . '/' . $page->slug . '/';
 
     return [
-        'post_id'           => (string) $page->id,
+        'post_id'           => (string) ($page->id + PAGE_ID_OFFSET),
         'post_title'        => $page->title,
         'post_content'      => $page->content,
         'post_name'         => $page->slug,
         'post_status'       => $page->status === 'published' ? 'publish' : 'draft',
         'post_type'         => 'page',
-        'post_date'         => XmlRpc::isoDate($page->created_at),
-        'post_date_gmt'     => XmlRpc::isoDate($page->created_at),
-        'post_modified'     => XmlRpc::isoDate($page->updated_at),
-        'post_modified_gmt' => XmlRpc::isoDate($page->updated_at),
+        'post_date'         => new \CMS\DateTimeValue(XmlRpc::isoDate($page->created_at)),
+        'post_date_gmt'     => new \CMS\DateTimeValue(XmlRpc::isoDate($page->created_at)),
+        'post_modified'     => new \CMS\DateTimeValue(XmlRpc::isoDate($page->updated_at)),
+        'post_modified_gmt' => new \CMS\DateTimeValue(XmlRpc::isoDate($page->updated_at)),
         'link'              => $url,
         'guid'              => $url,
         'post_author'       => '1',
@@ -564,12 +598,15 @@ switch ($method) {
         break;
 
     // ── metaWeblog.getRecentPosts(blogid, username, password, numberOfPosts) ──
+    // numberOfPosts=0 means "return all" (MarsEdit "Download all posts" mode).
     case 'metaWeblog.getRecentPosts':
         xmlrpc_auth($params, 1, 2);
-        $limit = max(1, (int) ($params[3] ?? 20));
-        $all   = Post::findAll($db, 'published');
-        $posts = array_slice($all, 0, $limit);
-        $structs = array_map(fn($p) => postToStruct($p, $siteUrl), $posts);
+        $numberRaw = isset($params[3]) ? (int) $params[3] : 0;
+        $limit     = $numberRaw > 0 ? $numberRaw : PHP_INT_MAX;
+        $all       = Post::findAll($db, 'published');
+        $posts     = array_slice($all, 0, $limit);
+        $structs   = array_map(fn($p) => postToStruct($p, $siteUrl), $posts);
+        xmlrpc_debug("  number=$numberRaw → " . count($posts) . " posts returned");
         echo XmlRpc::encodeResponse($structs);
         break;
 
@@ -684,11 +721,11 @@ switch ($method) {
             'metaWeblog.getCategories', 'metaWeblog.newMediaObject',
             'mt.supportedMethods', 'mt.supportedTextFilters',
             'mt.getCategoryList', 'mt.getPostCategories', 'mt.setPostCategories',
-            'wp.getUsersBlogs', 'wp.getOptions', 'wp.getAuthors',
+            'wp.getUsersBlogs', 'wp.getUsers', 'wp.getOptions', 'wp.getAuthors',
             'wp.getPostFormats', 'wp.getTaxonomies', 'wp.getTerms',
             'wp.getTags',
             'wp.getPosts', 'wp.getPost', 'wp.newPost', 'wp.editPost', 'wp.deletePost',
-            'wp.getPages', 'wp.getPage', 'wp.newPage', 'wp.editPage', 'wp.deletePage',
+            'wp.getPages', 'wp.getPageList', 'wp.getPageStatusList', 'wp.getPage', 'wp.newPage', 'wp.editPage', 'wp.deletePage',
             'wp.getMediaLibrary', 'wp.uploadFile',
         ]);
         break;
@@ -754,6 +791,26 @@ switch ($method) {
         ]);
         break;
 
+    // ── wp.getUsers(blogid, username, password[, filter]) ────────────────────
+    case 'wp.getUsers':
+        xmlrpc_auth($params, 1, 2);
+        $cfgUser = $config['admin']['username'] ?? '';
+        xmlrpc_debug("  → returning user '$cfgUser'");
+        echo XmlRpc::encodeResponse([[
+            'user_id'          => '1',
+            'user_login'       => $cfgUser,
+            'display_name'     => $cfgUser,
+            'user_registered'  => new \CMS\DateTimeValue(XmlRpc::isoDate(null)),
+            'bio'              => '',
+            'email'            => '',
+            'nickname'         => $cfgUser,
+            'firstname'        => '',
+            'lastname'         => '',
+            'url'              => $siteUrl,
+            'roles'            => ['administrator'],
+        ]]);
+        break;
+
     // ── wp.getAuthors(blogid, username, password) ─────────────────────────────
     case 'wp.getAuthors':
         xmlrpc_auth($params, 1, 2);
@@ -791,73 +848,154 @@ switch ($method) {
         break;
 
     // ── wp.getPosts(blogid, username, password[, filter]) ─────────────────────
+    // MarsEdit uses post_type='page' filter to list pages via this method.
+    // number=0 (or absent) means "return all" — used by "Download all posts".
     case 'wp.getPosts':
         xmlrpc_auth($params, 1, 2);
-        $filter    = (array) ($params[3] ?? []);
-        $wpStat    = strtolower(trim((string) ($filter['post_status'] ?? 'any')));
-        $limit     = max(1, (int) ($filter['number'] ?? 20));
-        $status    = ($wpStat === 'any' || $wpStat === '') ? null : cmsStatusFromWp($wpStat);
-        $all       = Post::findAll($db, $status);
-        $sliced    = array_slice($all, (int) ($filter['offset'] ?? 0), $limit);
-        echo XmlRpc::encodeResponse(array_map(fn($p) => wpPostToStruct($p, $siteUrl), $sliced));
+        $filter      = (array) ($params[3] ?? []);
+        $postType    = strtolower(trim((string) ($filter['post_type'] ?? 'post')));
+        $numberRaw   = isset($filter['number']) ? (int) $filter['number'] : 0;
+        $limit       = $numberRaw > 0 ? $numberRaw : PHP_INT_MAX;
+        $offset      = (int) ($filter['offset'] ?? 0);
+
+        xmlrpc_debug("  post_type=$postType post_status=" . ($filter['post_status'] ?? '(none)') . " number=$numberRaw offset=$offset limit=" . ($limit === PHP_INT_MAX ? 'ALL' : $limit));
+
+        if ($postType === 'page') {
+            $all    = Page::findAll($db);
+            $sliced = array_slice($all, $offset, $limit);
+            xmlrpc_debug("  → " . count($sliced) . " pages (of " . count($all) . " total)");
+            echo XmlRpc::encodeResponse(array_map(fn($pg) => wpPageToStruct($pg, $siteUrl), $sliced));
+        } else {
+            $wpStat = strtolower(trim((string) ($filter['post_status'] ?? 'any')));
+            $status = ($wpStat === 'any' || $wpStat === '') ? null : cmsStatusFromWp($wpStat);
+            $all    = Post::findAll($db, $status);
+            $sliced = array_slice($all, $offset, $limit);
+            xmlrpc_debug("  → " . count($sliced) . " posts (of " . count($all) . " total, db_status_filter=" . ($status ?? 'all') . ")");
+            $structs  = array_map(fn($p) => wpPostToStruct($p, $siteUrl), $sliced);
+            foreach ($structs as $s) {
+                xmlrpc_debug("    id={$s['post_id']} wp_status={$s['post_status']} post_date={$s['post_date']->iso}");
+            }
+            $xml = XmlRpc::encodeResponse($structs);
+            xmlrpc_debug("  → response size=" . strlen($xml) . " bytes");
+            echo $xml;
+        }
         break;
 
     // ── wp.getPost(blogid, username, password, post_id) ───────────────────────
+    // IDs >= PAGE_ID_OFFSET are pages (offset encoded in wpPageToStruct).
     case 'wp.getPost':
         xmlrpc_auth($params, 1, 2);
-        $post = Post::findById($db, (int) ($params[3] ?? 0));
+        $postId = (int) ($params[3] ?? 0);
+        xmlrpc_debug("  post_id=$postId" . ($postId >= PAGE_ID_OFFSET ? " (page, real_id=" . ($postId - PAGE_ID_OFFSET) . ")" : ""));
+        if ($postId >= PAGE_ID_OFFSET) {
+            $page = Page::findById($db, $postId - PAGE_ID_OFFSET);
+            if ($page === null) {
+                xmlrpc_debug("  → 404 page not found");
+                xmlrpc_fault(404, 'Page not found.');
+            }
+            xmlrpc_debug("  → page '{$page->title}' status={$page->status}");
+            echo XmlRpc::encodeResponse(wpPageToStruct($page, $siteUrl));
+            break;
+        }
+        $post = Post::findById($db, $postId);
         if ($post === null) {
+            xmlrpc_debug("  → 404 post not found");
             xmlrpc_fault(404, 'Post not found.');
         }
+        xmlrpc_debug("  → post '{$post->title}' status={$post->status} pub=" . ($post->published_at ?? 'null'));
         echo XmlRpc::encodeResponse(wpPostToStruct($post, $siteUrl));
         break;
 
     // ── wp.newPost(blogid, username, password, content) ───────────────────────
+    // MarsEdit passes post_type='page' when creating a page from the Pages section.
     case 'wp.newPost':
         xmlrpc_auth($params, 1, 2);
-        $struct = (array) ($params[3] ?? []);
+        $struct   = (array) ($params[3] ?? []);
+        $postType = strtolower(trim((string) ($struct['post_type'] ?? 'post')));
 
-        $post = new Post($db);
-        applyWpPostStruct($post, $struct, $timezone);
-
-        if ($post->title === '') {
-            xmlrpc_fault(400, 'Title is required.');
+        if ($postType === 'page') {
+            $page = new Page($db);
+            applyWpPageStruct($page, $struct);
+            if ($page->title === '') {
+                xmlrpc_fault(400, 'Title is required.');
+            }
+            $page->save();
+            rebuildPage($page, false);
+            echo XmlRpc::encodeResponse((string) ($page->id + PAGE_ID_OFFSET));
+        } else {
+            $post = new Post($db);
+            applyWpPostStruct($post, $struct, $timezone);
+            if ($post->title === '') {
+                xmlrpc_fault(400, 'Title is required.');
+            }
+            $post->save();
+            syndicatePost($post);
+            rebuildPost($post);
+            echo XmlRpc::encodeResponse((string) $post->id);
         }
-
-        $post->save();
-        syndicatePost($post);
-        rebuildPost($post);
-
-        echo XmlRpc::encodeResponse((string) $post->id);
         break;
 
     // ── wp.editPost(blogid, username, password, post_id, content) ────────────
+    // IDs >= PAGE_ID_OFFSET are pages (offset encoded in wpPageToStruct).
     case 'wp.editPost':
         xmlrpc_auth($params, 1, 2);
-        $post = Post::findById($db, (int) ($params[3] ?? 0));
+        $postId = (int) ($params[3] ?? 0);
+        $struct = (array) ($params[4] ?? []);
+
+        if ($postId >= PAGE_ID_OFFSET) {
+            $page = Page::findById($db, $postId - PAGE_ID_OFFSET);
+            if ($page === null) {
+                xmlrpc_fault(404, 'Page not found.');
+            }
+            $wasPublished = $page->status === 'published';
+            applyWpPageStruct($page, $struct);
+            if ($page->title === '') {
+                xmlrpc_fault(400, 'Title is required.');
+            }
+            $page->save();
+            rebuildPage($page, $wasPublished);
+            echo XmlRpc::encodeResponse(true);
+            break;
+        }
+
+        $post = Post::findById($db, $postId);
         if ($post === null) {
             xmlrpc_fault(404, 'Post not found.');
         }
         $wasPublished = $post->status === 'published';
-        $struct       = (array) ($params[4] ?? []);
-
         applyWpPostStruct($post, $struct, $timezone);
-
         if ($post->title === '') {
             xmlrpc_fault(400, 'Title is required.');
         }
-
         $post->save();
         syndicatePost($post);
         rebuildPost($post, $wasPublished);
-
         echo XmlRpc::encodeResponse(true);
         break;
 
     // ── wp.deletePost(blogid, username, password, post_id) ────────────────────
+    // IDs >= PAGE_ID_OFFSET are pages (offset encoded in wpPageToStruct).
     case 'wp.deletePost':
         xmlrpc_auth($params, 1, 2);
-        $post = Post::findById($db, (int) ($params[3] ?? 0));
+        $postId = (int) ($params[3] ?? 0);
+
+        if ($postId >= PAGE_ID_OFFSET) {
+            $page = Page::findById($db, $postId - PAGE_ID_OFFSET);
+            if ($page === null) {
+                xmlrpc_fault(404, 'Page not found.');
+            }
+            $wasPublished = $page->status === 'published';
+            $page->delete();
+            $page->status = 'draft';
+            $builder->buildPage($page);
+            if ($wasPublished) {
+                $builder->buildIndex();
+            }
+            echo XmlRpc::encodeResponse(true);
+            break;
+        }
+
+        $post = Post::findById($db, $postId);
         if ($post === null) {
             xmlrpc_fault(404, 'Post not found.');
         }
@@ -879,6 +1017,29 @@ switch ($method) {
         $all   = Page::findAll($db);        // all statuses — MarsEdit needs drafts
         $pages = array_slice($all, 0, $limit);
         echo XmlRpc::encodeResponse(array_map(fn($pg) => wpPageToStruct($pg, $siteUrl), $pages));
+        break;
+
+    // ── wp.getPageList(blogid, username, password) ────────────────────────────
+    // MarsEdit calls this (not wp.getPages) to populate its Pages sidebar.
+    // Returns a lightweight index per the WP spec: page_id and page_parent_id
+    // must be integers (not strings) or MarsEdit may silently drop the list.
+    case 'wp.getPageList':
+        xmlrpc_auth($params, 1, 2);
+        $all = Page::findAll($db);
+        $list = array_map(fn(Page $pg): array => [
+            'page_id'          => (int) $pg->id,
+            'page_title'       => $pg->title,
+            'page_parent_id'   => 0,
+            'dateCreated'      => new \CMS\DateTimeValue(XmlRpc::isoDate($pg->created_at)),
+            'date_created_gmt' => new \CMS\DateTimeValue(XmlRpc::isoDate($pg->created_at)),
+        ], $all);
+        echo XmlRpc::encodeResponse($list);
+        break;
+
+    // ── wp.getPageStatusList(blogid, username, password) ─────────────────────
+    case 'wp.getPageStatusList':
+        xmlrpc_auth($params, 1, 2);
+        echo XmlRpc::encodeResponse(['draft' => 'Draft', 'publish' => 'Published']);
         break;
 
     // ── wp.getPage(blogid, username, password, page_id) ───────────────────────
@@ -965,9 +1126,10 @@ switch ($method) {
     // ── wp.getMediaLibrary(blogid, username, password[, filter]) ─────────────
     case 'wp.getMediaLibrary':
         xmlrpc_auth($params, 1, 2);
-        $filter  = (array) ($params[3] ?? []);
-        $limit   = max(1, (int) ($filter['number'] ?? 20));
-        $offset  = max(0, (int) ($filter['offset'] ?? 0));
+        $filter    = (array) ($params[3] ?? []);
+        $numberRaw = isset($filter['number']) ? (int) $filter['number'] : 0;
+        $limit     = $numberRaw > 0 ? $numberRaw : PHP_INT_MAX;
+        $offset    = max(0, (int) ($filter['offset'] ?? 0));
         $rows    = $db->select(
             "SELECT * FROM media ORDER BY uploaded_at DESC LIMIT :lim OFFSET :off",
             ['lim' => $limit, 'off' => $offset]
@@ -978,7 +1140,7 @@ switch ($method) {
             $isImage  = str_starts_with((string) $row['mime_type'], 'image/');
             $items[] = [
                 'attachment_id'   => (string) $row['id'],
-                'date_created_gmt' => XmlRpc::isoDate($row['uploaded_at']),
+                'date_created_gmt' => new \CMS\DateTimeValue(XmlRpc::isoDate($row['uploaded_at'])),
                 'parent'          => 0,
                 'link'            => $url,
                 'title'           => $row['original_name'],
