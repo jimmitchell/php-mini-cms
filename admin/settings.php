@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'bluesky_handle'       => trim($_POST['bluesky_handle']       ?? ''),
         'bluesky_app_password' => trim($_POST['bluesky_app_password'] ?? ''),
         'tinylytics_code'      => trim($_POST['tinylytics_code']      ?? ''),
+        'ga_measurement_id'    => trim($_POST['ga_measurement_id']    ?? ''),
     ];
 
     if ($fields['site_title'] === '') {
@@ -252,6 +253,16 @@ $flash     = $auth->getFlash();
             <p class="form-hint">
                 Your Tinylytics site ID. When set, the tracking script is added to every page.
                 Leave blank to disable tracking.
+            </p>
+
+            <label for="ga_measurement_id">Google Analytics measurement ID</label>
+            <input type="text" id="ga_measurement_id" name="ga_measurement_id"
+                   value="<?= Helpers::e($_POST['ga_measurement_id'] ?? $settings['ga_measurement_id'] ?? '') ?>"
+                   placeholder="G-XXXXXXXXXX"
+                   style="max-width:200px">
+            <p class="form-hint">
+                Your GA4 measurement ID (e.g. <code>G-XXXXXXXXXX</code>). When set, the Google Analytics
+                tag is injected into every public page. Leave blank to disable.
             </p>
         </div>
 

@@ -48,6 +48,17 @@ if (!function_exists('_e')) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<?php $gaMeasurementId = $settings['ga_measurement_id'] ?? ''; ?>
+<?php if ($gaMeasurementId !== ''): ?>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=<?= _e($gaMeasurementId) ?>"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '<?= _e($gaMeasurementId) ?>');
+</script>
+<?php endif; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= _e($pageTitle) ?></title>
