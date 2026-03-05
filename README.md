@@ -14,10 +14,14 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Media library** — drag-and-drop uploads with MIME validation; images, video, and audio supported (50 MB limit)
 - **Atom feed** — generated automatically at `/feed.xml`
 - **OG images** — auto-generated 1200×630 PNG per post (requires GD + FreeType)
-- **Mastodon & Bluesky** — optional auto-post on first publish; per-post skip checkbox for each platform
+- **Mastodon & Bluesky** — optional auto-post on first publish; the URL of the remote post is stored and displayed as an "Also on:" link at the bottom of each post; per-post skip checkbox for each platform
+- **Webmentions** — display incoming webmentions (likes, reposts, replies) on posts via webmention.io; client-side fetch with avatar grid for reactions and threaded reply cards
 - **MarsEdit support** — full WordPress XML-RPC API at `/admin/xmlrpc.php`; write and publish from MarsEdit with post and page management
+- **Google Analytics** — optional GA4 integration; add a measurement ID in Settings to inject the tracking script
 - **Dark / light mode** — system-preference aware with manual toggle; no flash on load
 - **Search** — client-side full-text search of posts at `/search/`; no server-side PHP required
+- **Favicon** — SVG favicon matching the site theme color
+- **Collapsible admin sidebar** — sidebar collapses to icon-only mode to maximize editor space; preference stored in localStorage
 - **Single admin user** — bcrypt password, CSRF protection, IP-based rate limiting; password changeable from within the admin panel
 - **Docker-ready** — one command to run locally
 
@@ -110,7 +114,7 @@ return [
 ];
 ```
 
-Runtime settings (site title, description, URL, footer text, pagination, Mastodon/Bluesky credentials, analytics, etc.) are stored in the SQLite `settings` table and edited through **Admin → Settings**.
+Runtime settings (site title, description, URL, footer text, pagination, Mastodon/Bluesky credentials, Google Analytics measurement ID, webmention.io domain, etc.) are stored in the SQLite `settings` table and edited through **Admin → Settings**. The Settings page is organized into panels: Site, Content, Mastodon, Bluesky, IndieWeb, Analytics.
 
 ---
 
@@ -221,6 +225,27 @@ Set your Bluesky handle and an app password in **Settings → Bluesky**. New pos
 
 Both platforms are independent — you can enable one, both, or neither.
 
+When a post is syndicated, the URL of the Mastodon toot or Bluesky post is stored and displayed at the bottom of the public post page as a small "Also on: Mastodon / Bluesky" footer. Posts published before syndication URLs were captured simply show no footer (graceful degradation).
+
+---
+
+## Webmention.io
+
+The CMS supports [webmention.io](https://webmention.io/) for receiving and displaying incoming webmentions (IndieWeb interactions from other sites). To enable:
+
+1. Sign in to webmention.io with your site URL
+2. Enter your domain (e.g. `example.com`) in **Admin → Settings → IndieWeb**
+
+The CMS will:
+- Add `<link rel="webmention">` and `<link rel="pingback">` tags to every page `<head>` so other sites can send webmentions to you
+- Fetch and render incoming webmentions client-side on each post page
+
+Webmentions are grouped by type:
+- **Likes and reposts** — displayed as a compact avatar grid with reaction counts
+- **Replies and mentions** — displayed as individual reply cards with author, date, and content
+
+Because the site generates static HTML, webmentions are fetched on each page load from the webmention.io API (no build step needed).
+
 ---
 
 ## MarsEdit Integration
@@ -312,6 +337,7 @@ php-mini-cms/
 ├── composer.json
 ├── docker-compose.yml
 ├── Dockerfile
+├── favicon.svg             # SVG favicon (blue rounded square matching theme)
 ├── nginx.conf.example      # Production Nginx template
 ├── theme.css               # Public stylesheet
 └── INSTALL.md              # Full VPS deployment guide

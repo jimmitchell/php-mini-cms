@@ -124,6 +124,7 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 ├── composer.lock
 ├── Dockerfile
 ├── docker-compose.yml
+├── favicon.svg             ← SVG favicon (blue rounded square, served publicly)
 ├── nginx.conf.example      ← Production Nginx template
 └── INSTALL.md
 ```
@@ -151,8 +152,10 @@ CREATE TABLE posts (
     content_hash TEXT,                      -- SHA-256 of rendered HTML; change detection
     og_image_hash TEXT,                     -- Hash used to cache OG image generation
     tooted_at    DATETIME,                  -- Set when post is syndicated to Mastodon
+    mastodon_url TEXT,                      -- Canonical URL of the Mastodon toot
     mastodon_skip INTEGER DEFAULT 0,        -- 1 = skip Mastodon syndication
     bluesky_at   DATETIME,                  -- Set when post is syndicated to Bluesky
+    bluesky_url  TEXT,                      -- Canonical URL of the Bluesky post
     bluesky_skip INTEGER DEFAULT 0          -- 1 = skip Bluesky syndication
 );
 ```
@@ -196,10 +199,12 @@ CREATE TABLE settings (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 -- Keys include: site_title, site_description, site_url, footer_text,
---               posts_per_page, feed_post_count,
+--               posts_per_page, feed_post_count, locale, timezone,
 --               mastodon_handle, mastodon_instance, mastodon_token,
---               bluesky_handle, bluesky_app_password,
---               timezone, tinylytics_code
+--               bluesky_handle, bluesky_url, bluesky_app_password,
+--               webmention_domain,
+--               ga_measurement_id,
+--               tinylytics_code
 ```
 
 ### `login_attempts`
@@ -299,8 +304,9 @@ Renders `feed.xml` (Atom 1.0) from the N most recently published posts, with opt
 
 ### `Mastodon` / `Bluesky`
 API clients for social syndication:
-- `Mastodon::tootPost(title, excerpt, url)` — posts a status via Mastodon API
-- `Bluesky::postToBluesky(title, excerpt, url)` — posts via Bluesky AT Protocol
+- `Mastodon::tootPost(title, excerpt, url)` — posts a status via Mastodon API; returns `?string` (canonical toot URL on success, `null` on failure)
+- `Bluesky::postToBluesky(title, excerpt, url)` — posts via Bluesky AT Protocol; returns `?string` (canonical `bsky.app` URL on success, `null` on failure)
+- Returned URLs are stored on the post (`mastodon_url` / `bluesky_url`) and displayed as "Also on:" links on the public post page
 
 ### `OgImage`
 Generates 1200×630 PNG Open Graph images using GD + FreeType. Caches by `og_image_hash` stored on the post; regenerates only when title or site name changes.
@@ -444,10 +450,16 @@ Features added after the initial build phases:
 | Syntax highlighting | `src/HighlightFencedCodeRenderer.php`, `theme.css` |
 | Mastodon auto-syndication | `src/Mastodon.php`, `admin/post-edit.php`, `admin/settings.php` |
 | Bluesky auto-syndication | `src/Bluesky.php`, `admin/post-edit.php`, `admin/settings.php` |
+| Syndication URL storage + display | `src/Mastodon.php`, `src/Bluesky.php`, `src/Post.php`, `src/Database.php` (V7), `templates/post.php`, `theme.css` |
 | WordPress XML-RPC API | `src/XmlRpc.php`, `admin/xmlrpc.php` |
 | Client-side search | `src/Builder.php` (search.json), `templates/search.php` |
 | Admin post search | `admin/posts.php` |
+| Admin posts pagination | `admin/posts.php` |
+| Collapsible admin sidebar | `admin/assets/admin.css`, `admin/assets/admin.js`, `admin/partials/nav.php` |
 | Tinylytics analytics | `templates/base.php`, `src/Feed.php`, `admin/settings.php` |
+| Google Analytics (GA4) | `templates/base.php`, `admin/settings.php` |
+| Webmention.io integration | `templates/base.php`, `templates/post.php`, `admin/settings.php`, `theme.css` |
+| Favicon | `favicon.svg`, `templates/base.php` |
 | Lightbox for post images | `theme.css`, `templates/base.php` |
 | Dark / light mode toggle | `theme.css`, `templates/base.php` |
 | Probabilistic DB cleanup | `admin/bootstrap.php` |
