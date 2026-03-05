@@ -233,12 +233,15 @@ body.nav-collapsed .admin-nav__brand-inner {
     flex: none;
     opacity: 0;
     width: 0;
+    height: 0;
+    overflow: hidden;
     pointer-events: none;
 }
 
 body.nav-collapsed .admin-nav__brand {
     justify-content: center;
-    padding: 1rem .5rem;
+    padding: .5rem;
+    min-height: 0;
 }
 
 body.nav-collapsed .admin-nav__toggle {
@@ -317,6 +320,11 @@ body.nav-collapsed .admin-nav__logout {
 
 body.nav-collapsed .admin-main {
     margin-left: var(--nav-collapsed-width);
+}
+
+/* ── EasyMDE fullscreen — hide sidebar so it doesn't float over the editor ── */
+body:has(.CodeMirror-fullscreen) .admin-nav {
+    display: none;
 }
 
 /* ── Page header ──────────────────────────────────────────────────────────── */

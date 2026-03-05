@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
 
         $page->save();
-        $builder->buildPage($page);
+        $builder->buildAll();
 
         $label = match ($action) {
             'publish'   => 'Page published.',

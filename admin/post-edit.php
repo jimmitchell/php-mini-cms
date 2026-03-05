@@ -184,24 +184,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Trigger builds based on what actually happened.
-        if (($action === 'publish' && $post->status === 'published') || $action === 'unpublish') {
-            // Visibility changed — rebuild post + index + feed.
-            $builder->buildPost($post);
-            $builder->buildIndex();
-            $builder->buildFeed();
-        } elseif ($action === 'draft' && $post->status === 'published') {
-            // Content or date update on a published post — rebuild post + feed.
-            $builder->buildPost($post);
-            $builder->buildFeed();
+        // Trigger a full rebuild whenever the post is live or changes visibility.
+        if (($action === 'publish' && $post->status === 'published')
+            || $action === 'unpublish'
+            || ($action === 'draft' && $post->status === 'published')) {
+            $builder->buildAll();
         }
         // Scheduled and draft-only saves don't need a build.
 
         $label = match (true) {
-            $action === 'unpublish'                              => 'Post unpublished.',
-            $action === 'publish' && $post->status === 'scheduled' => 'Post scheduled.',
-            $action === 'publish'                               => 'Post published.',
-            default                                             => 'Draft saved.',
+            $action === 'unpublish'                                        => 'Post unpublished.',
+            $action === 'publish' && $post->status === 'scheduled'         => 'Post scheduled.',
+            $action === 'publish'                                           => 'Post published.',
+            $action === 'draft'   && $post->status === 'published'         => 'Post updated.',
+            default                                                        => 'Draft saved.',
         };
         $auth->flash($label);
 
@@ -324,9 +320,11 @@ if ($post->published_at) {
                     </div>
 
                     <?php if ($hasMastodon && $post->tooted_at === null): ?>
-                    <label style="display:flex;gap:.5rem;align-items:center;font-size:.875rem;font-weight:400;margin-bottom:.75rem">
+                    <?php $mastodonDisabled = $post->status === 'published'; ?>
+                    <label style="display:flex;gap:.5rem;align-items:center;font-size:.875rem;font-weight:400;margin-bottom:.75rem;<?= $mastodonDisabled ? 'opacity:.45;cursor:not-allowed' : '' ?>">
                         <input type="checkbox" name="send_to_mastodon" value="1"
-                               <?= $post->mastodon_skip === 0 ? 'checked' : '' ?>>
+                               <?= $post->mastodon_skip === 0 ? 'checked' : '' ?>
+                               <?= $mastodonDisabled ? 'disabled title="Post is already published — syndication only happens on first publish"' : '' ?>>
                         Post to Mastodon on publish
                     </label>
                     <?php elseif ($hasMastodon && $post->tooted_at !== null): ?>
@@ -334,9 +332,11 @@ if ($post->published_at) {
                     <?php endif; ?>
 
                     <?php if ($hasBluesky && $post->bluesky_at === null): ?>
-                    <label style="display:flex;gap:.5rem;align-items:center;font-size:.875rem;font-weight:400;margin-bottom:.75rem">
+                    <?php $blueskyDisabled = $post->status === 'published'; ?>
+                    <label style="display:flex;gap:.5rem;align-items:center;font-size:.875rem;font-weight:400;margin-bottom:.75rem;<?= $blueskyDisabled ? 'opacity:.45;cursor:not-allowed' : '' ?>">
                         <input type="checkbox" name="send_to_bluesky" value="1"
-                               <?= $post->bluesky_skip === 0 ? 'checked' : '' ?>>
+                               <?= $post->bluesky_skip === 0 ? 'checked' : '' ?>
+                               <?= $blueskyDisabled ? 'disabled title="Post is already published — syndication only happens on first publish"' : '' ?>>
                         Post to Bluesky on publish
                     </label>
                     <?php elseif ($hasBluesky && $post->bluesky_at !== null): ?>
