@@ -58,7 +58,11 @@ ob_start();
         foreach ($post->tags as $tag) {
             $terms[] = ['url' => '/tag/' . rawurlencode($tag['slug']) . '/', 'label' => $tag['name'], 'type' => 'tag'];
         }
-        usort($terms, fn($a, $b) => strcmp($a['label'], $b['label']));
+        usort($terms, fn($a, $b) =>
+            ($a['type'] === $b['type'])
+                ? strcmp($a['label'], $b['label'])
+                : ($a['type'] === 'category' ? -1 : 1)
+        );
         ?>
         <?php if (!empty($terms)): ?>
         <ul class="post__terms">

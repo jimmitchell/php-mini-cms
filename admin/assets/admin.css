@@ -708,7 +708,7 @@ th:last-child { text-align: right; }
 }
 
 .term-checklist li {
-    padding: .2rem 0;
+    padding: 0;
 }
 
 .term-checklist label {
@@ -717,6 +717,7 @@ th:last-child { text-align: right; }
     gap: .5rem;
     font-weight: 400;
     font-size: .875rem;
+    line-height: .5;
     cursor: pointer;
 }
 

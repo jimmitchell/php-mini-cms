@@ -270,8 +270,8 @@ audio { width: 100%; }
     align-items: center;
     padding: .2em .65em;
     border-radius: 999px;
-    font-size: .8rem;
-    font-weight: 500;
+    font-size: .7rem;
+    font-weight: 400;
     line-height: 1.4;
     text-decoration: none;
     transition: background .15s, color .15s, border-color .15s;
@@ -280,32 +280,32 @@ audio { width: 100%; }
 .term:hover { text-decoration: none; }
 
 .term--category {
-    background: #dbeafe;
-    color: #1d4ed8;
-    border: 1.5px solid #2563eb;
+    background: transparent;
+    color: var(--color-link);
+    border: 1.5px solid var(--color-link);
 }
 
 .term--category:hover {
-    background: #2563eb;
-    color: #fff;
+    background: var(--color-link);
+    color: var(--color-bg);
 }
 
 .term--tag {
     background: transparent;
-    border: 1.5px solid #2563eb;
-    color: #2563eb;
+    border: 1.5px solid var(--color-link);
+    color: var(--color-link);
 }
 
 .term--tag:hover {
-    background: #2563eb;
-    color: #fff;
+    background: var(--color-link);
+    color: var(--color-bg);
 }
 
 @media (prefers-color-scheme: dark) {
-    .term--category { background: #1e3a5f; color: #93c5fd; border-color: #60a5fa; }
-    .term--category:hover { background: #60a5fa; color: #0f172a; }
-    .term--tag { border-color: #60a5fa; color: #60a5fa; }
-    .term--tag:hover { background: #60a5fa; color: #0f172a; }
+    .term--category { background: var(--color-chrome-bg); color: var(--color-link); border-color: var(--color-link); }
+    .term--category:hover { background: var(--color-link); color: var(--color-chrome-bg); }
+    .term--tag { border-color: var(--color-link); color: var(--color-link); }
+    .term--tag:hover { background: var(--color-link); color: var(--color-bg); }
 }
 
 /* ── Prose styles ─────────────────────────────────────────────────────────── */

@@ -407,27 +407,85 @@ function xmlrpc_save_terms(Post $post, array $struct): void
         }
     }
 
-    // WordPress-style: 'terms' is an array of term structs with 'taxonomy' key.
+    // WordPress-style 'terms': two possible formats depending on the client:
+    //   a) wp.editPost set format — struct of taxonomy → [term_ids]:
+    //        {'category': [1, 2], 'post_tag': [3]}
+    //   b) Round-tripped get format — sequential array of term-object structs:
+    //        [{'term_id': '1', 'taxonomy': 'category', ...}, ...]
     if (!empty($struct['terms']) && is_array($struct['terms'])) {
-        foreach ($struct['terms'] as $term) {
-            if (!is_array($term)) {
+        $terms = $struct['terms'];
+        $isSequential = array_keys($terms) === range(0, count($terms) - 1);
+
+        if (!$isSequential) {
+            // Format (a): struct of taxonomy → [term_ids or term_names]
+            foreach ($terms as $taxonomy => $termRefs) {
+                $taxonomy = strtolower(trim((string) $taxonomy));
+                if (!is_array($termRefs)) {
+                    continue;
+                }
+                foreach ($termRefs as $ref) {
+                    $id = (int) $ref;
+                    if ($id > 0) {
+                        if ($taxonomy === 'category') {
+                            $categoryIds[] = $id;
+                        } elseif ($taxonomy === 'post_tag') {
+                            $tagIds[] = $id;
+                        }
+                    } else {
+                        $name = trim((string) $ref);
+                        if ($name !== '') {
+                            if ($taxonomy === 'category') {
+                                $categoryIds[] = xmlrpc_upsert_category($name);
+                            } elseif ($taxonomy === 'post_tag') {
+                                $tagIds[] = xmlrpc_upsert_tag($name);
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            // Format (b): sequential array of term-object structs
+            foreach ($terms as $term) {
+                if (!is_array($term)) {
+                    continue;
+                }
+                $taxonomy = strtolower(trim((string) ($term['taxonomy'] ?? '')));
+                $termId   = isset($term['term_id']) ? (int) $term['term_id'] : 0;
+                $termName = trim((string) ($term['name'] ?? ''));
+
+                if ($taxonomy === 'category') {
+                    if ($termId > 0) {
+                        $categoryIds[] = $termId;
+                    } elseif ($termName !== '') {
+                        $categoryIds[] = xmlrpc_upsert_category($termName);
+                    }
+                } elseif ($taxonomy === 'post_tag') {
+                    if ($termId > 0) {
+                        $tagIds[] = $termId;
+                    } elseif ($termName !== '') {
+                        $tagIds[] = xmlrpc_upsert_tag($termName);
+                    }
+                }
+            }
+        }
+    }
+
+    // WordPress-style 'terms_names': struct of taxonomy → [names] (used by some WP clients).
+    if (!empty($struct['terms_names']) && is_array($struct['terms_names'])) {
+        foreach ($struct['terms_names'] as $taxonomy => $names) {
+            $taxonomy = strtolower(trim((string) $taxonomy));
+            if (!is_array($names)) {
                 continue;
             }
-            $taxonomy = strtolower(trim((string) ($term['taxonomy'] ?? '')));
-            $termId   = isset($term['term_id']) ? (int) $term['term_id'] : 0;
-            $termName = trim((string) ($term['name'] ?? ''));
-
-            if ($taxonomy === 'category') {
-                if ($termId > 0) {
-                    $categoryIds[] = $termId;
-                } elseif ($termName !== '') {
-                    $categoryIds[] = xmlrpc_upsert_category($termName);
+            foreach ($names as $name) {
+                $name = trim((string) $name);
+                if ($name === '') {
+                    continue;
                 }
-            } elseif ($taxonomy === 'post_tag') {
-                if ($termId > 0) {
-                    $tagIds[] = $termId;
-                } elseif ($termName !== '') {
-                    $tagIds[] = xmlrpc_upsert_tag($termName);
+                if ($taxonomy === 'category') {
+                    $categoryIds[] = xmlrpc_upsert_category($name);
+                } elseif ($taxonomy === 'post_tag') {
+                    $tagIds[] = xmlrpc_upsert_tag($name);
                 }
             }
         }
@@ -833,7 +891,7 @@ switch ($method) {
             'mt.getCategoryList', 'mt.getPostCategories', 'mt.setPostCategories',
             'wp.getUsersBlogs', 'wp.getUsers', 'wp.getOptions', 'wp.getAuthors',
             'wp.getPostFormats', 'wp.getTaxonomies', 'wp.getTerms',
-            'wp.getTags',
+            'wp.getTags', 'wp.newCategory', 'wp.deleteCategory',
             'wp.getPosts', 'wp.getPost', 'wp.newPost', 'wp.editPost', 'wp.deletePost',
             'wp.getPages', 'wp.getPageList', 'wp.getPageStatusList', 'wp.getPage', 'wp.newPage', 'wp.editPage', 'wp.deletePage',
             'wp.getMediaLibrary', 'wp.uploadFile',
@@ -1060,6 +1118,41 @@ switch ($method) {
             'html_url' => rtrim($siteUrl, '/') . '/tag/' . rawurlencode($t['slug']) . '/',
             'rss_url'  => '',
         ], $rows));
+        break;
+
+    // ── wp.getPosts(blogid, username, password[, filter]) ─────────────────────
+    // ── wp.newCategory(blogid, username, password, category) ──────────────────
+    case 'wp.newCategory':
+        xmlrpc_auth($params, 1, 2);
+        $cat     = (array) ($params[3] ?? []);
+        $name    = trim((string) ($cat['name'] ?? ''));
+        $slug    = trim((string) ($cat['slug'] ?? ''));
+        $desc    = trim((string) ($cat['description'] ?? ''));
+        if ($name === '') {
+            xmlrpc_fault(400, 'Category name is required.');
+        }
+        if ($slug === '') {
+            $slug = Helpers::slugify($name);
+        }
+        $existing = $db->selectOne("SELECT id FROM categories WHERE slug = ?", [$slug]);
+        if ($existing) {
+            echo XmlRpc::encodeResponse((int) $existing['id']);
+        } else {
+            $id = $db->insert('categories', ['name' => $name, 'slug' => $slug, 'description' => $desc]);
+            echo XmlRpc::encodeResponse($id);
+        }
+        break;
+
+    // ── wp.deleteCategory(blogid, username, password, category_id) ────────────
+    case 'wp.deleteCategory':
+        xmlrpc_auth($params, 1, 2);
+        $catId = (int) ($params[3] ?? 0);
+        if ($catId <= 0) {
+            xmlrpc_fault(400, 'Invalid category ID.');
+        }
+        $db->delete('categories', 'id = :id', ['id' => $catId]);
+        $builder->buildAllTaxonomyArchives();
+        echo XmlRpc::encodeResponse(true);
         break;
 
     // ── wp.getPosts(blogid, username, password[, filter]) ─────────────────────
