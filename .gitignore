@@ -23,6 +23,8 @@ composer.phar
 /page/
 /pages/
 /search/
+/category/
+/tag/
 
 # Proxima Nova font files (commercial license — do not commit)
 /fonts/ProximaNova*
