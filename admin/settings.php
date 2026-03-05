@@ -261,6 +261,6 @@ $flash     = $auth->getFlash();
         </div>
     </form>
 </main>
-
+<script src="/admin/assets/admin.js"></script>
 </body>
 </html>

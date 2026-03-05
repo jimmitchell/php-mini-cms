@@ -14,6 +14,7 @@
     --color-success:   #16a34a;
     --color-warning:   #d97706;
     --nav-width:       220px;
+    --nav-collapsed-width: 56px;
     --nav-bg:          #1e1e2e;
     --nav-text:        #cdd6f4;
     --nav-active:      #89b4fa;
@@ -82,62 +83,214 @@ body.admin-page {
     position: fixed;
     top: 0; left: 0; bottom: 0;
     z-index: 100;
+    transition: width .2s ease;
+    overflow: hidden;
 }
+
+/* ── Brand area ───────────────────────────────────────────────────────────── */
 
 .admin-nav__brand {
-    padding: 1.25rem 1rem;
+    padding: 1rem;
     border-bottom: 1px solid rgba(255,255,255,.1);
-    font-weight: 600;
-    font-size: 1rem;
     display: flex;
-    flex-direction: column;
-    gap: .35rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .5rem;
+    min-height: 72px;
+    flex-shrink: 0;
 }
 
-.admin-nav__brand a {
+.admin-nav__brand-inner {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+    overflow: hidden;
+    transition: opacity .15s, width .2s ease;
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-nav__site-link {
     color: #fff;
     text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
 }
 
 .admin-nav__view-site {
     font-size: .75rem;
     font-weight: 400;
     opacity: .65;
+    color: var(--nav-text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: .3rem;
 }
 
-.admin-nav__view-site:hover { opacity: 1; }
+.admin-nav__view-site:hover { opacity: 1; text-decoration: none; }
+
+.admin-nav__toggle {
+    background: none;
+    border: none;
+    color: var(--nav-text);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: .4rem .45rem;
+    border-radius: 4px;
+    line-height: 1;
+    flex-shrink: 0;
+    opacity: .7;
+    transition: opacity .15s, background .15s;
+    transform: translate(7px, -5px);
+}
+
+.admin-nav__toggle:hover {
+    opacity: 1;
+    background: var(--nav-hover-bg);
+}
+
+/* ── Nav links ────────────────────────────────────────────────────────────── */
 
 .admin-nav__links {
     list-style: none;
     padding: .5rem 0;
     flex: 1;
+    overflow: hidden;
+}
+
+.admin-nav__links li {
+    position: relative;
 }
 
 .admin-nav__links li a {
-    display: block;
-    padding: .6rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    padding: .6rem .75rem;
     color: var(--nav-text);
     text-decoration: none;
     border-radius: 4px;
     margin: 1px 8px;
     transition: background .15s;
+    white-space: nowrap;
+    position: relative;
 }
 
-.admin-nav__links li a:hover { background: var(--nav-hover-bg); }
+.admin-nav__links li a .fa {
+    font-size: 1rem;
+    width: 1.1rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.admin-nav__links li a:hover { background: var(--nav-hover-bg); text-decoration: none; }
 .admin-nav__links li a.active { color: var(--nav-active); background: var(--nav-hover-bg); }
 
+/* ── Actions / logout ─────────────────────────────────────────────────────── */
+
 .admin-nav__actions {
-    padding: 1rem;
+    padding: .75rem .5rem;
     border-top: 1px solid rgba(255,255,255,.1);
+    flex-shrink: 0;
 }
 
 .admin-nav__actions form { width: 100%; }
 
-.admin-nav__actions .btn-link {
+.admin-nav__logout {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
     width: 100%;
-    text-align: center;
-    display: block;
+    padding: .5rem .85rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    position: relative;
 }
+
+.admin-nav__logout:hover { background: var(--nav-hover-bg); }
+
+.admin-nav__logout .fa {
+    font-size: 1rem;
+    width: 1.1rem;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* ── nav-label spans ──────────────────────────────────────────────────────── */
+
+.nav-label {
+    transition: opacity .15s;
+}
+
+/* ── Collapsed state ──────────────────────────────────────────────────────── */
+
+body.nav-collapsed .admin-nav {
+    width: var(--nav-collapsed-width);
+}
+
+body.nav-collapsed .admin-nav__brand-inner {
+    flex: none;
+    opacity: 0;
+    width: 0;
+    pointer-events: none;
+}
+
+body.nav-collapsed .admin-nav__brand {
+    justify-content: center;
+    padding: 1rem .5rem;
+}
+
+body.nav-collapsed .admin-nav__toggle {
+    transform: translateX(-3px);
+}
+
+body.nav-collapsed .nav-label {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+body.nav-collapsed .admin-nav__links li a,
+body.nav-collapsed .admin-nav__logout {
+    justify-content: center;
+    gap: 0;
+    padding: .6rem 0;
+    margin: 1px 6px;
+}
+
+body.nav-collapsed .admin-nav__actions {
+    display: flex;
+    justify-content: center;
+    padding: .75rem 0;
+}
+
+body.nav-collapsed .admin-nav__logout {
+    width: auto;
+    margin: 0 .5rem;
+    padding: .5rem .6rem;
+}
+
+/* JS tooltip — appended to <body> so it escapes overflow: hidden */
+.nav-tooltip {
+    position: fixed;
+    background: #313244;
+    color: #cdd6f4;
+    padding: .35rem .65rem;
+    border-radius: 5px;
+    font-size: .8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-50%);
+    transition: opacity .12s;
+    z-index: 9999;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+
+.nav-tooltip.visible { opacity: 1; }
 
 .btn-link {
     background: none;
@@ -159,6 +312,11 @@ body.admin-page {
     flex: 1;
     padding: 2rem;
     max-width: none;
+    transition: margin-left .2s ease;
+}
+
+body.nav-collapsed .admin-main {
+    margin-left: var(--nav-collapsed-width);
 }
 
 /* ── Page header ──────────────────────────────────────────────────────────── */
@@ -399,6 +557,26 @@ button[type="submit"]:hover,
 
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tr:hover td { background: #fafafa; }
+
+/* ── Pagination ───────────────────────────────────────────────────────────── */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .75rem;
+    padding: 1.25rem 0 .5rem;
+}
+
+.pagination__info {
+    font-size: .85rem;
+    color: var(--color-muted);
+}
+
+.btn--disabled {
+    opacity: .4;
+    cursor: default;
+    pointer-events: none;
+}
 
 /* ── Status badges ────────────────────────────────────────────────────────── */
 .badge {

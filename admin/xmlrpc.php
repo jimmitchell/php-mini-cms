@@ -871,13 +871,8 @@ switch ($method) {
             $all    = Post::findAll($db, $status);
             $sliced = array_slice($all, $offset, $limit);
             xmlrpc_debug("  → " . count($sliced) . " posts (of " . count($all) . " total, db_status_filter=" . ($status ?? 'all') . ")");
-            $structs  = array_map(fn($p) => wpPostToStruct($p, $siteUrl), $sliced);
-            foreach ($structs as $s) {
-                xmlrpc_debug("    id={$s['post_id']} wp_status={$s['post_status']} post_date={$s['post_date']->iso}");
-            }
-            $xml = XmlRpc::encodeResponse($structs);
-            xmlrpc_debug("  → response size=" . strlen($xml) . " bytes");
-            echo $xml;
+            $structs = array_map(fn($p) => wpPostToStruct($p, $siteUrl), $sliced);
+            echo XmlRpc::encodeResponse($structs);
         }
         break;
 

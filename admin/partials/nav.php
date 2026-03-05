@@ -4,25 +4,37 @@ $siteTitle  = $db->getSetting('site_title', 'My CMS');
 $currentUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 
 $navItems = [
-    '/admin/dashboard.php' => 'Dashboard',
-    '/admin/posts.php'     => 'Posts',
-    '/admin/pages.php'     => 'Pages',
-    '/admin/media.php'     => 'Media',
-    '/admin/settings.php'  => 'Settings',
-    '/admin/account.php'   => 'Account',
+    '/admin/dashboard.php' => ['label' => 'Dashboard', 'icon' => 'fa-tachometer'],
+    '/admin/posts.php'     => ['label' => 'Posts',     'icon' => 'fa-file-text-o'],
+    '/admin/pages.php'     => ['label' => 'Pages',     'icon' => 'fa-files-o'],
+    '/admin/media.php'     => ['label' => 'Media',     'icon' => 'fa-picture-o'],
+    '/admin/settings.php'  => ['label' => 'Settings',  'icon' => 'fa-cog'],
+    '/admin/account.php'   => ['label' => 'Account',   'icon' => 'fa-user'],
 ];
 ?>
-<nav class="admin-nav">
+<link rel="stylesheet" href="/admin/assets/font-awesome.min.css">
+<script>try{if(localStorage.getItem('cms_nav_collapsed')==='1')document.body.classList.add('nav-collapsed');}catch(e){}</script>
+<nav class="admin-nav" id="admin-nav">
     <div class="admin-nav__brand">
-        <a href="/admin/dashboard.php"><?= htmlspecialchars($siteTitle) ?></a>
-        <a href="/" target="_blank" class="admin-nav__view-site">View site</a>
+        <div class="admin-nav__brand-inner">
+            <a href="/admin/dashboard.php" class="admin-nav__site-link"><?= htmlspecialchars($siteTitle) ?></a>
+            <a href="/" target="_blank" class="admin-nav__view-site">
+                <i class="fa fa-external-link"></i>
+                <span class="nav-label">View site</span>
+            </a>
+        </div>
+        <button class="admin-nav__toggle" id="nav-toggle" title="Toggle sidebar" aria-label="Toggle sidebar">
+            <i class="fa fa-bars"></i>
+        </button>
     </div>
     <ul class="admin-nav__links">
-        <?php foreach ($navItems as $href => $label): ?>
+        <?php foreach ($navItems as $href => $item): ?>
         <li>
             <a href="<?= htmlspecialchars($href) ?>"
-               class="<?= $currentUri === $href ? 'active' : '' ?>">
-                <?= htmlspecialchars($label) ?>
+               class="<?= $currentUri === $href ? 'active' : '' ?>"
+               data-label="<?= htmlspecialchars($item['label']) ?>">
+                <i class="fa <?= htmlspecialchars($item['icon']) ?>"></i>
+                <span class="nav-label"><?= htmlspecialchars($item['label']) ?></span>
             </a>
         </li>
         <?php endforeach; ?>
@@ -30,7 +42,10 @@ $navItems = [
     <div class="admin-nav__actions">
         <form method="post" action="/admin/logout.php">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($auth->csrfToken()) ?>">
-            <button type="submit" class="btn-link">Log out</button>
+            <button type="submit" class="btn-link admin-nav__logout" data-label="Log out">
+                <i class="fa fa-sign-out"></i>
+                <span class="nav-label">Log out</span>
+            </button>
         </form>
     </div>
 </nav>

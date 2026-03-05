@@ -1,4 +1,4 @@
-/* Admin JS — EasyMDE init, slug generation, media insert */
+/* Admin JS — EasyMDE init, slug generation, media insert, sidebar toggle */
 
 'use strict';
 
@@ -120,4 +120,63 @@ function setAction(action) {
             }
         }
     });
+})();
+
+// ── Sidebar toggle + tooltip ──────────────────────────────────────────────────
+
+(function initSidebarToggle() {
+    const STORAGE_KEY = 'cms_nav_collapsed';
+    const btn = document.getElementById('nav-toggle');
+    if (!btn) return;
+
+    function setCollapsed(collapsed) {
+        document.body.classList.toggle('nav-collapsed', collapsed);
+        try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch (e) {}
+    }
+
+    btn.addEventListener('click', () => {
+        setCollapsed(!document.body.classList.contains('nav-collapsed'));
+        hideTip(); // hide any open tooltip on toggle
+    });
+
+    // ── Hover tooltips (bypass overflow: hidden via fixed position) ──────────
+
+    let tip = null;
+
+    function getTip() {
+        if (!tip) {
+            tip = document.createElement('div');
+            tip.className = 'nav-tooltip';
+            document.body.appendChild(tip);
+        }
+        return tip;
+    }
+
+    function showTip(el) {
+        if (!document.body.classList.contains('nav-collapsed')) return;
+        const label = el.dataset.label;
+        if (!label) return;
+        const rect = el.getBoundingClientRect();
+        const t = getTip();
+        t.textContent = label;
+        t.style.top  = (rect.top + rect.height / 2) + 'px';
+        t.style.left = (rect.right + 10) + 'px';
+        t.classList.add('visible');
+    }
+
+    function hideTip() {
+        if (tip) tip.classList.remove('visible');
+    }
+
+    const nav = document.getElementById('admin-nav');
+    if (nav) {
+        nav.addEventListener('mouseover', (e) => {
+            const el = e.target.closest('[data-label]');
+            if (el) showTip(el);
+        });
+        nav.addEventListener('mouseout', (e) => {
+            const el = e.target.closest('[data-label]');
+            if (el) hideTip();
+        });
+    }
 })();

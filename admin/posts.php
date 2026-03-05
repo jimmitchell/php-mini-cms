@@ -58,6 +58,20 @@ $counts = $db->selectOne(
      FROM posts"
 );
 
+// Pagination.
+$perPage    = 20;
+$totalPosts = count($posts);
+$totalPages = max(1, (int) ceil($totalPosts / $perPage));
+$page       = max(1, min($totalPages, (int) ($_GET['page'] ?? 1)));
+$posts      = array_slice($posts, ($page - 1) * $perPage, $perPage);
+
+// Base href for pagination links (preserves status + search, resets page).
+$_paginationBase = '/admin/posts.php?' . http_build_query(array_filter([
+    'status' => $statusFilter !== 'all' ? $statusFilter : '',
+    'q'      => $search,
+], fn($v) => $v !== ''));
+$_paginationBase .= $_paginationBase !== '/admin/posts.php?' ? '&' : '';
+
 $siteTitle = $db->getSetting('site_title', 'My CMS');
 $timezone  = $db->getSetting('timezone', '');
 $csrf      = $auth->csrfToken();
@@ -170,7 +184,29 @@ $flashType = $flash['type']    ?? 'success';
         </table>
         <?php endif; ?>
     </div>
-</main>
 
+    <?php if ($totalPages > 1): ?>
+    <div class="pagination">
+        <?php if ($page > 1): ?>
+            <a href="<?= $_paginationBase ?>page=<?= $page - 1 ?>" class="btn btn--sm btn--secondary">&larr; Prev</a>
+        <?php else: ?>
+            <span class="btn btn--sm btn--secondary btn--disabled">&larr; Prev</span>
+        <?php endif; ?>
+
+        <span class="pagination__info">
+            Page <?= $page ?> of <?= $totalPages ?>
+            &nbsp;&middot;&nbsp;
+            <?= number_format($totalPosts) ?> post<?= $totalPosts !== 1 ? 's' : '' ?>
+        </span>
+
+        <?php if ($page < $totalPages): ?>
+            <a href="<?= $_paginationBase ?>page=<?= $page + 1 ?>" class="btn btn--sm btn--secondary">Next &rarr;</a>
+        <?php else: ?>
+            <span class="btn btn--sm btn--secondary btn--disabled">Next &rarr;</span>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+</main>
+<script src="/admin/assets/admin.js"></script>
 </body>
 </html>

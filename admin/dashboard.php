@@ -160,6 +160,6 @@ $csrf      = $auth->csrfToken();
         </form>
     </section>
 </main>
-
+<script src="/admin/assets/admin.js"></script>
 </body>
 </html>
