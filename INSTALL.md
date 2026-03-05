@@ -76,6 +76,10 @@ chmod 775 /var/www/cms/content/media
 # Web root writable so the Builder can write generated HTML
 chmod 775 /var/www/cms
 
+# Storage directory for CLI script logs (e.g. webmention send log)
+mkdir -p /var/www/cms/storage
+chmod 775 /var/www/cms/storage
+
 # If generated HTML files already exist (e.g. copied from dev), make them group-writable
 # so PHP-FPM (www-data) can overwrite them on rebuild
 chmod -R g+w /var/www/cms/posts
@@ -170,6 +174,27 @@ The CMS exposes a WordPress-compatible XML-RPC API. To connect MarsEdit:
 3. **Username / Password:** your admin credentials
 
 MarsEdit will show **Posts** and **Pages** sections. All CRUD operations and media uploads work from the client. The same endpoint also supports the MetaWeblog API for other clients.
+
+---
+
+## Outgoing webmentions (cron)
+
+The CMS can send webmention pings to external URLs linked from your published posts. Because endpoint discovery and pinging can take time, this runs as a CLI script rather than a web request:
+
+```bash
+php /var/www/cms/bin/send-webmentions.php           # send for posts updated since last run
+php /var/www/cms/bin/send-webmentions.php --force   # re-send for all published posts
+```
+
+Add to your crontab (`crontab -e`) to run daily at 02:00:
+
+```
+0 2 * * * /usr/bin/php /var/www/cms/bin/send-webmentions.php >> /var/www/cms/storage/webmentions.log 2>&1
+```
+
+Verify the PHP binary path first: `which php`
+
+The script exits with code `0` on success and `1` if any pings failed (useful for monitoring).
 
 ---
 

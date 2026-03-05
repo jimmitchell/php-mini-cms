@@ -13,7 +13,7 @@
  *             webmentions_sent_at timestamp.
  *
  * Add to cron (daily at 02:00):
- *   0 2 * * * /usr/bin/php /path/to/bin/send-webmentions.php >> /var/log/webmentions.log 2>&1
+ *   0 2 * * * /usr/bin/php /var/www/cms/bin/send-webmentions.php >> /var/www/cms/storage/webmentions.log 2>&1
  */
 
 define('CMS_ROOT', dirname(__DIR__));

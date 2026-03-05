@@ -13,9 +13,14 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Scheduling** — set a future publish date; posts promote automatically on next admin load
 - **Media library** — drag-and-drop uploads with MIME validation; images, video, and audio supported (50 MB limit)
 - **Atom feed** — generated automatically at `/feed.xml`
+- **JSON Feed** — generated automatically at `/feed.json` (JSON Feed 1.1); linked in `<head>` for feed reader discovery
 - **OG images** — auto-generated 1200×630 PNG per post (requires GD + FreeType)
+- **JSON-LD structured data** — `BlogPosting` schema.org markup in every post's `<head>` for richer search results; author name configurable in Settings
+- **Reading time** — estimated minutes-to-read displayed inline with the post date
+- **Microformats2 (h-entry)** — posts and index items carry MF2 classes for IndieWeb parsers and readers
 - **Mastodon & Bluesky** — optional auto-post on first publish; the URL of the remote post is stored and displayed as an "Also on:" link at the bottom of each post; per-post skip checkbox for each platform
-- **Webmentions** — display incoming webmentions (likes, reposts, replies) on posts via webmention.io; client-side fetch with avatar grid for reactions and threaded reply cards
+- **Incoming webmentions** — display likes, reposts, and replies on posts via webmention.io; client-side fetch with avatar grid for reactions and threaded reply cards
+- **Outgoing webmentions** — CLI script (`bin/send-webmentions.php`) discovers endpoints and sends pings for all external links in published posts; safe to schedule via cron
 - **MarsEdit support** — full WordPress XML-RPC API at `/admin/xmlrpc.php`; write and publish from MarsEdit with post and page management
 - **Google Analytics** — optional GA4 integration; add a measurement ID in Settings to inject the tracking script
 - **Dark / light mode** — system-preference aware with manual toggle; no flash on load
@@ -114,7 +119,7 @@ return [
 ];
 ```
 
-Runtime settings (site title, description, URL, footer text, pagination, Mastodon/Bluesky credentials, Google Analytics measurement ID, webmention.io domain, etc.) are stored in the SQLite `settings` table and edited through **Admin → Settings**. The Settings page is organized into panels: Site, Content, Mastodon, Bluesky, IndieWeb, Analytics.
+Runtime settings (site title, description, URL, footer text, author name, pagination, Mastodon/Bluesky credentials, Google Analytics measurement ID, webmention.io domain, etc.) are stored in the SQLite `settings` table and edited through **Admin → Settings**. The Settings page is organized into panels: Site identity, Content, Mastodon, Bluesky, IndieWeb, Analytics.
 
 ---
 
@@ -229,7 +234,9 @@ When a post is syndicated, the URL of the Mastodon toot or Bluesky post is store
 
 ---
 
-## Webmention.io
+## Webmentions
+
+### Incoming (webmention.io)
 
 The CMS supports [webmention.io](https://webmention.io/) for receiving and displaying incoming webmentions (IndieWeb interactions from other sites). To enable:
 
@@ -245,6 +252,23 @@ Webmentions are grouped by type:
 - **Replies and mentions** — displayed as individual reply cards with author, date, and content
 
 Because the site generates static HTML, webmentions are fetched on each page load from the webmention.io API (no build step needed).
+
+### Outgoing
+
+The CMS can send webmention pings to every external URL linked from your published posts. This runs as a CLI script (not in the web request) to avoid timeouts:
+
+```bash
+php bin/send-webmentions.php           # send for posts updated since last run
+php bin/send-webmentions.php --force   # re-send for all published posts
+```
+
+Add to cron for daily sending:
+
+```
+0 2 * * * /usr/bin/php /var/www/cms/bin/send-webmentions.php >> /var/www/cms/storage/webmentions.log 2>&1
+```
+
+The script is idempotent — it skips posts whose content has not changed since webmentions were last sent.
 
 ---
 
@@ -270,6 +294,7 @@ MarsEdit will show both a **Posts** and a **Pages** section. All post and page C
 /search/                    → search/index.html        (client-side search page)
 /search.json                → search index (title, excerpt, date, URL for all published posts)
 /feed.xml                   → Atom 1.0 feed
+/feed.json                  → JSON Feed 1.1
 /media/{filename}           → content/media/ alias
 /theme.css                  → public stylesheet
 /fonts/                     → Nunito Sans web font files
@@ -307,7 +332,8 @@ php-mini-cms/
 │   ├── partials/           # Shared nav partial
 │   └── xmlrpc.php          # WordPress/MetaWeblog XML-RPC API endpoint
 ├── bin/
-│   └── setup.php           # CLI installer (password hash + DB init)
+│   ├── setup.php           # CLI installer (password hash + DB init)
+│   └── send-webmentions.php  # CLI: send outgoing webmention pings
 ├── content/
 │   └── media/              # Uploaded files (not committed)
 ├── data/                   # SQLite database (not committed)
@@ -321,11 +347,13 @@ php-mini-cms/
 │   ├── Feed.php
 │   ├── Helpers.php
 │   ├── HighlightFencedCodeRenderer.php
+│   ├── JsonFeed.php
 │   ├── Mastodon.php
 │   ├── Media.php
 │   ├── OgImage.php
 │   ├── Page.php
 │   ├── Post.php
+│   ├── Webmention.php
 │   └── XmlRpc.php
 ├── templates/              # Public HTML templates
 │   ├── base.php
@@ -333,6 +361,7 @@ php-mini-cms/
 │   ├── page.php
 │   ├── post.php
 │   └── search.php
+├── storage/                # Runtime logs (not committed; create on server)
 ├── config.php              # Credentials + paths (not committed)
 ├── composer.json
 ├── docker-compose.yml

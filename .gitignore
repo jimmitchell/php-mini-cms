@@ -9,6 +9,7 @@ composer.phar
 # Database and uploaded media (runtime data — not committed)
 /data/
 /content/media/
+/storage/
 
 # Generated static output — rebuilt by the CMS; not tracked
 /index.html
