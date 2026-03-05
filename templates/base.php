@@ -61,6 +61,7 @@ if (!function_exists('_e')) {
 <?php endif; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <title><?= _e($pageTitle) ?></title>
     <?php if ($description !== ''): ?>
     <meta name="description" content="<?= _e($description) ?>">

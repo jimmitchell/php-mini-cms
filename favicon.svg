@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background rounded square in theme blue -->
+  <rect width="32" height="32" rx="7" fill="#2563eb"/>
+  <!-- Heading line — shorter and thicker -->
+  <rect x="6" y="7"  width="13" height="3.5" rx="1.75" fill="white"/>
+  <!-- Body lines — full width, slightly transparent -->
+  <rect x="6" y="14" width="20" height="2.5" rx="1.25" fill="white" opacity=".82"/>
+  <rect x="6" y="19" width="20" height="2.5" rx="1.25" fill="white" opacity=".82"/>
+  <!-- Last body line — shorter, suggesting paragraph end -->
+  <rect x="6" y="24" width="13" height="2.5" rx="1.25" fill="white" opacity=".82"/>
+</svg>
