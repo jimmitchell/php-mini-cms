@@ -87,6 +87,16 @@ class Helpers
     }
 
     /**
+     * Estimate reading time in minutes for rendered HTML.
+     * Strips tags, counts words, divides by $wpm. Returns at least 1.
+     */
+    public static function readingTime(string $html, int $wpm = 200): int
+    {
+        $words = str_word_count(strip_tags($html));
+        return max(1, (int) ceil($words / $wpm));
+    }
+
+    /**
      * Escape a string for safe HTML output.
      */
     public static function e(string $value): string

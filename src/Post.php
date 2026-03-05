@@ -23,7 +23,8 @@ class Post
     public ?string $bluesky_at   = null;
     public ?string $bluesky_url  = null;
     public int     $bluesky_skip  = 0;
-    public ?string $og_image_hash = null;
+    public ?string $og_image_hash      = null;
+    public ?string $webmentions_sent_at = null;
 
     private Database $db;
 
@@ -155,6 +156,16 @@ class Post
         }
 
         $this->db->update('posts', $cols, 'id = :id', ['id' => $this->id]);
+    }
+
+    /**
+     * Record that outgoing webmentions were sent for this post.
+     */
+    public function markWebmentionsSent(): void
+    {
+        $now = date('Y-m-d H:i:s');
+        $this->webmentions_sent_at = $now;
+        $this->db->update('posts', ['webmentions_sent_at' => $now], 'id = :id', ['id' => $this->id]);
     }
 
     /**
@@ -351,7 +362,8 @@ class Post
         $post->bluesky_at    = $row['bluesky_at']   ?? null;
         $post->bluesky_url   = $row['bluesky_url']  ?? null;
         $post->bluesky_skip  = (int) ($row['bluesky_skip']  ?? 0);
-        $post->og_image_hash = $row['og_image_hash'] ?? null;
+        $post->og_image_hash       = $row['og_image_hash']       ?? null;
+        $post->webmentions_sent_at = $row['webmentions_sent_at'] ?? null;
         return $post;
     }
 }

@@ -52,6 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($wasPublished) {
                 $builder->buildIndex();
                 $builder->buildFeed();
+                $builder->buildJsonFeed();
+                $builder->buildSitemap();
             }
             $auth->flash('Post deleted.', 'info');
             header('Location: /admin/posts.php');

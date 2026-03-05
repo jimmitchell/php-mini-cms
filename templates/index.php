@@ -23,18 +23,18 @@ ob_start();
 
     <?php foreach ($posts as $post): ?>
     <?php $postUrl = rtrim($siteUrl, '/') . '/' . CMS\Post::datePath($post->published_at, $post->slug) . '/'; ?>
-    <article class="post-card">
+    <article class="post-card h-entry">
         <h2 class="post-card__title">
-            <a href="<?= htmlspecialchars($postUrl) ?>"><?= htmlspecialchars($post->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
+            <a href="<?= htmlspecialchars($postUrl) ?>" class="u-url p-name"><?= htmlspecialchars($post->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
         </h2>
         <?php if ($post->published_at): ?>
-        <time class="post-card__date" datetime="<?= htmlspecialchars($post->published_at) ?>">
+        <time class="post-card__date dt-published" datetime="<?= htmlspecialchars($post->published_at) ?>">
             <?= Helpers::formatDate($post->published_at, 'l, F j, Y', $settings['locale'] ?? '', $settings['timezone'] ?? '') ?>
         </time>
         <?php endif; ?>
         <?php $cardExcerpt = $post->effectiveExcerpt(); ?>
         <?php if ($cardExcerpt !== null): ?>
-        <p class="post-card__excerpt"><?= htmlspecialchars(strip_tags($cardExcerpt), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></p>
+        <p class="post-card__excerpt p-summary"><?= htmlspecialchars(strip_tags($cardExcerpt), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></p>
         <?php endif; ?>
         <a href="<?= htmlspecialchars($postUrl) ?>" class="post-card__more">Read more →</a>
     </article>

@@ -154,6 +154,69 @@ class Builder
     }
 
     /**
+     * Render and write feed.json (JSON Feed 1.1).
+     */
+    public function buildJsonFeed(): void
+    {
+        $feed = new JsonFeed($this->db, $this->settings);
+        $this->writeFile($this->outputDir . '/feed.json', $feed->render());
+    }
+
+    /**
+     * Generate sitemap.xml listing all published posts and pages.
+     * Skipped silently when site_url is not configured.
+     */
+    public function buildSitemap(): void
+    {
+        $siteUrl = rtrim($this->settings['site_url'] ?? '', '/');
+        if ($siteUrl === '') {
+            return;
+        }
+
+        $posts = Post::findAll($this->db, 'published');
+        $pages = Page::findAll($this->db, 'published');
+
+        $x = fn(string $v) => htmlspecialchars($v, ENT_XML1, 'UTF-8');
+
+        $lines = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        ];
+
+        // Homepage
+        $lines[] = '  <url>';
+        $lines[] = '    <loc>' . $x($siteUrl . '/') . '</loc>';
+        $lines[] = '  </url>';
+
+        // Published posts
+        foreach ($posts as $post) {
+            if ($post->published_at === null) {
+                continue;
+            }
+            $url     = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+            $lastmod = substr($post->updated_at ?: $post->published_at, 0, 10);
+            $lines[] = '  <url>';
+            $lines[] = '    <loc>' . $x($url) . '</loc>';
+            $lines[] = '    <lastmod>' . $x($lastmod) . '</lastmod>';
+            $lines[] = '  </url>';
+        }
+
+        // Published pages
+        foreach ($pages as $page) {
+            $url     = $siteUrl . '/' . $page->slug . '/';
+            $lastmod = substr($page->updated_at, 0, 10);
+            $lines[] = '  <url>';
+            $lines[] = '    <loc>' . $x($url) . '</loc>';
+            $lines[] = '    <lastmod>' . $x($lastmod) . '</lastmod>';
+            $lines[] = '  </url>';
+        }
+
+        $lines[] = '</urlset>';
+
+        $this->writeFile($this->outputDir . '/sitemap.xml', implode("\n", $lines) . "\n");
+    }
+
+    /**
      * Write search.json — an array of published posts for client-side search.
      */
     public function buildSearchIndex(): void
@@ -238,6 +301,8 @@ class Builder
         }
         $this->buildIndex();
         $this->buildFeed();
+        $this->buildJsonFeed();
+        $this->buildSitemap();
     }
 
     /**

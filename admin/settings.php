@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $fields = [
         'site_title'         => trim($_POST['site_title']         ?? ''),
+        'author_name'        => trim($_POST['author_name']        ?? ''),
         'site_description'   => trim($_POST['site_description']   ?? ''),
         'site_url'           => rtrim(trim($_POST['site_url'] ?? ''), '/'),
         'footer_text'        => trim($_POST['footer_text']        ?? ''),
@@ -63,9 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->upsertSetting($key, $value);
         }
 
-        // Rebuild index and feed so new title/footer etc. is reflected.
+        // Rebuild index, feeds, and sitemap so new title/URL etc. is reflected.
         $builder->buildIndex();
         $builder->buildFeed();
+        $builder->buildJsonFeed();
+        $builder->buildSitemap();
 
         $auth->flash('Settings saved and site rebuilt.');
         header('Location: /admin/settings.php');
@@ -114,6 +117,12 @@ $flash     = $auth->getFlash();
             <input type="text" id="site_title" name="site_title"
                    value="<?= Helpers::e($_POST['site_title'] ?? $settings['site_title'] ?? '') ?>"
                    required>
+
+            <label for="author_name">Author name</label>
+            <input type="text" id="author_name" name="author_name"
+                   value="<?= Helpers::e($_POST['author_name'] ?? $settings['author_name'] ?? '') ?>"
+                   placeholder="Your real name">
+            <p class="form-hint">Used in JSON-LD structured data. Leave blank to omit the author field.</p>
 
             <label for="site_description">Site description</label>
             <input type="text" id="site_description" name="site_description"

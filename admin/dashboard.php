@@ -5,12 +5,60 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 $auth->check();
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rebuild') {
+use CMS\Post;
+use CMS\Webmention;
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $auth->verifyCsrf($_POST['csrf_token'] ?? '');
-    $builder->buildAll();
-    $auth->flash('Full site rebuild complete.');
-    header('Location: /admin/dashboard.php');
-    exit;
+
+    if ($_POST['action'] === 'rebuild') {
+        $builder->buildAll();
+        $auth->flash('Full site rebuild complete.');
+        header('Location: /admin/dashboard.php');
+        exit;
+    }
+
+    if ($_POST['action'] === 'send_webmentions') {
+        $outputDir = $config['paths']['output'];
+        $siteUrl   = rtrim($settings['site_url'] ?? '', '/');
+        $posts     = Post::findAll($db, 'published');
+
+        $sent = $skipped = $failed = $processed = 0;
+
+        foreach ($posts as $post) {
+            // Skip if already sent and post hasn't changed since.
+            if ($post->webmentions_sent_at !== null
+                && strtotime($post->updated_at) <= strtotime($post->webmentions_sent_at)) {
+                $skipped++;
+                continue;
+            }
+
+            $htmlPath = $outputDir . '/posts/' . Post::datePath($post->published_at, $post->slug) . '/index.html';
+            if (!file_exists($htmlPath)) {
+                $skipped++;
+                continue;
+            }
+
+            $html    = (string) file_get_contents($htmlPath);
+            $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+            $urls    = Webmention::extractUrls($html, $siteUrl);
+
+            foreach ($urls as $target) {
+                $endpoint = Webmention::discoverEndpoint($target);
+                if ($endpoint === null) {
+                    continue;
+                }
+                Webmention::sendPing($postUrl, $target, $endpoint) ? $sent++ : $failed++;
+            }
+
+            $post->markWebmentionsSent();
+            $processed++;
+        }
+
+        $auth->flash("Webmentions: {$sent} sent across {$processed} posts; {$failed} failed; {$skipped} already up to date.");
+        header('Location: /admin/dashboard.php');
+        exit;
+    }
 }
 
 $flash     = $auth->getFlash();
@@ -153,10 +201,15 @@ $csrf      = $auth->csrfToken();
 
     <section class="panel">
         <h2>Actions</h2>
-        <form method="post" action="/admin/dashboard.php">
+        <form method="post" action="/admin/dashboard.php" style="display:inline-block;margin-right:.5rem">
             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
             <input type="hidden" name="action" value="rebuild">
             <button type="submit" class="btn btn--secondary">Rebuild entire site</button>
+        </form>
+        <form method="post" action="/admin/dashboard.php" style="display:inline-block">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+            <input type="hidden" name="action" value="send_webmentions">
+            <button type="submit" class="btn btn--secondary">Send webmentions</button>
         </form>
     </section>
 </main>

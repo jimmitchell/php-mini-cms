@@ -62,6 +62,7 @@ if (!function_exists('_e')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml">
     <title><?= _e($pageTitle) ?></title>
     <?php if ($description !== ''): ?>
     <meta name="description" content="<?= _e($description) ?>">
@@ -84,10 +85,13 @@ if (!function_exists('_e')) {
           as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/NunitoSans-Italic.woff2"
           as="font" type="font/woff2" crossorigin>
-    <!-- Atom feed -->
+    <!-- Feeds -->
     <link rel="alternate" type="application/atom+xml"
           title="<?= _e($siteTitle) ?>"
           href="<?= _e($siteUrl . '/feed.xml') ?>">
+    <link rel="alternate" type="application/feed+json"
+          title="<?= _e($siteTitle) ?>"
+          href="<?= _e($siteUrl . '/feed.json') ?>">
     <!-- Webmention -->
     <?php $webmentionDomain = $settings['webmention_domain'] ?? ''; ?>
     <?php if ($webmentionDomain !== ''): ?>
@@ -97,6 +101,9 @@ if (!function_exists('_e')) {
     <!-- Anti-FOUC: apply saved/system theme before CSS renders to avoid flash -->
     <script>(function(){var t=localStorage.getItem('theme');if(t==='dark'||(t===null&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}else if(t==='light'){document.documentElement.setAttribute('data-theme','light');}})();</script>
     <link rel="stylesheet" href="/theme.min.css">
+    <?php if (!empty($jsonLd)): ?>
+    <script type="application/ld+json"><?= $jsonLd ?></script>
+    <?php endif; ?>
 </head>
 <body>
 

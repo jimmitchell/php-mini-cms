@@ -235,9 +235,24 @@ audio { width: 100%; }
 }
 
 .post__date {
-    display: block;
+    display: inline;
     font-size: .875rem;
     color: var(--color-muted);
+}
+
+.post__date a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.post__reading-time {
+    display: inline;
+    font-size: .875rem;
+    color: var(--color-muted);
+}
+
+.post__reading-time::before {
+    content: ' · ';
 }
 
 /* ── Prose styles ─────────────────────────────────────────────────────────── */
@@ -327,8 +342,8 @@ audio { width: 100%; }
 
 .code-copy {
     position: absolute;
-    top: .5rem;
-    right: .5rem;
+    top: .1rem;
+    right: .1rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -531,7 +546,6 @@ audio { width: 100%; }
     gap: .6rem;
     margin-top: 2rem;
     padding-top: 1.25rem;
-    border-top: 1px solid var(--color-border);
     font-size: .825rem;
     color: var(--color-muted);
 }

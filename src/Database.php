@@ -14,7 +14,7 @@ class Database
     private PDO $pdo;
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 7;
+    private const SCHEMA_VERSION = 8;
 
     public function __construct(string $dbPath)
     {
@@ -177,6 +177,10 @@ class Database
             $this->applySchemaV7();
         }
 
+        if ($current < 8) {
+            $this->applySchemaV8();
+        }
+
         if ($current < self::SCHEMA_VERSION) {
             $this->upsertSetting('schema_version', (string) self::SCHEMA_VERSION);
         }
@@ -293,6 +297,13 @@ class Database
         // so it can be linked from the public post page.
         $this->pdo->exec("ALTER TABLE posts ADD COLUMN mastodon_url TEXT");
         $this->pdo->exec("ALTER TABLE posts ADD COLUMN bluesky_url  TEXT");
+    }
+
+    private function applySchemaV8(): void
+    {
+        // Track when outgoing webmentions were last sent for a post.
+        // NULL = never sent; re-send when updated_at > webmentions_sent_at.
+        $this->pdo->exec("ALTER TABLE posts ADD COLUMN webmentions_sent_at DATETIME");
     }
 
     /** Insert or update a single settings row. */
