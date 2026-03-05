@@ -293,13 +293,6 @@ audio { width: 100%; }
     border: 1px solid var(--color-link);
 }
 
-@media (prefers-color-scheme: dark) {
-    .term--category { background: var(--color-chrome-bg); color: var(--color-link); border-color: var(--color-link); }
-    .term--category:hover { background: var(--color-link); color: var(--color-chrome-bg); }
-    .term--tag { border-color: var(--color-link); color: var(--color-link); }
-    .term--tag:hover { background: var(--color-link); color: var(--color-bg); }
-}
-
 /* ── Prose styles ─────────────────────────────────────────────────────────── */
 .prose > * + * { margin-top: 1.25em; }
 
