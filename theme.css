@@ -26,7 +26,7 @@
     --color-muted:      #6b7280;
     --color-border:     #e5e7eb;
     --color-bg:         #ffffff;
-    --color-chrome-bg:  #fafafa;
+    --color-chrome-bg:  #f3f4f6;
     --color-code-bg:    #f3f4f6;
     --color-link:       #2563eb;
     --max-content:      800px;
@@ -253,6 +253,59 @@ audio { width: 100%; }
 
 .post__reading-time::before {
     content: ' · ';
+}
+
+/* ── Post taxonomy terms (categories + tags intermingled) ────────────────── */
+.post__terms {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .375rem;
+    margin: .75rem 0 0;
+    padding: 0;
+}
+
+.term {
+    display: inline-flex;
+    align-items: center;
+    padding: .2em .65em;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 500;
+    line-height: 1.4;
+    text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+}
+
+.term:hover { text-decoration: none; }
+
+.term--category {
+    background: #dbeafe;
+    color: #1d4ed8;
+    border: 1.5px solid #2563eb;
+}
+
+.term--category:hover {
+    background: #2563eb;
+    color: #fff;
+}
+
+.term--tag {
+    background: transparent;
+    border: 1.5px solid #2563eb;
+    color: #2563eb;
+}
+
+.term--tag:hover {
+    background: #2563eb;
+    color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+    .term--category { background: #1e3a5f; color: #93c5fd; border-color: #60a5fa; }
+    .term--category:hover { background: #60a5fa; color: #0f172a; }
+    .term--tag { border-color: #60a5fa; color: #60a5fa; }
+    .term--tag:hover { background: #60a5fa; color: #0f172a; }
 }
 
 /* ── Prose styles ─────────────────────────────────────────────────────────── */
@@ -872,6 +925,33 @@ audio { width: 100%; }
     font-size: .9rem;
     color: var(--color-text);
     line-height: 1.55;
+    margin: 0;
+}
+
+/* ── Taxonomy archive (category / tag) ───────────────────────────────────── */
+.taxonomy-archive__header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.taxonomy-archive__type {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--color-muted);
+    margin: 0 0 .25rem;
+}
+
+.taxonomy-archive__title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 0 .5rem;
+}
+
+.taxonomy-archive__description {
+    color: var(--color-muted);
     margin: 0;
 }
 

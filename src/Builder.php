@@ -59,6 +59,13 @@ class Builder
 
         if ($post->status !== 'published') {
             $this->removeFile($path);
+            // Rebuild any archives this post was in so it no longer appears there.
+            foreach ($post->categories as $cat) {
+                $this->buildCategoryArchive((int) $cat['id']);
+            }
+            foreach ($post->tags as $tag) {
+                $this->buildTagArchive((int) $tag['id']);
+            }
             return;
         }
 
@@ -80,6 +87,14 @@ class Builder
         if ($hash !== $post->content_hash) {
             $this->writeFile($path, $rendered);
             $post->markBuilt($hash);
+        }
+
+        // Rebuild taxonomy archive pages for this post's terms.
+        foreach ($post->categories as $cat) {
+            $this->buildCategoryArchive((int) $cat['id']);
+        }
+        foreach ($post->tags as $tag) {
+            $this->buildTagArchive((int) $tag['id']);
         }
     }
 
@@ -303,6 +318,104 @@ class Builder
         $this->buildFeed();
         $this->buildJsonFeed();
         $this->buildSitemap();
+        $this->buildAllTaxonomyArchives();
+    }
+
+    /**
+     * Rebuild the static archive page for a single category.
+     */
+    public function buildCategoryArchive(int $categoryId): void
+    {
+        $cat = $this->db->selectOne("SELECT * FROM categories WHERE id = ?", [$categoryId]);
+        if ($cat === null) {
+            return;
+        }
+
+        $posts    = Post::findByCategory($this->db, $categoryId);
+        $path     = $this->outputDir . '/category/' . $cat['slug'] . '/index.html';
+        $rendered = $this->render('taxonomy.php', [
+            'type'  => 'category',
+            'term'  => $cat,
+            'posts' => $posts,
+        ]);
+        $this->writeFile($path, $rendered);
+    }
+
+    /**
+     * Rebuild the static archive page for a single tag.
+     */
+    public function buildTagArchive(int $tagId): void
+    {
+        $tag = $this->db->selectOne("SELECT * FROM tags WHERE id = ?", [$tagId]);
+        if ($tag === null) {
+            return;
+        }
+
+        $posts    = Post::findByTag($this->db, $tagId);
+        $path     = $this->outputDir . '/tag/' . $tag['slug'] . '/index.html';
+        $rendered = $this->render('taxonomy.php', [
+            'type'  => 'tag',
+            'term'  => $tag,
+            'posts' => $posts,
+        ]);
+        $this->writeFile($path, $rendered);
+    }
+
+    /**
+     * Rebuild all category and tag archive pages, removing any stale directories
+     * whose terms have been deleted.
+     */
+    public function buildAllTaxonomyArchives(): void
+    {
+        $categories = $this->db->select("SELECT * FROM categories ORDER BY name");
+        $validCatSlugs = [];
+        foreach ($categories as $cat) {
+            $this->buildCategoryArchive((int) $cat['id']);
+            $validCatSlugs[] = $cat['slug'];
+        }
+
+        $tags = $this->db->select("SELECT * FROM tags ORDER BY name");
+        $validTagSlugs = [];
+        foreach ($tags as $tag) {
+            $this->buildTagArchive((int) $tag['id']);
+            $validTagSlugs[] = $tag['slug'];
+        }
+
+        // Remove stale category archive directories.
+        $catDir = $this->outputDir . '/category';
+        if (is_dir($catDir)) {
+            foreach (scandir($catDir) as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
+                if (!in_array($entry, $validCatSlugs, true)) {
+                    $stale = $catDir . '/' . $entry . '/index.html';
+                    $this->removeFile($stale);
+                    $dir = $catDir . '/' . $entry;
+                    if (is_dir($dir) && count(scandir($dir)) === 2) {
+                        rmdir($dir);
+                    }
+                }
+            }
+        }
+
+        // Remove stale tag archive directories.
+        $tagDir = $this->outputDir . '/tag';
+        if (is_dir($tagDir)) {
+            foreach (scandir($tagDir) as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
+                if (!in_array($entry, $validTagSlugs, true)) {
+                    $stale = $tagDir . '/' . $entry . '/index.html';
+                    $this->removeFile($stale);
+                    $dir = $tagDir . '/' . $entry;
+                    if (is_dir($dir) && count(scandir($dir)) === 2) {
+                        rmdir($dir);
+                    }
+                }
+            }
+        }
     }
 
     /**

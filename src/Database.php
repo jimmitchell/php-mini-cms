@@ -14,7 +14,7 @@ class Database
     private PDO $pdo;
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 8;
+    private const SCHEMA_VERSION = 9;
 
     public function __construct(string $dbPath)
     {
@@ -181,6 +181,10 @@ class Database
             $this->applySchemaV8();
         }
 
+        if ($current < 9) {
+            $this->applySchemaV9();
+        }
+
         if ($current < self::SCHEMA_VERSION) {
             $this->upsertSetting('schema_version', (string) self::SCHEMA_VERSION);
         }
@@ -304,6 +308,45 @@ class Database
         // Track when outgoing webmentions were last sent for a post.
         // NULL = never sent; re-send when updated_at > webmentions_sent_at.
         $this->pdo->exec("ALTER TABLE posts ADD COLUMN webmentions_sent_at DATETIME");
+    }
+
+    private function applySchemaV9(): void
+    {
+        // Categories (hierarchical taxonomy) and tags (flat taxonomy) with junction tables.
+        $this->pdo->exec(<<<SQL
+            CREATE TABLE IF NOT EXISTS categories (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                name        TEXT    NOT NULL,
+                slug        TEXT    UNIQUE NOT NULL,
+                description TEXT    NOT NULL DEFAULT '',
+                created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        SQL);
+
+        $this->pdo->exec(<<<SQL
+            CREATE TABLE IF NOT EXISTS tags (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                name       TEXT NOT NULL,
+                slug       TEXT UNIQUE NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        SQL);
+
+        $this->pdo->exec(<<<SQL
+            CREATE TABLE IF NOT EXISTS post_categories (
+                post_id     INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+                category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+                PRIMARY KEY (post_id, category_id)
+            )
+        SQL);
+
+        $this->pdo->exec(<<<SQL
+            CREATE TABLE IF NOT EXISTS post_tags (
+                post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+                tag_id  INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+                PRIMARY KEY (post_id, tag_id)
+            )
+        SQL);
     }
 
     /** Insert or update a single settings row. */

@@ -50,6 +50,24 @@ ob_start();
         </time>
         <span class="post__reading-time"><?= $readingTime ?> min read</span>
         <?php endif; ?>
+        <?php
+        $terms = [];
+        foreach ($post->categories as $cat) {
+            $terms[] = ['url' => '/category/' . rawurlencode($cat['slug']) . '/', 'label' => $cat['name'], 'type' => 'category'];
+        }
+        foreach ($post->tags as $tag) {
+            $terms[] = ['url' => '/tag/' . rawurlencode($tag['slug']) . '/', 'label' => $tag['name'], 'type' => 'tag'];
+        }
+        usort($terms, fn($a, $b) => strcmp($a['label'], $b['label']));
+        ?>
+        <?php if (!empty($terms)): ?>
+        <ul class="post__terms">
+            <?php foreach ($terms as $term): ?>
+            <li><a href="<?= htmlspecialchars($term['url'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+                   class="term term--<?= $term['type'] ?>"><?= htmlspecialchars($term['label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a></li>
+            <?php endforeach; ?>
+        </ul>
+        <?php endif; ?>
     </header>
 
     <div class="post__content prose e-content">

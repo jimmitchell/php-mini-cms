@@ -698,6 +698,34 @@ th:last-child { text-align: right; }
 
 .editor-sidebar .panel { margin-bottom: 0; }
 
+/* ── Term checklist (categories in post editor) ──────────────────────────── */
+.term-checklist {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 .5rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.term-checklist li {
+    padding: .2rem 0;
+}
+
+.term-checklist label {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-weight: 400;
+    font-size: .875rem;
+    cursor: pointer;
+}
+
+.term-checklist input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    flex-shrink: 0;
+}
+
 /* ── Media grid (editor sidebar) ─────────────────────────────────────────── */
 .media-grid {
     display: grid;

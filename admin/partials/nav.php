@@ -5,9 +5,11 @@ $currentUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 
 $navItems = [
     '/admin/dashboard.php' => ['label' => 'Dashboard', 'icon' => 'fa-tachometer'],
-    '/admin/posts.php'     => ['label' => 'Posts',     'icon' => 'fa-file-text-o'],
-    '/admin/pages.php'     => ['label' => 'Pages',     'icon' => 'fa-files-o'],
-    '/admin/media.php'     => ['label' => 'Media',     'icon' => 'fa-picture-o'],
+    '/admin/posts.php'      => ['label' => 'Posts',      'icon' => 'fa-file-text-o'],
+    '/admin/pages.php'      => ['label' => 'Pages',      'icon' => 'fa-files-o'],
+    '/admin/categories.php' => ['label' => 'Categories', 'icon' => 'fa-tag'],
+    '/admin/tags.php'       => ['label' => 'Tags',       'icon' => 'fa-tags'],
+    '/admin/media.php'      => ['label' => 'Media',      'icon' => 'fa-picture-o'],
     '/admin/settings.php'  => ['label' => 'Settings',  'icon' => 'fa-cog'],
     '/admin/account.php'   => ['label' => 'Account',   'icon' => 'fa-user'],
 ];

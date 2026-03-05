@@ -26,6 +26,12 @@ class Post
     public ?string $og_image_hash      = null;
     public ?string $webmentions_sent_at = null;
 
+    /** @var array<array<string,mixed>>  [['id'=>int,'name'=>string,'slug'=>string,'description'=>string], ...] */
+    public array $categories = [];
+
+    /** @var array<array<string,mixed>>  [['id'=>int,'name'=>string,'slug'=>string], ...] */
+    public array $tags = [];
+
     private Database $db;
 
     public function __construct(Database $db)
@@ -69,6 +75,40 @@ class Post
         return $row ? self::fromRow($db, $row) : null;
     }
 
+    /**
+     * Return all published posts in a given category, newest first.
+     *
+     * @return self[]
+     */
+    public static function findByCategory(Database $db, int $categoryId): array
+    {
+        $rows = $db->select(
+            "SELECT p.* FROM posts p
+              JOIN post_categories pc ON pc.post_id = p.id
+             WHERE pc.category_id = :cid AND p.status = 'published'
+             ORDER BY p.published_at DESC",
+            ['cid' => $categoryId]
+        );
+        return array_map(fn($row) => self::fromRow($db, $row), $rows);
+    }
+
+    /**
+     * Return all published posts with a given tag, newest first.
+     *
+     * @return self[]
+     */
+    public static function findByTag(Database $db, int $tagId): array
+    {
+        $rows = $db->select(
+            "SELECT p.* FROM posts p
+              JOIN post_tags pt ON pt.post_id = p.id
+             WHERE pt.tag_id = :tid AND p.status = 'published'
+             ORDER BY p.published_at DESC",
+            ['tid' => $tagId]
+        );
+        return array_map(fn($row) => self::fromRow($db, $row), $rows);
+    }
+
     // ── Persistence ───────────────────────────────────────────────────────────
 
     /**
@@ -104,6 +144,62 @@ class Post
         }
         $affected = $this->db->delete('posts', 'id = :id', ['id' => $this->id]);
         return $affected > 0;
+    }
+
+    /**
+     * Replace all category and tag associations for this post.
+     * Silently ignores IDs that do not exist in the respective tables.
+     *
+     * @param int[] $categoryIds
+     * @param int[] $tagIds
+     */
+    public function saveTerms(array $categoryIds, array $tagIds): void
+    {
+        if ($this->id === null) {
+            return;
+        }
+
+        // Replace category associations.
+        $this->db->exec("DELETE FROM post_categories WHERE post_id = ?", [$this->id]);
+        foreach (array_unique($categoryIds) as $cid) {
+            $cid = (int) $cid;
+            if ($cid > 0) {
+                $this->db->exec(
+                    "INSERT OR IGNORE INTO post_categories (post_id, category_id) VALUES (?, ?)",
+                    [$this->id, $cid]
+                );
+            }
+        }
+
+        // Replace tag associations.
+        $this->db->exec("DELETE FROM post_tags WHERE post_id = ?", [$this->id]);
+        foreach (array_unique($tagIds) as $tid) {
+            $tid = (int) $tid;
+            if ($tid > 0) {
+                $this->db->exec(
+                    "INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)",
+                    [$this->id, $tid]
+                );
+            }
+        }
+
+        // Refresh the in-memory arrays.
+        $this->categories = $this->db->select(
+            "SELECT c.id, c.name, c.slug, c.description
+               FROM categories c
+               JOIN post_categories pc ON pc.category_id = c.id
+              WHERE pc.post_id = ?
+              ORDER BY c.name",
+            [$this->id]
+        );
+        $this->tags = $this->db->select(
+            "SELECT t.id, t.name, t.slug
+               FROM tags t
+               JOIN post_tags pt ON pt.tag_id = t.id
+              WHERE pt.post_id = ?
+              ORDER BY t.name",
+            [$this->id]
+        );
     }
 
     // ── Build helpers ─────────────────────────────────────────────────────────
@@ -364,6 +460,24 @@ class Post
         $post->bluesky_skip  = (int) ($row['bluesky_skip']  ?? 0);
         $post->og_image_hash       = $row['og_image_hash']       ?? null;
         $post->webmentions_sent_at = $row['webmentions_sent_at'] ?? null;
+
+        $post->categories = $db->select(
+            "SELECT c.id, c.name, c.slug, c.description
+               FROM categories c
+               JOIN post_categories pc ON pc.category_id = c.id
+              WHERE pc.post_id = ?
+              ORDER BY c.name",
+            [$post->id]
+        );
+        $post->tags = $db->select(
+            "SELECT t.id, t.name, t.slug
+               FROM tags t
+               JOIN post_tags pt ON pt.tag_id = t.id
+              WHERE pt.post_id = ?
+              ORDER BY t.name",
+            [$post->id]
+        );
+
         return $post;
     }
 }

@@ -160,6 +160,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $post->save();
 
+        // Save category and tag associations.
+        $submittedCatIds = array_filter(array_map('intval', $_POST['category_ids'] ?? []));
+        $validCatIds     = array_column($db->select("SELECT id FROM categories"), 'id');
+        $categoryIds     = array_values(array_intersect($submittedCatIds, $validCatIds));
+
+        $tagIds   = [];
+        $tagNames = array_filter(array_map('trim', explode(',', $_POST['tags_csv'] ?? '')));
+        foreach ($tagNames as $tagName) {
+            if ($tagName === '') {
+                continue;
+            }
+            $tagSlug = Helpers::slugify($tagName);
+            $existing = $db->selectOne("SELECT id FROM tags WHERE slug = ?", [$tagSlug]);
+            if ($existing) {
+                $tagIds[] = (int) $existing['id'];
+            } else {
+                $tagIds[] = $db->insert('tags', ['name' => $tagName, 'slug' => $tagSlug]);
+            }
+        }
+
+        $post->saveTerms($categoryIds, $tagIds);
+
         // Syndicate to Mastodon on first publish (unless opted out).
         if ($isFirstPublish) {
             $siteUrlForToot = $db->getSetting('site_url', '');
@@ -230,6 +252,12 @@ $mediaItems = $db->select(
       ORDER BY uploaded_at DESC
       LIMIT 50"
 );
+
+// Load all categories and tags for the sidebar panels.
+$allCategories  = $db->select("SELECT id, name FROM categories ORDER BY name");
+$allTags        = $db->select("SELECT id, name FROM tags ORDER BY name");
+$selectedCatIds = array_map('intval', array_column($post->categories, 'id'));
+$tagsCsv        = implode(', ', array_column($post->tags, 'name'));
 
 $siteUrl   = $db->getSetting('site_url', '');
 $siteTitle = $db->getSetting('site_title', 'My CMS');
@@ -368,6 +396,40 @@ if ($post->published_at) {
                         </button>
                         <?php endif; ?>
                     </div>
+                </div>
+
+                <!-- Categories panel -->
+                <?php if (!empty($allCategories)): ?>
+                <div class="panel">
+                    <h2>Categories</h2>
+                    <ul class="term-checklist">
+                        <?php foreach ($allCategories as $cat): ?>
+                        <li>
+                            <label>
+                                <input type="checkbox" name="category_ids[]" value="<?= (int) $cat['id'] ?>"
+                                       <?= in_array((int) $cat['id'], $selectedCatIds, true) ? 'checked' : '' ?>>
+                                <?= Helpers::e($cat['name']) ?>
+                            </label>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <a href="/admin/categories.php" class="form-hint" style="display:block;margin-top:.5rem">Manage categories →</a>
+                </div>
+                <?php else: ?>
+                <div class="panel">
+                    <h2>Categories</h2>
+                    <p class="form-hint">No categories yet. <a href="/admin/categories.php">Create some →</a></p>
+                </div>
+                <?php endif; ?>
+
+                <!-- Tags panel -->
+                <div class="panel">
+                    <h2>Tags</h2>
+                    <input type="text" name="tags_csv"
+                           value="<?= Helpers::e($tagsCsv) ?>"
+                           placeholder="<?= !empty($allTags) ? 'e.g. ' . Helpers::e($allTags[0]['name'] ?? 'php, tutorial') : 'php, tutorial' ?>">
+                    <p class="form-hint">Comma-separated. New tags are created automatically.</p>
+                    <a href="/admin/tags.php" class="form-hint" style="display:block;margin-top:.25rem">Manage tags →</a>
                 </div>
 
                 <!-- Media insert panel -->

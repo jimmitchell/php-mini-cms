@@ -155,7 +155,7 @@ function postToStruct(Post $post, string $siteUrl): array
         'dateCreated' => new \CMS\DateTimeValue(XmlRpc::isoDate($pubAt)),
         'link'        => $url,
         'permaLink'   => $url,
-        'categories'  => [],
+        'categories'  => array_column($post->categories, 'name'),
         'post_status' => $post->status,
     ];
 }
@@ -355,6 +355,95 @@ function rebuildPost(Post $post, bool $wasPublished = false): void
     }
 }
 
+// ── Taxonomy helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Look up a category by name (case-insensitive slug match), creating it if absent.
+ * Returns the category ID.
+ */
+function xmlrpc_upsert_category(string $name): int
+{
+    global $db;
+    $slug     = \CMS\Helpers::slugify($name);
+    $existing = $db->selectOne("SELECT id FROM categories WHERE slug = ?", [$slug]);
+    if ($existing) {
+        return (int) $existing['id'];
+    }
+    return $db->insert('categories', ['name' => $name, 'slug' => $slug, 'description' => '']);
+}
+
+/**
+ * Look up a tag by name (case-insensitive slug match), creating it if absent.
+ * Returns the tag ID.
+ */
+function xmlrpc_upsert_tag(string $name): int
+{
+    global $db;
+    $slug     = \CMS\Helpers::slugify($name);
+    $existing = $db->selectOne("SELECT id FROM tags WHERE slug = ?", [$slug]);
+    if ($existing) {
+        return (int) $existing['id'];
+    }
+    return $db->insert('tags', ['name' => $name, 'slug' => $slug]);
+}
+
+/**
+ * Extract and save category + tag associations from a MetaWeblog struct's
+ * 'categories' array (names) or a WordPress struct's 'terms' array.
+ * Also handles a flat 'mt_tags' / 'mt_keywords' field (comma-separated names).
+ */
+function xmlrpc_save_terms(Post $post, array $struct): void
+{
+    $categoryIds = [];
+    $tagIds      = [];
+
+    // MetaWeblog-style: 'categories' is an array of category name strings.
+    if (!empty($struct['categories']) && is_array($struct['categories'])) {
+        foreach ($struct['categories'] as $catName) {
+            $catName = trim((string) $catName);
+            if ($catName !== '') {
+                $categoryIds[] = xmlrpc_upsert_category($catName);
+            }
+        }
+    }
+
+    // WordPress-style: 'terms' is an array of term structs with 'taxonomy' key.
+    if (!empty($struct['terms']) && is_array($struct['terms'])) {
+        foreach ($struct['terms'] as $term) {
+            if (!is_array($term)) {
+                continue;
+            }
+            $taxonomy = strtolower(trim((string) ($term['taxonomy'] ?? '')));
+            $termId   = isset($term['term_id']) ? (int) $term['term_id'] : 0;
+            $termName = trim((string) ($term['name'] ?? ''));
+
+            if ($taxonomy === 'category') {
+                if ($termId > 0) {
+                    $categoryIds[] = $termId;
+                } elseif ($termName !== '') {
+                    $categoryIds[] = xmlrpc_upsert_category($termName);
+                }
+            } elseif ($taxonomy === 'post_tag') {
+                if ($termId > 0) {
+                    $tagIds[] = $termId;
+                } elseif ($termName !== '') {
+                    $tagIds[] = xmlrpc_upsert_tag($termName);
+                }
+            }
+        }
+    }
+
+    // mt_keywords / mt_tags: comma-separated tag names.
+    $keywords = trim((string) ($struct['mt_keywords'] ?? $struct['mt_tags'] ?? ''));
+    if ($keywords !== '') {
+        foreach (array_filter(array_map('trim', explode(',', $keywords))) as $kw) {
+            $tagIds[] = xmlrpc_upsert_tag($kw);
+        }
+    }
+
+    $post->saveTerms(array_unique($categoryIds), array_unique($tagIds));
+}
+
 // ── WordPress API helpers ─────────────────────────────────────────────────────
 
 /** Map CMS status → WordPress status string */
@@ -412,7 +501,20 @@ function wpPostToStruct(Post $post, string $siteUrl): array
         'ping_status'       => 'closed',
         'post_format'       => 'standard',
         'post_thumbnail'    => '',
-        'terms'             => [],
+        'terms'             => array_merge(
+            array_map(fn($c) => [
+                'term_id'  => (string) $c['id'],
+                'name'     => $c['name'],
+                'slug'     => $c['slug'],
+                'taxonomy' => 'category',
+            ], $post->categories),
+            array_map(fn($t) => [
+                'term_id'  => (string) $t['id'],
+                'name'     => $t['name'],
+                'slug'     => $t['slug'],
+                'taxonomy' => 'post_tag',
+            ], $post->tags)
+        ),
         'custom_fields'     => [],
     ];
 }
@@ -634,6 +736,7 @@ switch ($method) {
         }
 
         $post->save();
+        xmlrpc_save_terms($post, $struct);
         syndicatePost($post);
         rebuildPost($post);
 
@@ -647,8 +750,8 @@ switch ($method) {
         if ($post === null) {
             xmlrpc_fault(404, 'Post not found.');
         }
-        $struct      = (array) ($params[3] ?? []);
-        $publish     = (bool) ($params[4] ?? false);
+        $struct       = (array) ($params[3] ?? []);
+        $publish      = (bool) ($params[4] ?? false);
         $wasPublished = $post->status === 'published';
 
         applyStruct($post, $struct, $publish, $timezone);
@@ -658,6 +761,7 @@ switch ($method) {
         }
 
         $post->save();
+        xmlrpc_save_terms($post, $struct);
         syndicatePost($post);
         rebuildPost($post, $wasPublished);
 
@@ -687,8 +791,14 @@ switch ($method) {
     // ── metaWeblog.getCategories(blogid, username, password) ─────────────────
     case 'metaWeblog.getCategories':
         xmlrpc_auth($params, 1, 2);
-        // No category system in this CMS.
-        echo XmlRpc::encodeResponse([]);
+        $cats = $db->select("SELECT * FROM categories ORDER BY name");
+        echo XmlRpc::encodeResponse(array_map(fn($c) => [
+            'categoryId'   => (string) $c['id'],
+            'categoryName' => $c['name'],
+            'description'  => $c['description'],
+            'htmlUrl'      => rtrim($siteUrl, '/') . '/category/' . rawurlencode($c['slug']) . '/',
+            'rssUrl'       => '',
+        ], $cats));
         break;
 
     // ── metaWeblog.newMediaObject(blogid, username, password, struct) ─────────
@@ -739,18 +849,46 @@ switch ($method) {
     // ── mt.getCategoryList(blogid, username, password) ────────────────────────
     case 'mt.getCategoryList':
         xmlrpc_auth($params, 1, 2);
-        echo XmlRpc::encodeResponse([]);
+        $cats = $db->select("SELECT id, name FROM categories ORDER BY name");
+        echo XmlRpc::encodeResponse(array_map(fn($c) => [
+            'categoryId'   => (string) $c['id'],
+            'categoryName' => $c['name'],
+        ], $cats));
         break;
 
     // ── mt.getPostCategories(postid, username, password) ─────────────────────
     case 'mt.getPostCategories':
         xmlrpc_auth($params, 1, 2);
-        echo XmlRpc::encodeResponse([]);
+        $post = Post::findById($db, (int) ($params[0] ?? 0));
+        if ($post === null) {
+            xmlrpc_fault(404, 'Post not found.');
+        }
+        echo XmlRpc::encodeResponse(array_map(fn($c) => [
+            'categoryId'   => (string) $c['id'],
+            'categoryName' => $c['name'],
+            'isPrimary'    => true,
+        ], $post->categories));
         break;
 
     // ── mt.setPostCategories(postid, username, password, categories) ──────────
     case 'mt.setPostCategories':
         xmlrpc_auth($params, 1, 2);
+        $post = Post::findById($db, (int) ($params[0] ?? 0));
+        if ($post === null) {
+            xmlrpc_fault(404, 'Post not found.');
+        }
+        $catStructs  = (array) ($params[3] ?? []);
+        $categoryIds = [];
+        foreach ($catStructs as $cs) {
+            $cid = (int) ($cs['categoryId'] ?? 0);
+            if ($cid > 0) {
+                $categoryIds[] = $cid;
+            }
+        }
+        $post->saveTerms($categoryIds, array_column($post->tags, 'id'));
+        if ($post->status === 'published') {
+            $builder->buildPost($post);
+        }
         echo XmlRpc::encodeResponse(true);
         break;
 
@@ -832,19 +970,96 @@ switch ($method) {
     // ── wp.getTaxonomies(blogid, username, password) ──────────────────────────
     case 'wp.getTaxonomies':
         xmlrpc_auth($params, 1, 2);
-        echo XmlRpc::encodeResponse([]);
+        echo XmlRpc::encodeResponse([
+            [
+                'name'         => 'category',
+                'label'        => 'Categories',
+                'hierarchical' => true,
+                'public'       => true,
+                'show_ui'      => true,
+                'cap'          => ['manage_terms' => 'manage_categories', 'edit_terms' => 'manage_categories', 'delete_terms' => 'manage_categories', 'assign_terms' => 'edit_posts'],
+                '_builtin'     => true,
+                'labels'       => ['name' => 'Categories', 'singular_name' => 'Category'],
+            ],
+            [
+                'name'         => 'post_tag',
+                'label'        => 'Tags',
+                'hierarchical' => false,
+                'public'       => true,
+                'show_ui'      => true,
+                'cap'          => ['manage_terms' => 'manage_post_tags', 'edit_terms' => 'manage_post_tags', 'delete_terms' => 'manage_post_tags', 'assign_terms' => 'edit_posts'],
+                '_builtin'     => true,
+                'labels'       => ['name' => 'Tags', 'singular_name' => 'Tag'],
+            ],
+        ]);
         break;
 
     // ── wp.getTerms(blogid, username, password, taxonomy[, filter]) ───────────
     case 'wp.getTerms':
         xmlrpc_auth($params, 1, 2);
-        echo XmlRpc::encodeResponse([]);
+        $taxonomy = strtolower(trim((string) ($params[3] ?? '')));
+        if ($taxonomy === 'category') {
+            $rows = $db->select(
+                "SELECT c.id, c.name, c.slug, c.description,
+                        COUNT(pc.post_id) AS count
+                   FROM categories c
+              LEFT JOIN post_categories pc ON pc.category_id = c.id
+                  GROUP BY c.id ORDER BY c.name"
+            );
+            echo XmlRpc::encodeResponse(array_map(fn($c) => [
+                'term_id'     => (string) $c['id'],
+                'name'        => $c['name'],
+                'slug'        => $c['slug'],
+                'term_group'  => '0',
+                'term_taxonomy_id' => (string) $c['id'],
+                'taxonomy'    => 'category',
+                'description' => $c['description'],
+                'parent'      => '0',
+                'count'       => (int) $c['count'],
+            ], $rows));
+        } elseif ($taxonomy === 'post_tag') {
+            $rows = $db->select(
+                "SELECT t.id, t.name, t.slug,
+                        COUNT(pt.post_id) AS count
+                   FROM tags t
+              LEFT JOIN post_tags pt ON pt.tag_id = t.id
+                  GROUP BY t.id ORDER BY t.name"
+            );
+            echo XmlRpc::encodeResponse(array_map(fn($t) => [
+                'term_id'     => (string) $t['id'],
+                'name'        => $t['name'],
+                'slug'        => $t['slug'],
+                'term_group'  => '0',
+                'term_taxonomy_id' => (string) $t['id'],
+                'taxonomy'    => 'post_tag',
+                'description' => '',
+                'parent'      => '0',
+                'count'       => (int) $t['count'],
+            ], $rows));
+        } else {
+            echo XmlRpc::encodeResponse([]);
+        }
         break;
 
     // ── wp.getTags(blogid, username, password) ────────────────────────────────
     case 'wp.getTags':
         xmlrpc_auth($params, 1, 2);
-        echo XmlRpc::encodeResponse([]);
+        $rows = $db->select(
+            "SELECT t.id, t.name, t.slug,
+                    COUNT(pt.post_id) AS count
+               FROM tags t
+          LEFT JOIN post_tags pt ON pt.tag_id = t.id
+              GROUP BY t.id ORDER BY t.name"
+        );
+        echo XmlRpc::encodeResponse(array_map(fn($t) => [
+            'tag_id'   => (string) $t['id'],
+            'name'     => $t['name'],
+            'slug'     => $t['slug'],
+            'tag_description' => '',
+            'count'    => (int) $t['count'],
+            'html_url' => rtrim($siteUrl, '/') . '/tag/' . rawurlencode($t['slug']) . '/',
+            'rss_url'  => '',
+        ], $rows));
         break;
 
     // ── wp.getPosts(blogid, username, password[, filter]) ─────────────────────
@@ -924,6 +1139,7 @@ switch ($method) {
                 xmlrpc_fault(400, 'Title is required.');
             }
             $post->save();
+            xmlrpc_save_terms($post, $struct);
             syndicatePost($post);
             rebuildPost($post);
             echo XmlRpc::encodeResponse((string) $post->id);
@@ -963,6 +1179,7 @@ switch ($method) {
             xmlrpc_fault(400, 'Title is required.');
         }
         $post->save();
+        xmlrpc_save_terms($post, $struct);
         syndicatePost($post);
         rebuildPost($post, $wasPublished);
         echo XmlRpc::encodeResponse(true);
