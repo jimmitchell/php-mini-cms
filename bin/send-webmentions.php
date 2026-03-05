@@ -30,7 +30,7 @@ if (!class_exists(Database::class)) {
 }
 
 $config   = require CMS_ROOT . '/config.php';
-$db       = new Database($config['paths']['db']);
+$db       = new Database($config['paths']['data'] . '/cms.db');
 $settings = $db->getAllSettings();
 
 $outputDir = rtrim($config['paths']['output'], '/');
