@@ -18,8 +18,10 @@ class Post
     public ?string $built_at     = null;
     public ?string $content_hash = null;
     public ?string $tooted_at    = null;
+    public ?string $mastodon_url = null;
     public int     $mastodon_skip = 0;
     public ?string $bluesky_at   = null;
+    public ?string $bluesky_url  = null;
     public int     $bluesky_skip  = 0;
     public ?string $og_image_hash = null;
 
@@ -139,34 +141,38 @@ class Post
 
     /**
      * Record that this post was successfully posted to Bluesky.
+     * Optionally stores the canonical bsky.app URL.
      */
-    public function markBluesky(): void
+    public function markBluesky(string $url = ''): void
     {
-        $now            = date('Y-m-d H:i:s');
+        $now              = date('Y-m-d H:i:s');
         $this->bluesky_at = $now;
+        $cols = ['bluesky_at' => $now];
 
-        $this->db->update(
-            'posts',
-            ['bluesky_at' => $now],
-            'id = :id',
-            ['id' => $this->id]
-        );
+        if ($url !== '') {
+            $this->bluesky_url = $url;
+            $cols['bluesky_url'] = $url;
+        }
+
+        $this->db->update('posts', $cols, 'id = :id', ['id' => $this->id]);
     }
 
     /**
      * Record that this post was successfully tooted to Mastodon.
+     * Optionally stores the canonical toot URL.
      */
-    public function markTooted(): void
+    public function markTooted(string $url = ''): void
     {
-        $now            = date('Y-m-d H:i:s');
+        $now             = date('Y-m-d H:i:s');
         $this->tooted_at = $now;
+        $cols = ['tooted_at' => $now];
 
-        $this->db->update(
-            'posts',
-            ['tooted_at' => $now],
-            'id = :id',
-            ['id' => $this->id]
-        );
+        if ($url !== '') {
+            $this->mastodon_url = $url;
+            $cols['mastodon_url'] = $url;
+        }
+
+        $this->db->update('posts', $cols, 'id = :id', ['id' => $this->id]);
     }
 
     /**
@@ -339,9 +345,11 @@ class Post
         $post->updated_at   = $row['updated_at'] ?? '';
         $post->built_at     = $row['built_at'] ?? null;
         $post->content_hash = $row['content_hash'] ?? null;
-        $post->tooted_at     = $row['tooted_at'] ?? null;
+        $post->tooted_at     = $row['tooted_at']    ?? null;
+        $post->mastodon_url  = $row['mastodon_url'] ?? null;
         $post->mastodon_skip = (int) ($row['mastodon_skip'] ?? 0);
         $post->bluesky_at    = $row['bluesky_at']   ?? null;
+        $post->bluesky_url   = $row['bluesky_url']  ?? null;
         $post->bluesky_skip  = (int) ($row['bluesky_skip']  ?? 0);
         $post->og_image_hash = $row['og_image_hash'] ?? null;
         return $post;

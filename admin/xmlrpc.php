@@ -249,15 +249,15 @@ function syndicatePost(Post $post): void
 
     if ($hasMastodon && $post->tooted_at === null && $post->mastodon_skip === 0) {
         $mastodon = new Mastodon($mastodonInstance, $mastodonToken);
-        if ($mastodon->tootPost($post->title, $excerpt, $postUrl)) {
-            $post->markTooted();
+        if ($tootUrl = $mastodon->tootPost($post->title, $excerpt, $postUrl)) {
+            $post->markTooted($tootUrl);
         }
     }
 
     if ($hasBluesky && $post->bluesky_at === null && $post->bluesky_skip === 0) {
         $bluesky = new Bluesky($blueskyHandle, $blueskyAppPassword);
-        if ($bluesky->postToBluesky($post->title, $excerpt, $postUrl)) {
-            $post->markBluesky();
+        if ($bskyUrl = $bluesky->postToBluesky($post->title, $excerpt, $postUrl)) {
+            $post->markBluesky($bskyUrl);
         }
     }
 }

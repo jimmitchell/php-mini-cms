@@ -17,9 +17,9 @@ class Mastodon
 
     /**
      * Build and post a toot for a newly-published post.
-     * Returns true on success, false on failure.
+     * Returns the canonical toot URL on success, null on failure.
      */
-    public function tootPost(string $title, string $excerpt, string $postUrl): bool
+    public function tootPost(string $title, string $excerpt, string $postUrl): ?string
     {
         $text = $this->buildText($title, $excerpt, $postUrl);
         return $this->post($text);
@@ -48,8 +48,9 @@ class Mastodon
 
     /**
      * POST the status to the Mastodon API.
+     * Returns the canonical toot URL on success, null on failure.
      */
-    private function post(string $text): bool
+    private function post(string $text): ?string
     {
         $ch = curl_init($this->instanceUrl . '/api/v1/statuses');
         curl_setopt_array($ch, [
@@ -64,6 +65,11 @@ class Mastodon
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        return $response !== false && in_array($httpCode, [200, 201], true);
+        if ($response === false || !in_array($httpCode, [200, 201], true)) {
+            return null;
+        }
+
+        $data = json_decode((string) $response, true);
+        return (is_array($data) && !empty($data['url'])) ? $data['url'] : null;
     }
 }

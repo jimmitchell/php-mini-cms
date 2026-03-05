@@ -19,13 +19,13 @@ class Bluesky
 
     /**
      * Build and post to Bluesky for a newly-published post.
-     * Returns true on success, false on failure.
+     * Returns the canonical bsky.app post URL on success, null on failure.
      */
-    public function postToBluesky(string $title, string $excerpt, string $url): bool
+    public function postToBluesky(string $title, string $excerpt, string $url): ?string
     {
         $session = $this->createSession();
         if ($session === false) {
-            return false;
+            return null;
         }
 
         $text   = $this->buildText($title, $excerpt, $url);
@@ -117,9 +117,10 @@ class Bluesky
     }
 
     /**
-     * POST the record to the Bluesky API. Returns true on HTTP 200.
+     * POST the record to the Bluesky API.
+     * Returns the canonical bsky.app post URL on success, null on failure.
      */
-    private function createPost(string $did, string $jwt, string $text, array $facets): bool
+    private function createPost(string $did, string $jwt, string $text, array $facets): ?string
     {
         $record = [
             '$type'     => 'app.bsky.feed.post',
@@ -153,6 +154,18 @@ class Bluesky
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        return $response !== false && $httpCode === 200;
+        if ($response === false || $httpCode !== 200) {
+            return null;
+        }
+
+        // AT URI format: at://did:plc:.../app.bsky.feed.post/{rkey}
+        // Construct the canonical bsky.app URL from the handle and rkey.
+        $data = json_decode((string) $response, true);
+        if (!is_array($data) || empty($data['uri'])) {
+            return null;
+        }
+
+        $rkey = basename($data['uri']);
+        return 'https://bsky.app/profile/' . $this->handle . '/post/' . $rkey;
     }
 }

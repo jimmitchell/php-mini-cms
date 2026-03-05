@@ -30,6 +30,19 @@ ob_start();
     <div class="post__content prose">
         <?= $html ?>
     </div>
+    <?php if ($post->mastodon_url || $post->bluesky_url): ?>
+    <footer class="post__syndication">
+        <span>Also on:</span>
+        <?php if ($post->mastodon_url): ?>
+        <a href="<?= htmlspecialchars($post->mastodon_url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+           target="_blank" rel="noopener noreferrer">Mastodon</a>
+        <?php endif; ?>
+        <?php if ($post->bluesky_url): ?>
+        <a href="<?= htmlspecialchars($post->bluesky_url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
+           target="_blank" rel="noopener noreferrer">Bluesky</a>
+        <?php endif; ?>
+    </footer>
+    <?php endif; ?>
 </article>
 
 <?php if (($settings['webmention_domain'] ?? '') !== ''): ?>

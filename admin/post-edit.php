@@ -166,8 +166,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? strip_tags($post->effectiveExcerpt())
                 : Helpers::truncate($post->content, 280);
             $mastodon = new Mastodon($mastodonInstance, $mastodonToken);
-            if ($mastodon->tootPost($post->title, $excerpt, $postUrl)) {
-                $post->markTooted();
+            if ($tootUrl = $mastodon->tootPost($post->title, $excerpt, $postUrl)) {
+                $post->markTooted($tootUrl);
             }
         }
 
@@ -179,8 +179,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? strip_tags($post->effectiveExcerpt())
                 : Helpers::truncate($post->content, 280);
             $bluesky = new Bluesky($blueskyHandle, $blueskyAppPassword);
-            if ($bluesky->postToBluesky($post->title, $excerpt, $postUrl)) {
-                $post->markBluesky();
+            if ($bskyUrl = $bluesky->postToBluesky($post->title, $excerpt, $postUrl)) {
+                $post->markBluesky($bskyUrl);
             }
         }
 

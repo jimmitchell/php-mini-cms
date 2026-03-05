@@ -14,7 +14,7 @@ class Database
     private PDO $pdo;
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 6;
+    private const SCHEMA_VERSION = 7;
 
     public function __construct(string $dbPath)
     {
@@ -173,6 +173,10 @@ class Database
             $this->applySchemaV6();
         }
 
+        if ($current < 7) {
+            $this->applySchemaV7();
+        }
+
         if ($current < self::SCHEMA_VERSION) {
             $this->upsertSetting('schema_version', (string) self::SCHEMA_VERSION);
         }
@@ -281,6 +285,14 @@ class Database
         // Track Bluesky crossposting — mirrors tooted_at / mastodon_skip.
         $this->pdo->exec("ALTER TABLE posts ADD COLUMN bluesky_at   DATETIME");
         $this->pdo->exec("ALTER TABLE posts ADD COLUMN bluesky_skip INTEGER NOT NULL DEFAULT 0");
+    }
+
+    private function applySchemaV7(): void
+    {
+        // Store the canonical URL of the remote post after syndication,
+        // so it can be linked from the public post page.
+        $this->pdo->exec("ALTER TABLE posts ADD COLUMN mastodon_url TEXT");
+        $this->pdo->exec("ALTER TABLE posts ADD COLUMN bluesky_url  TEXT");
     }
 
     /** Insert or update a single settings row. */

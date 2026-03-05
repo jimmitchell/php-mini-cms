@@ -524,6 +524,33 @@ audio { width: 100%; }
     margin-left: .25em;
 }
 
+/* ── Post syndication footer ──────────────────────────────────────────────── */
+.post__syndication {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--color-border);
+    font-size: .825rem;
+    color: var(--color-muted);
+}
+
+.post__syndication a {
+    color: var(--color-muted);
+    text-decoration: none;
+    font-weight: 500;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: .15rem .5rem;
+    transition: color .15s, border-color .15s;
+}
+
+.post__syndication a:hover {
+    color: var(--color-text);
+    border-color: currentColor;
+}
+
 /* ── Post navigation (prev / next) ────────────────────────────────────────── */
 .post-nav {
     display: flex;
