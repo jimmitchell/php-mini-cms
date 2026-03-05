@@ -268,7 +268,7 @@ audio { width: 100%; }
 .term {
     display: inline-flex;
     align-items: center;
-    padding: .2em .65em;
+    padding: .2em .6em;
     border-radius: 999px;
     font-size: .7rem;
     font-weight: 400;
@@ -279,26 +279,18 @@ audio { width: 100%; }
 
 .term:hover { text-decoration: none; }
 
-.term--category {
-    background: transparent;
-    color: var(--color-link);
-    border: 1.5px solid var(--color-link);
-}
-
-.term--category:hover {
-    background: var(--color-link);
-    color: var(--color-bg);
-}
-
+.term--category,
 .term--tag {
-    background: transparent;
-    border: 1.5px solid var(--color-link);
-    color: var(--color-link);
+    background: var(--color-chrome-bg);
+    color: var(--color-muted);
+    border: 1px solid var(--color-chrome-bg);
 }
 
+.term--category:hover,
 .term--tag:hover {
     background: var(--color-link);
     color: var(--color-bg);
+    border: 1px solid var(--color-link);
 }
 
 @media (prefers-color-scheme: dark) {
