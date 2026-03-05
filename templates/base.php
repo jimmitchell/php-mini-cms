@@ -87,6 +87,12 @@ if (!function_exists('_e')) {
     <link rel="alternate" type="application/atom+xml"
           title="<?= _e($siteTitle) ?>"
           href="<?= _e($siteUrl . '/feed.xml') ?>">
+    <!-- Webmention -->
+    <?php $webmentionDomain = $settings['webmention_domain'] ?? ''; ?>
+    <?php if ($webmentionDomain !== ''): ?>
+    <link rel="webmention" href="https://webmention.io/<?= _e($webmentionDomain) ?>/webmention">
+    <link rel="pingback" href="https://webmention.io/xmlrpc">
+    <?php endif; ?>
     <!-- Anti-FOUC: apply saved/system theme before CSS renders to avoid flash -->
     <script>(function(){var t=localStorage.getItem('theme');if(t==='dark'||(t===null&&window.matchMedia('(prefers-color-scheme:dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}else if(t==='light'){document.documentElement.setAttribute('data-theme','light');}})();</script>
     <link rel="stylesheet" href="/theme.min.css">
@@ -274,6 +280,106 @@ if (!function_exists('_e')) {
 <?php $tinylyticsCode = $settings['tinylytics_code'] ?? ''; ?>
 <?php if ($tinylyticsCode !== ''): ?>
 <script src="https://tinylytics.app/embed/<?= _e($tinylyticsCode) ?>.js" defer></script>
+<?php endif; ?>
+<?php if (($settings['webmention_domain'] ?? '') !== ''): ?>
+<script>
+(function () {
+    var section = document.getElementById('webmentions');
+    if (!section) return;
+
+    var target = section.dataset.url;
+    if (!target) return;
+
+    function esc(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function buildAvatar(a, size) {
+        var cls = 'wm-avatar' + (size === 'sm' ? ' wm-avatar--sm' : '');
+        var name = a.name || '?';
+        var initial = name.charAt(0).toUpperCase();
+        if (a.photo) {
+            return '<img class="' + cls + '" src="' + esc(a.photo) + '" alt="' + esc(name) + '" width="' + (size === 'sm' ? 40 : 32) + '" height="' + (size === 'sm' ? 40 : 32) + '" loading="lazy">';
+        }
+        return '<span class="' + cls + ' wm-avatar--fallback">' + esc(initial) + '</span>';
+    }
+
+    fetch('https://webmention.io/api/mentions.jf2?target=' + encodeURIComponent(target) + '&per-page=100')
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (data) {
+            var all      = data.children || [];
+            var likes    = all.filter(function (m) { return m['wm-property'] === 'like-of'; });
+            var reposts  = all.filter(function (m) { return m['wm-property'] === 'repost-of'; });
+            var replies  = all.filter(function (m) { return m['wm-property'] === 'in-reply-to'; });
+            var mentions = all.filter(function (m) { return m['wm-property'] === 'mention-of'; });
+
+            if (!all.length) return;
+
+            var html = '';
+
+            // ── Reactions (likes + reposts) ─────────────────────────────────
+            var reactions = likes.concat(reposts);
+            if (reactions.length) {
+                html += '<div class="webmentions__reactions">';
+                html += '<p class="wm-counts">';
+                if (likes.length)   html += '<span class="wm-count"><span aria-hidden="true">♥</span> ' + likes.length   + (likes.length   === 1 ? ' like'   : ' likes')   + '</span>';
+                if (reposts.length) html += '<span class="wm-count"><span aria-hidden="true">↺</span> ' + reposts.length + (reposts.length === 1 ? ' repost' : ' reposts') + '</span>';
+                html += '</p><div class="wm-avatars">';
+                reactions.forEach(function (m) {
+                    var a    = m.author || {};
+                    var link = a.url || m.url || '#';
+                    html += '<a href="' + esc(link) + '" target="_blank" rel="noopener noreferrer" title="' + esc(a.name || 'Anonymous') + '" class="wm-avatar-link">' + buildAvatar(a, 'lg') + '</a>';
+                });
+                html += '</div></div>';
+            }
+
+            // ── Replies + mentions ──────────────────────────────────────────
+            var allReplies = replies.concat(mentions);
+            if (allReplies.length) {
+                html += '<div class="webmentions__replies">';
+                html += '<p class="wm-group-label">' + allReplies.length + (allReplies.length === 1 ? ' Reply' : ' Replies') + '</p>';
+                allReplies.forEach(function (m) {
+                    var a       = m.author || {};
+                    var name    = a.name || 'Anonymous';
+                    var srcLink = a.url || m.url || '#';
+                    var pub     = m.published || m['wm-received'] || '';
+                    var dateStr = '';
+                    if (pub) {
+                        try { dateStr = new Date(pub).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) {}
+                    }
+                    var text = (m.content && m.content.text) ? m.content.text : '';
+                    if (text.length > 300) text = text.slice(0, 300) + '\u2026';
+
+                    html += '<article class="wm-reply">';
+                    html += '<header class="wm-reply__header">';
+                    html += '<a href="' + esc(srcLink) + '" target="_blank" rel="noopener noreferrer" class="wm-avatar-link">' + buildAvatar(a, 'sm') + '</a>';
+                    html += '<div class="wm-reply__meta">';
+                    html += '<a href="' + esc(srcLink) + '" target="_blank" rel="noopener noreferrer" class="wm-reply__author">' + esc(name) + '</a>';
+                    if (dateStr) {
+                        html += '<a href="' + esc(m.url || '#') + '" target="_blank" rel="noopener noreferrer" class="wm-reply__date-link"><time class="wm-reply__date" datetime="' + esc(pub) + '">' + esc(dateStr) + '</time></a>';
+                    }
+                    html += '</div></header>';
+                    if (text) {
+                        html += '<p class="wm-reply__content">' + esc(text) + '</p>';
+                    }
+                    html += '</article>';
+                });
+                html += '</div>';
+            }
+
+            if (html) {
+                var body = section.querySelector('.webmentions__body');
+                if (body) body.innerHTML = html;
+                section.classList.add('webmentions--loaded');
+            }
+        })
+        .catch(function () { /* fail silently */ });
+}());
+</script>
 <?php endif; ?>
 </body>
 </html>

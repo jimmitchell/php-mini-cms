@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'bluesky_app_password' => trim($_POST['bluesky_app_password'] ?? ''),
         'tinylytics_code'      => trim($_POST['tinylytics_code']      ?? ''),
         'ga_measurement_id'    => trim($_POST['ga_measurement_id']    ?? ''),
+        'webmention_domain'    => trim($_POST['webmention_domain']    ?? ''),
     ];
 
     if ($fields['site_title'] === '') {
@@ -239,6 +240,22 @@ $flash     = $auth->getFlash();
                 Create one in Bluesky under Settings → Privacy and Security → App Passwords.
                 Never use your main password. When both Handle and App password are set,
                 new posts will be automatically shared on first publish.
+            </p>
+        </div>
+
+        <div class="panel">
+            <h2>IndieWeb</h2>
+
+            <label for="webmention_domain">Webmention.io domain</label>
+            <input type="text" id="webmention_domain" name="webmention_domain"
+                   value="<?= Helpers::e($_POST['webmention_domain'] ?? $settings['webmention_domain'] ?? '') ?>"
+                   placeholder="example.com"
+                   style="max-width:280px">
+            <p class="form-hint">
+                Your domain as registered on <a href="https://webmention.io" target="_blank" rel="noopener">webmention.io</a>
+                (e.g. <code>example.com</code>). When set, webmention endpoint link tags are added to every page
+                and incoming webmentions are fetched and displayed below each post.
+                Leave blank to disable.
             </p>
         </div>
 

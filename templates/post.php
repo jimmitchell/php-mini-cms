@@ -32,6 +32,12 @@ ob_start();
     </div>
 </article>
 
+<?php if (($settings['webmention_domain'] ?? '') !== ''): ?>
+<section class="webmentions" id="webmentions" data-url="<?= htmlspecialchars($canonical, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+    <h2 class="webmentions__title">Webmentions</h2>
+    <div class="webmentions__body"></div>
+</section>
+<?php endif; ?>
 <?php if ($prevPost || $nextPost): ?>
 <nav class="post-nav" aria-label="Post navigation">
     <div class="post-nav__prev">
