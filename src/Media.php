@@ -14,7 +14,6 @@ class Media
         'image/png'       => 'png',
         'image/gif'       => 'gif',
         'image/webp'      => 'webp',
-        'image/svg+xml'   => 'svg',
         'video/mp4'       => 'mp4',
         'video/webm'      => 'webm',
         'audio/mpeg'      => 'mp3',

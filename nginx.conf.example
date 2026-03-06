@@ -23,6 +23,10 @@ server {
     include             /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
 
+    # HSTS — tells browsers to only connect via HTTPS for 2 years.
+    # Remove includeSubDomains/preload if this domain has HTTP-only subdomains.
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
     # ── Custom error pages ────────────────────────────────────────────────────
     error_page 404 /404.html;
 
@@ -43,8 +47,14 @@ server {
     location /media/ {
         alias /var/www/cms/content/media/;
         expires 30d;
-        add_header Cache-Control          "public, immutable" always;
-        add_header X-Content-Type-Options "nosniff"          always;
+        add_header Cache-Control          "public, immutable"  always;
+        add_header X-Content-Type-Options "nosniff"            always;
+        add_header X-Frame-Options        "SAMEORIGIN"         always;
+        add_header Referrer-Policy        "strict-origin-when-cross-origin" always;
+        # Media files (images, video, audio) need no scripting, fonts, or
+        # external connections — a strict CSP prevents any SVG or other
+        # file from executing code if navigated to directly.
+        add_header Content-Security-Policy "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'" always;
     }
 
     # ── Admin panel — PHP-FPM ─────────────────────────────────────────────────
