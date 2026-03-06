@@ -293,7 +293,7 @@ audio { width: 100%; }
     border: 1px solid var(--color-link);
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
     .term--category,
     .term--tag {
         background: var(--color-muted);
@@ -306,7 +306,7 @@ audio { width: 100%; }
         color: var(--color-chrome-bg);
         border-color: var(--color-link); 
     }
-}
+} */
 
 /* ── Prose styles ─────────────────────────────────────────────────────────── */
 .prose > * + * { margin-top: 1.25em; }
