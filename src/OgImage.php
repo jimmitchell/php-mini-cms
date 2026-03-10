@@ -30,14 +30,14 @@ class OgImage
     public function __construct(string $fontDir)
     {
         $fontDir = rtrim($fontDir, '/\\');
-        $this->fontRegular = $fontDir . '/NunitoSans-Regular.ttf';
-        $this->fontBold    = $fontDir . '/NunitoSans-Bold.ttf';
+        $this->fontRegular = $fontDir . '/Inter-Regular.ttf';
+        $this->fontBold    = $fontDir . '/Inter-Bold.ttf';
 
         if (!extension_loaded('gd')) {
             throw new RuntimeException('GD extension is not loaded.');
         }
         if (!file_exists($this->fontRegular) || !file_exists($this->fontBold)) {
-            throw new RuntimeException('Nunito Sans font files not found in ' . $fontDir);
+            throw new RuntimeException('Inter font files not found in ' . $fontDir);
         }
     }
 
