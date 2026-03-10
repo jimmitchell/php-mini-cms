@@ -57,6 +57,19 @@ server {
         add_header Content-Security-Policy "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'" always;
     }
 
+    # ── REST API ──────────────────────────────────────────────────────────────
+    # All /admin/api/* requests are handled by a single api.php router.
+    # Nginx longest-prefix match routes this before the /admin/ block below.
+    location /admin/api {
+        include        fastcgi_params;
+        fastcgi_pass   unix:/run/php/php8.3-fpm.sock;
+        fastcgi_param  SCRIPT_FILENAME $document_root/admin/api.php;
+        fastcgi_param  HTTPS           on;
+        add_header X-Content-Type-Options "nosniff"                          always;
+        add_header X-Frame-Options        "DENY"                             always;
+        add_header Referrer-Policy        "strict-origin-when-cross-origin"  always;
+    }
+
     # ── Admin panel — PHP-FPM ─────────────────────────────────────────────────
     location /admin/ {
         index index.php;

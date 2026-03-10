@@ -1,0 +1,437 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * REST API endpoint — single-file router.
+ *
+ * Base URL:  /admin/api/{resource}/{id}
+ *
+ * Resources:
+ *   GET    /admin/api/posts              list posts (?status=draft|published|…)
+ *   GET    /admin/api/posts/{id}         get post
+ *   POST   /admin/api/posts              create post
+ *   PUT    /admin/api/posts/{id}         update post
+ *   DELETE /admin/api/posts/{id}         delete post
+ *
+ *   GET    /admin/api/pages              list pages (?status=…)
+ *   GET    /admin/api/pages/{id}         get page
+ *   POST   /admin/api/pages              create page
+ *   PUT    /admin/api/pages/{id}         update page
+ *   DELETE /admin/api/pages/{id}         delete page
+ *
+ *   GET    /admin/api/media              list media
+ *   POST   /admin/api/media              upload file (multipart/form-data, field: "file")
+ *   DELETE /admin/api/media/{id}         delete media
+ *
+ *   GET    /admin/api/categories         list categories
+ *   GET    /admin/api/tags               list tags
+ *   GET    /admin/api/settings           site settings (read-only)
+ *
+ * Auth: HTTP Basic — same username/password as the admin panel.
+ * Rate-limiting reuses the login_attempts table (same lockout rules as the UI).
+ */
+
+// Read the request body BEFORE any require that might start a session,
+// which can consume the input stream on some PHP-FPM configurations.
+$_apiRawBody = (string) file_get_contents('php://input');
+
+define('CMS_ROOT', dirname(__DIR__));
+require CMS_ROOT . '/vendor/autoload.php';
+
+$config  = require CMS_ROOT . '/config.php';
+$db      = new \CMS\Database($config['paths']['data'] . '/cms.db');
+$builder = new \CMS\Builder($config, $db);
+
+// Promote any due scheduled posts (same as bootstrap.php does for the UI).
+\CMS\Post::promoteScheduled($db);
+
+// ── CORS ────────────────────────────────────────────────────────────────────
+// Allow the Xcode simulator (and any other origin) to reach the API over HTTP.
+// In production the Nginx CSP / TLS config provides the real security boundary.
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Authorization, Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+// ── Response helpers ────────────────────────────────────────────────────────
+
+function api_json(mixed $data, int $status = 200): never
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    exit;
+}
+
+function api_error(string $message, int $status = 400): never
+{
+    api_json(['error' => $message], $status);
+}
+
+// ── Serializers ─────────────────────────────────────────────────────────────
+
+function post_to_array(\CMS\Post $post, string $siteUrl): array
+{
+    $url = null;
+    if ($post->status === 'published' && $post->published_at !== null) {
+        $url = rtrim($siteUrl, '/') . '/' . \CMS\Post::datePath($post->published_at, $post->slug) . '/';
+    }
+
+    return [
+        'id'           => $post->id,
+        'title'        => $post->title,
+        'slug'         => $post->slug,
+        'content'      => $post->content,
+        'excerpt'      => $post->excerpt,
+        'status'       => $post->status,
+        'published_at' => $post->published_at,
+        'created_at'   => $post->created_at,
+        'updated_at'   => $post->updated_at,
+        'categories'   => $post->categories,
+        'tags'         => $post->tags,
+        'url'          => $url,
+    ];
+}
+
+function page_to_array(\CMS\Page $page): array
+{
+    return [
+        'id'         => $page->id,
+        'title'      => $page->title,
+        'slug'       => $page->slug,
+        'content'    => $page->content,
+        'nav_order'  => $page->nav_order,
+        'status'     => $page->status,
+        'created_at' => $page->created_at,
+        'updated_at' => $page->updated_at,
+    ];
+}
+
+// ── Basic Auth ───────────────────────────────────────────────────────────────
+// Verifies credentials against config.php and applies the same rate-limiting
+// as the admin login form (reuses the login_attempts table).
+
+function api_authenticate(array $config, \CMS\Database $db): void
+{
+    $ip  = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $max = (int) ($config['security']['max_login_attempts'] ?? 5);
+    $win = (int) ($config['security']['lockout_minutes'] ?? 15);
+
+    $row = $db->selectOne(
+        "SELECT COUNT(*) AS cnt
+           FROM login_attempts
+          WHERE ip      = :ip
+            AND success = 0
+            AND attempted_at >= datetime('now', :w)",
+        ['ip' => $ip, 'w' => "-{$win} minutes"]
+    );
+
+    if (($row['cnt'] ?? 0) >= $max) {
+        api_error('Too many failed attempts. Try again later.', 429);
+    }
+
+    $user = $_SERVER['PHP_AUTH_USER'] ?? '';
+    $pass = $_SERVER['PHP_AUTH_PW']   ?? '';
+
+    $expectedUser = $config['admin']['username']      ?? '';
+    $hash         = $config['admin']['password_hash'] ?? '';
+
+    $ok = ($user === $expectedUser)
+        && $hash !== ''
+        && password_verify($pass, $hash);
+
+    $db->insert('login_attempts', ['ip' => $ip, 'success' => $ok ? 1 : 0]);
+
+    if (!$ok) {
+        header('WWW-Authenticate: Basic realm="CMS API"');
+        api_error('Unauthorized', 401);
+    }
+}
+
+api_authenticate($config, $db);
+
+// ── Parse request ────────────────────────────────────────────────────────────
+
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Strip the /admin/api prefix then split into segments.
+$uri      = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$uri      = (string) preg_replace('#^/admin/api/?#', '', $uri);
+$uri      = trim($uri, '/');
+$parts    = ($uri !== '') ? explode('/', $uri) : [];
+
+$resource = $parts[0] ?? '';
+$id       = (isset($parts[1]) && ctype_digit($parts[1])) ? (int) $parts[1] : null;
+
+// Parse a JSON body for write operations.
+$body = [];
+if (in_array($method, ['POST', 'PUT', 'PATCH'], true) && $_apiRawBody !== '') {
+    $ct = $_SERVER['CONTENT_TYPE'] ?? '';
+    if (str_contains($ct, 'application/json')) {
+        $body = json_decode($_apiRawBody, true) ?? [];
+    }
+}
+
+// Site URL (used in post URL generation).
+$siteUrl = $db->getSetting('site_url', '');
+
+// ── Routes ───────────────────────────────────────────────────────────────────
+
+// Posts — list
+if ($resource === 'posts' && $method === 'GET' && $id === null) {
+    $status = $_GET['status'] ?? null;
+    $posts  = \CMS\Post::findAll($db, $status ?: null);
+    api_json(array_map(fn($p) => post_to_array($p, $siteUrl), $posts));
+}
+
+// Posts — get one
+if ($resource === 'posts' && $method === 'GET' && $id !== null) {
+    $post = \CMS\Post::findById($db, $id);
+    if (!$post) {
+        api_error('Post not found', 404);
+    }
+    api_json(post_to_array($post, $siteUrl));
+}
+
+// Posts — create
+if ($resource === 'posts' && $method === 'POST' && $id === null) {
+    $title = trim($body['title'] ?? '');
+    if ($title === '') {
+        api_error('title is required');
+    }
+
+    $post          = new \CMS\Post($db);
+    $post->title   = $title;
+    $post->slug    = \CMS\Helpers::slugify($body['slug'] ?? $title);
+    $post->content = $body['content'] ?? '';
+    $post->excerpt = (($body['excerpt'] ?? '') !== '') ? $body['excerpt'] : null;
+    $post->status  = in_array($body['status'] ?? '', ['draft', 'published', 'scheduled'], true)
+                   ? $body['status'] : 'draft';
+
+    if (isset($body['published_at'])) {
+        $post->published_at = $body['published_at'];
+    } elseif ($post->status === 'published') {
+        $post->published_at = date('Y-m-d H:i:s');
+    }
+
+    if (!$post->save()) {
+        api_error('Failed to save post', 500);
+    }
+
+    $catIds = array_map('intval', $body['category_ids'] ?? []);
+    $tagIds = array_map('intval', $body['tag_ids']      ?? []);
+    $post->saveTerms($catIds, $tagIds);
+
+    if ($post->status === 'published') {
+        $builder->buildPost($post);
+        $builder->buildIndex();
+        $builder->buildFeed();
+    }
+
+    api_json(post_to_array($post, $siteUrl), 201);
+}
+
+// Posts — update
+if ($resource === 'posts' && $method === 'PUT' && $id !== null) {
+    $post = \CMS\Post::findById($db, $id);
+    if (!$post) {
+        api_error('Post not found', 404);
+    }
+
+    if (isset($body['title']))   $post->title   = trim($body['title']);
+    if (isset($body['slug']))    $post->slug    = \CMS\Helpers::slugify($body['slug']);
+    if (isset($body['content'])) $post->content = $body['content'];
+    if (array_key_exists('excerpt', $body)) {
+        $post->excerpt = ($body['excerpt'] !== '') ? $body['excerpt'] : null;
+    }
+    if (isset($body['status']) && in_array($body['status'], ['draft', 'published', 'scheduled', 'unpublished'], true)) {
+        $post->status = $body['status'];
+    }
+    if (isset($body['published_at'])) {
+        $post->published_at = $body['published_at'];
+    } elseif ($post->status === 'published' && $post->published_at === null) {
+        $post->published_at = date('Y-m-d H:i:s');
+    }
+
+    if (!$post->save()) {
+        api_error('Failed to save post', 500);
+    }
+
+    if (isset($body['category_ids']) || isset($body['tag_ids'])) {
+        $catIds = array_map('intval', $body['category_ids'] ?? array_column($post->categories, 'id'));
+        $tagIds = array_map('intval', $body['tag_ids']      ?? array_column($post->tags,       'id'));
+        $post->saveTerms($catIds, $tagIds);
+    }
+
+    $builder->buildPost($post);
+    if ($post->status === 'published') {
+        $builder->buildIndex();
+        $builder->buildFeed();
+    }
+
+    api_json(post_to_array($post, $siteUrl));
+}
+
+// Posts — delete
+if ($resource === 'posts' && $method === 'DELETE' && $id !== null) {
+    $post = \CMS\Post::findById($db, $id);
+    if (!$post) {
+        api_error('Post not found', 404);
+    }
+
+    $post->status = 'draft'; // Signals Builder to remove the static file.
+    $builder->buildPost($post);
+    $post->delete();
+    $builder->buildIndex();
+    $builder->buildFeed();
+
+    api_json(['deleted' => true]);
+}
+
+// Pages — list
+if ($resource === 'pages' && $method === 'GET' && $id === null) {
+    $status = $_GET['status'] ?? null;
+    $pages  = \CMS\Page::findAll($db, $status ?: null);
+    api_json(array_map('page_to_array', $pages));
+}
+
+// Pages — get one
+if ($resource === 'pages' && $method === 'GET' && $id !== null) {
+    $page = \CMS\Page::findById($db, $id);
+    if (!$page) {
+        api_error('Page not found', 404);
+    }
+    api_json(page_to_array($page));
+}
+
+// Pages — create
+if ($resource === 'pages' && $method === 'POST' && $id === null) {
+    $title = trim($body['title'] ?? '');
+    if ($title === '') {
+        api_error('title is required');
+    }
+
+    $page            = new \CMS\Page($db);
+    $page->title     = $title;
+    $page->slug      = \CMS\Helpers::slugify($body['slug'] ?? $title);
+    $page->content   = $body['content'] ?? '';
+    $page->nav_order = (int) ($body['nav_order'] ?? 0);
+    $page->status    = in_array($body['status'] ?? '', ['draft', 'published'], true)
+                     ? $body['status'] : 'draft';
+
+    if (!$page->save()) {
+        api_error('Failed to save page', 500);
+    }
+
+    if ($page->status === 'published') {
+        $builder->buildPage($page);
+    }
+
+    api_json(page_to_array($page), 201);
+}
+
+// Pages — update
+if ($resource === 'pages' && $method === 'PUT' && $id !== null) {
+    $page = \CMS\Page::findById($db, $id);
+    if (!$page) {
+        api_error('Page not found', 404);
+    }
+
+    if (isset($body['title']))     $page->title     = trim($body['title']);
+    if (isset($body['slug']))      $page->slug      = \CMS\Helpers::slugify($body['slug']);
+    if (isset($body['content']))   $page->content   = $body['content'];
+    if (isset($body['nav_order'])) $page->nav_order = (int) $body['nav_order'];
+    if (isset($body['status']) && in_array($body['status'], ['draft', 'published'], true)) {
+        $page->status = $body['status'];
+    }
+
+    if (!$page->save()) {
+        api_error('Failed to save page', 500);
+    }
+
+    $builder->buildPage($page);
+
+    api_json(page_to_array($page));
+}
+
+// Pages — delete
+if ($resource === 'pages' && $method === 'DELETE' && $id !== null) {
+    $page = \CMS\Page::findById($db, $id);
+    if (!$page) {
+        api_error('Page not found', 404);
+    }
+
+    $page->status = 'draft'; // Signals Builder to remove the static file.
+    $builder->buildPage($page);
+    $page->delete();
+
+    api_json(['deleted' => true]);
+}
+
+// Media — list
+if ($resource === 'media' && $method === 'GET' && $id === null) {
+    $media  = new \CMS\Media($db, $config['paths']['content'] . '/media');
+    $result = array_map(fn($row) => [
+        'id'            => (int) $row['id'],
+        'filename'      => $row['filename'],
+        'original_name' => $row['original_name'],
+        'mime_type'     => $row['mime_type'],
+        'size'          => (int) $row['size'],
+        'url'           => '/media/' . rawurlencode($row['filename']),
+        'uploaded_at'   => $row['uploaded_at'],
+    ], $media->all());
+
+    api_json($result);
+}
+
+// Media — upload (multipart/form-data, field name: "file")
+if ($resource === 'media' && $method === 'POST' && $id === null) {
+    if (empty($_FILES['file'])) {
+        api_error('No file received. Send multipart/form-data with field name "file".');
+    }
+
+    $media = new \CMS\Media($db, $config['paths']['content'] . '/media');
+    try {
+        $result = $media->upload($_FILES['file']);
+        api_json($result, 201);
+    } catch (\RuntimeException $e) {
+        api_error($e->getMessage(), 422);
+    }
+}
+
+// Media — delete
+if ($resource === 'media' && $method === 'DELETE' && $id !== null) {
+    $media = new \CMS\Media($db, $config['paths']['content'] . '/media');
+    if (!$media->delete($id)) {
+        api_error('Media not found', 404);
+    }
+    api_json(['deleted' => true]);
+}
+
+// Categories — list
+if ($resource === 'categories' && $method === 'GET') {
+    $rows = $db->select("SELECT id, name, slug, description FROM categories ORDER BY name");
+    api_json($rows);
+}
+
+// Tags — list
+if ($resource === 'tags' && $method === 'GET') {
+    $rows = $db->select("SELECT id, name, slug FROM tags ORDER BY name");
+    api_json($rows);
+}
+
+// Settings — read-only snapshot (excludes sensitive keys)
+if ($resource === 'settings' && $method === 'GET') {
+    $rows     = $db->select("SELECT key, value FROM settings");
+    $settings = array_column($rows, 'value', 'key');
+    unset($settings['password_hash']); // belt-and-suspenders; not stored here, but guard anyway
+    api_json($settings);
+}
+
+// No route matched.
+api_error('Not found', 404);
