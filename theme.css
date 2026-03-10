@@ -594,7 +594,7 @@ audio { width: 100%; }
     font-weight: 500;
     border: 1px solid var(--color-border);
     border-radius: 4px;
-    padding: .15rem .5rem;
+    padding: .1rem .5rem;
     transition: color .15s, border-color .15s;
 }
 
