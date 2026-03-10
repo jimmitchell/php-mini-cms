@@ -203,17 +203,19 @@ $siteTitle = $db->getSetting('site_title', 'My CMS');
             <td><code>/category/<?= Helpers::e($cat['slug']) ?>/</code></td>
             <td><?= Helpers::e($cat['description']) ?></td>
             <td style="text-align:right"><?= (int) $cat['post_count'] ?></td>
-            <td style="text-align:right;white-space:nowrap">
-                <a href="/admin/categories.php?edit=<?= (int) $cat['id'] ?>" class="btn btn--secondary btn--sm">Edit</a>
-                <form method="post" action="/admin/categories.php" style="display:inline">
-                    <input type="hidden" name="csrf_token" value="<?= Helpers::e($csrf) ?>">
-                    <input type="hidden" name="action"    value="delete">
-                    <input type="hidden" name="delete_id" value="<?= (int) $cat['id'] ?>">
-                    <button type="submit" class="btn btn--danger btn--sm"
-                            onclick="return confirm('Delete category &quot;<?= Helpers::e(addslashes($cat['name'])) ?>&quot;? Posts will not be deleted.')">
-                        Delete
-                    </button>
-                </form>
+            <td>
+                <div class="actions">
+                    <a href="/admin/categories.php?edit=<?= (int) $cat['id'] ?>" class="btn btn--secondary btn--sm">Edit</a>
+                    <form method="post" action="/admin/categories.php" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="<?= Helpers::e($csrf) ?>">
+                        <input type="hidden" name="action"    value="delete">
+                        <input type="hidden" name="delete_id" value="<?= (int) $cat['id'] ?>">
+                        <button type="submit" class="btn btn--danger btn--sm"
+                                onclick="return confirm('Delete category &quot;<?= Helpers::e(addslashes($cat['name'])) ?>&quot;? Posts will not be deleted.')">
+                            Delete
+                        </button>
+                    </form>
+                </div>
             </td>
         </tr>
         <?php endforeach; ?>

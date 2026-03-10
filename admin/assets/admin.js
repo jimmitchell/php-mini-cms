@@ -126,21 +126,62 @@ function setAction(action) {
 
 (function initSidebarToggle() {
     const STORAGE_KEY = 'cms_nav_collapsed';
+    const MOBILE_BP   = 700; // must match the CSS breakpoint
     const btn = document.getElementById('nav-toggle');
+    const nav = document.getElementById('admin-nav');
     if (!btn) return;
+
+    // ── Backdrop (mobile only) ───────────────────────────────────────────────
+    const backdrop = document.createElement('div');
+    backdrop.className = 'mobile-nav-backdrop';
+    document.body.appendChild(backdrop);
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+    function isMobile() {
+        return window.innerWidth <= MOBILE_BP;
+    }
 
     function setCollapsed(collapsed) {
         document.body.classList.toggle('nav-collapsed', collapsed);
         try { localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0'); } catch (e) {}
     }
 
+    function closeMobileNav() {
+        document.body.classList.remove('mobile-nav-open');
+    }
+
+    // ── Toggle button ────────────────────────────────────────────────────────
     btn.addEventListener('click', () => {
-        setCollapsed(!document.body.classList.contains('nav-collapsed'));
-        hideTip(); // hide any open tooltip on toggle
+        if (isMobile()) {
+            document.body.classList.toggle('mobile-nav-open');
+        } else {
+            setCollapsed(!document.body.classList.contains('nav-collapsed'));
+            hideTip();
+        }
     });
 
-    // ── Hover tooltips (bypass overflow: hidden via fixed position) ──────────
+    // ── Close mobile drawer on backdrop tap ──────────────────────────────────
+    backdrop.addEventListener('click', closeMobileNav);
 
+    // ── Close mobile drawer when a nav link is tapped ────────────────────────
+    if (nav) {
+        nav.addEventListener('click', (e) => {
+            if (!isMobile()) return;
+            if (e.target.closest('a[href], button[type="submit"]')) {
+                // Small delay lets the browser start the navigation first.
+                setTimeout(closeMobileNav, 80);
+            }
+        });
+    }
+
+    // ── Clean up mobile state when resizing to desktop ───────────────────────
+    window.addEventListener('resize', () => {
+        if (!isMobile()) {
+            closeMobileNav();
+        }
+    }, { passive: true });
+
+    // ── Hover tooltips (desktop collapsed mode only) ─────────────────────────
     let tip = null;
 
     function getTip() {
@@ -154,6 +195,7 @@ function setAction(action) {
 
     function showTip(el) {
         if (!document.body.classList.contains('nav-collapsed')) return;
+        if (isMobile()) return;
         const label = el.dataset.label;
         if (!label) return;
         const rect = el.getBoundingClientRect();
@@ -168,7 +210,6 @@ function setAction(action) {
         if (tip) tip.classList.remove('visible');
     }
 
-    const nav = document.getElementById('admin-nav');
     if (nav) {
         nav.addEventListener('mouseover', (e) => {
             const el = e.target.closest('[data-label]');

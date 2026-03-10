@@ -143,7 +143,7 @@ $siteTitle = $db->getSetting('site_title', 'My CMS');
         <p class="alert alert--<?= Helpers::e($flashType) ?>"><?= Helpers::e($flashMsg) ?></p>
     <?php endif; ?>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;align-items:start">
+    <div class="tags-form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;align-items:start">
 
         <!-- Add / Edit single tag -->
         <div class="panel">
@@ -177,7 +177,7 @@ $siteTitle = $db->getSetting('site_title', 'My CMS');
         </div>
 
         <!-- Bulk add -->
-        <div class="panel">
+        <div class="panel panel--bulk-add">
             <h2>Bulk Add</h2>
             <form method="post" action="/admin/tags.php">
                 <input type="hidden" name="csrf_token" value="<?= Helpers::e($csrf) ?>">
@@ -211,17 +211,19 @@ $siteTitle = $db->getSetting('site_title', 'My CMS');
             <td><strong><?= Helpers::e($tag['name']) ?></strong></td>
             <td><code>/tag/<?= Helpers::e($tag['slug']) ?>/</code></td>
             <td style="text-align:right"><?= (int) $tag['post_count'] ?></td>
-            <td style="text-align:right;white-space:nowrap">
-                <a href="/admin/tags.php?edit=<?= (int) $tag['id'] ?>" class="btn btn--secondary btn--sm">Edit</a>
-                <form method="post" action="/admin/tags.php" style="display:inline">
-                    <input type="hidden" name="csrf_token" value="<?= Helpers::e($csrf) ?>">
-                    <input type="hidden" name="action"    value="delete">
-                    <input type="hidden" name="delete_id" value="<?= (int) $tag['id'] ?>">
-                    <button type="submit" class="btn btn--danger btn--sm"
-                            onclick="return confirm('Delete tag &quot;<?= Helpers::e(addslashes($tag['name'])) ?>&quot;? Posts will not be deleted.')">
-                        Delete
-                    </button>
-                </form>
+            <td>
+                <div class="actions">
+                    <a href="/admin/tags.php?edit=<?= (int) $tag['id'] ?>" class="btn btn--secondary btn--sm">Edit</a>
+                    <form method="post" action="/admin/tags.php" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="<?= Helpers::e($csrf) ?>">
+                        <input type="hidden" name="action"    value="delete">
+                        <input type="hidden" name="delete_id" value="<?= (int) $tag['id'] ?>">
+                        <button type="submit" class="btn btn--danger btn--sm"
+                                onclick="return confirm('Delete tag &quot;<?= Helpers::e(addslashes($tag['name'])) ?>&quot;? Posts will not be deleted.')">
+                            Delete
+                        </button>
+                    </form>
+                </div>
             </td>
         </tr>
         <?php endforeach; ?>

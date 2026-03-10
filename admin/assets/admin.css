@@ -467,7 +467,7 @@ button[type="submit"]:hover,
     color: #fff;
 }
 
-.btn--sm { padding: .3rem .7rem; font-size: .8rem; }
+.btn--sm, button.btn--sm { padding: .3rem .7rem; font-size: .8rem; }
 
 /* ── Stats grid ───────────────────────────────────────────────────────────── */
 .stats-grid {
@@ -773,16 +773,313 @@ th:last-child { text-align: right; }
     .editor-layout { grid-template-columns: 1fr; }
 }
 
+/* ── Mobile (≤ 700px): fixed top bar + hamburger drawer ───────────────────── */
 @media (max-width: 700px) {
-    .admin-nav {
-        position: relative;
-        width: 100%;
-        min-height: auto;
-        flex-direction: row;
-        flex-wrap: wrap;
+    body.admin-page {
+        flex-direction: column;
     }
-    body.admin-page { flex-direction: column; }
-    .admin-main { margin-left: 0; }
+
+    /* ── Top bar ── */
+    .admin-nav {
+        position: fixed !important;
+        top: 0; left: 0; right: 0;
+        width: 100% !important;
+        height: 56px;
+        min-height: 0;
+        flex-direction: column;
+        overflow: hidden;
+        /* suppress the desktop width transition */
+        transition: none !important;
+        z-index: 200;
+    }
+
+    body.mobile-nav-open .admin-nav {
+        height: auto;
+        max-height: 100dvh;
+        overflow-y: auto;
+    }
+
+    /* ── Brand row (always visible) ── */
+    .admin-nav__brand,
+    body.nav-collapsed .admin-nav__brand {
+        height: 56px;
+        min-height: 56px !important;
+        padding: 0 1rem !important;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between !important;
+        flex-shrink: 0;
+    }
+
+    /* ── Reset nav-collapsed brand state on mobile ── */
+    .admin-nav__brand-inner,
+    body.nav-collapsed .admin-nav__brand-inner {
+        flex-direction: row !important;
+        align-items: center !important;
+        opacity: 1 !important;
+        width: auto !important;
+        height: auto !important;
+        overflow: visible !important;
+        pointer-events: auto !important;
+        flex: 1 !important;
+        gap: .75rem !important;
+    }
+
+    /* Show only the icon for "View site" — save space in the top bar */
+    .admin-nav__view-site .nav-label { display: none; }
+
+    .admin-nav__toggle,
+    body.nav-collapsed .admin-nav__toggle {
+        transform: none !important;
+        opacity: .85;
+        font-size: 1.1rem;
+        padding: .4rem .55rem;
+    }
+
+    /* ── Nav links: hidden until the drawer opens ── */
+    .admin-nav__links,
+    body.nav-collapsed .admin-nav__links {
+        display: none !important;
+        padding: .25rem 0;
+    }
+
+    body.mobile-nav-open .admin-nav__links {
+        display: block !important;
+    }
+
+    /* ── Always show full labels in the mobile drawer ── */
+    .nav-label,
+    body.nav-collapsed .nav-label {
+        opacity: 1 !important;
+        width: auto !important;
+        overflow: visible !important;
+        pointer-events: auto !important;
+    }
+
+    /* ── Full-row link items ── */
+    .admin-nav__links li a,
+    body.nav-collapsed .admin-nav__links li a {
+        justify-content: flex-start !important;
+        gap: .7rem !important;
+        padding: .65rem .75rem !important;
+        margin: 1px 8px !important;
+    }
+
+    /* ── Actions / logout: hidden until the drawer opens ── */
+    .admin-nav__actions,
+    body.nav-collapsed .admin-nav__actions {
+        display: none !important;
+        padding: .5rem .5rem .75rem;
+    }
+
+    body.mobile-nav-open .admin-nav__actions {
+        display: flex !important;
+        justify-content: flex-start !important;
+        padding: .5rem .5rem .75rem !important;
+    }
+
+    .admin-nav__logout,
+    body.nav-collapsed .admin-nav__logout,
+    body.mobile-nav-open .admin-nav__logout {
+        justify-content: flex-start !important;
+        gap: .7rem !important;
+        padding: .5rem .85rem !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* ── Main content: push below top bar, reduce side padding ── */
+    .admin-main,
+    body.nav-collapsed .admin-main {
+        margin-left: 0 !important;
+        padding: 72px 1rem 1.5rem;
+    }
+
+    /* ── Page header: stack h1 + action button vertically ── */
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: .6rem;
+    }
+
+    /* ── Toolbar: stack filter tabs above search ── */
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .search-form {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .search-input {
+        flex: 1;
+        width: 100%;
+    }
+
+    /* ── Panels: reduce padding; allow tables to scroll if wide ── */
+    .panel {
+        padding: 1rem;
+        overflow-x: auto;
+    }
+
+    .panel h2 {
+        margin-bottom: .75rem;
+    }
+
+    /* ── Tables: card layout — title full-width, status + actions below ── */
+    .data-table thead       { display: none; }
+    .data-table,
+    .data-table tbody       { display: block; }
+
+    .data-table tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .35rem;
+        padding: .6rem .75rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+
+    .data-table tr:last-child  { border-bottom: none; }
+    .data-table tr:hover td    { background: none; }
+    .data-table td             { border-bottom: none; }
+
+    /* Title: own full-width row */
+    .data-table td:first-child {
+        flex: 0 0 100%;
+        padding: 0;
+        font-size: .9rem;
+    }
+
+    /* Status badge cell: left side of second row */
+    .data-table td:nth-child(2) {
+        flex: 0 0 auto;
+        padding: 0;
+    }
+
+    /* Published date: hidden at this breakpoint (posts col 3) */
+    .data-table td:nth-child(3) { display: none; }
+
+    /* Pages table: hide slug + nav order; surface status as the badge */
+    .data-table--pages td:nth-child(2) { display: none; }   /* slug */
+    .data-table--pages td:nth-child(3) { display: none; }   /* nav order */
+    .data-table--pages td:nth-child(4) {                    /* status */
+        flex: 0 0 auto;
+        padding: 0;
+    }
+
+    /* Actions: fill remaining space, right-aligned, second row */
+    .data-table td:last-child {
+        flex: 1;
+        padding: 0;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .actions {
+        flex-wrap: wrap;
+        gap: .3rem;
+    }
+
+    /* Status badge: smaller on mobile */
+    .badge {
+        font-size: .68rem;
+        padding: .1em .4em;
+    }
+
+    /* ── Buttons: smaller on mobile ── */
+    .btn,
+    button[type="submit"] {
+        padding: .4rem .85rem;
+        font-size: .85rem;
+    }
+
+    .btn--sm {
+        padding: .25rem .45rem;
+        font-size: .75rem;
+    }
+
+    .btn--sm.btn--danger {
+        padding: .2rem .4rem;
+        font-size: .72rem;
+    }
+
+    /* ── Tags page: hide bulk-add, expand add-tag panel to full width ── */
+    .panel--bulk-add {
+        display: none;
+    }
+
+    .tags-form-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* ── Editor: tighten layout gap ── */
+    .editor-layout {
+        gap: 1rem;
+    }
+
+    /* ── Stats grid: 2-up on mobile ── */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* ── Backdrop ── */
+    .mobile-nav-backdrop {
+        display: none;
+        position: fixed;
+        inset: 56px 0 0 0;
+        background: rgba(0, 0, 0, .45);
+        z-index: 199;
+    }
+
+    body.mobile-nav-open .mobile-nav-backdrop {
+        display: block;
+    }
+
+    /* Media library: always at least 2 columns */
+    .media-library-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+}
+
+/* ── Extra-narrow phones (≤ 480px) ────────────────────────────────────────── */
+@media (max-width: 480px) {
+    /* Stats: single column on very small phones */
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Reduce main padding further */
+    .admin-main,
+    body.nav-collapsed .admin-main {
+        padding-left: .75rem;
+        padding-right: .75rem;
+    }
+
+    /* Buttons even more compact on very small phones */
+    .btn,
+    button[type="submit"] {
+        padding: .35rem .7rem;
+        font-size: .82rem;
+    }
+
+    .btn--sm {
+        padding: .2rem .4rem;
+        font-size: .73rem;
+    }
+
+    .btn--sm.btn--danger {
+        padding: .15rem .35rem;
+        font-size: .7rem;
+    }
 }
 
 /* ── Upload zone ──────────────────────────────────────────────────────────── */

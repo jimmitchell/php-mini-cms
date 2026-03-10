@@ -74,7 +74,7 @@ $csrf      = $auth->csrfToken();
         <?php if (empty($pages)): ?>
             <p style="padding:1.5rem; color:var(--color-muted)">No pages found.</p>
         <?php else: ?>
-        <table class="data-table">
+        <table class="data-table data-table--pages">
             <thead>
                 <tr>
                     <th>Title</th>
