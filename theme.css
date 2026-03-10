@@ -268,45 +268,30 @@ audio { width: 100%; }
 .term {
     display: inline-flex;
     align-items: center;
-    padding: .2em .6em;
-    border-radius: 999px;
+    padding: .15rem .45rem;
+    border-radius: 4px;
     font-size: .7rem;
-    font-weight: 400;
+    font-weight: 500;
     line-height: 1.4;
     text-decoration: none;
-    transition: background .15s, color .15s, border-color .15s;
+    transition: color .15s, border-color .15s;
 }
 
 .term:hover { text-decoration: none; }
 
 .term--category,
 .term--tag {
-    background: var(--color-chrome-bg);
+    background: transparent;
     color: var(--color-muted);
-    border: 1px solid var(--color-chrome-bg);
+    border: 1px solid var(--color-border);
 }
 
 .term--category:hover,
 .term--tag:hover {
-    background: var(--color-link);
-    color: var(--color-bg);
-    border: 1px solid var(--color-link);
+    color: var(--color-text);
+    border-color: currentColor;
 }
 
-/* @media (prefers-color-scheme: dark) {
-    .term--category,
-    .term--tag {
-        background: var(--color-muted);
-        color: var(--color-text);
-        border-color: var(--color-muted);
-    }
-    .term--category:hover,
-    .term--tag:hover { 
-        background: var(--color-link); 
-        color: var(--color-chrome-bg);
-        border-color: var(--color-link); 
-    }
-} */
 
 /* ── Prose styles ─────────────────────────────────────────────────────────── */
 .prose > * + * { margin-top: 1.25em; }
