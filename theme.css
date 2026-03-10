@@ -638,9 +638,9 @@ audio { width: 100%; }
 .post-nav__link:hover { color: var(--color-link); }
 
 @media (max-width: 600px) {
-    .post-nav { flex-direction: column; gap: 1rem; }
-    .post-nav__prev,
-    .post-nav__next { max-width: 100%; margin-left: 0; text-align: left; }
+    .post-nav { flex-direction: row; width: 100%; }
+    .post-nav__prev { max-width: 45%; text-align: left; }
+    .post-nav__next { max-width: 45%; text-align: right; }
 }
 
 /* ── Site footer ──────────────────────────────────────────────────────────── */
