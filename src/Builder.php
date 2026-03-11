@@ -10,6 +10,7 @@ use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
 use League\CommonMark\Extension\CommonMark\Node\Inline\Image;
 use League\CommonMark\Extension\Footnote\FootnoteExtension;
 use League\CommonMark\Extension\GithubFlavoredMarkdownExtension;
+use League\CommonMark\Extension\SmartPunct\SmartPunctExtension;
 use League\CommonMark\MarkdownConverter;
 
 class Builder
@@ -39,6 +40,7 @@ class Builder
         $env->addExtension(new CommonMarkCoreExtension());
         $env->addExtension(new GithubFlavoredMarkdownExtension());
         $env->addExtension(new FootnoteExtension());
+        $env->addExtension(new SmartPunctExtension());
         $env->addRenderer(FencedCode::class, new HighlightFencedCodeRenderer());
         $env->addRenderer(Image::class, new ImageRenderer($this->mediaDir));
         $this->md = new MarkdownConverter($env);
