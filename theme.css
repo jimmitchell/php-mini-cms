@@ -28,7 +28,7 @@
     --color-bg:         #ffffff;
     --color-chrome-bg:  #f3f4f6;
     --color-code-bg:    #f3f4f6;
-    --color-link:       #2563eb;
+    --color-link:       #0099ff;
     --max-content:      800px;
     --max-wide:         900px;
 }
@@ -43,7 +43,7 @@
         --color-bg:         #181818;
         --color-chrome-bg:  #121212;
         --color-code-bg:    #2a2a2a;
-        --color-link:       #60a5fa;
+        --color-link:       #60c0ff;
     }
 }
 
