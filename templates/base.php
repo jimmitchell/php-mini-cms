@@ -81,9 +81,9 @@ if (!function_exists('_e')) {
     <meta name="fediverse:creator" content="<?= _e($mastodonMeta) ?>">
     <?php endif; ?>
     <!-- Font preloads — must come before the stylesheet -->
-    <link rel="preload" href="/fonts/Inter-Regular.woff2"
+    <link rel="preload" href="/fonts/ProximaNova-Regular.woff2"
           as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/Inter-Italic.woff2"
+    <link rel="preload" href="/fonts/ProximaNova-Bold.woff2"
           as="font" type="font/woff2" crossorigin>
     <!-- Feeds -->
     <link rel="alternate" type="application/atom+xml"
