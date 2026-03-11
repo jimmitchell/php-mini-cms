@@ -727,6 +727,73 @@ th:last-child { text-align: right; }
     flex-shrink: 0;
 }
 
+/* ── Tag pill widget ──────────────────────────────────────────────────────── */
+.tag-pill-widget {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .35rem;
+    min-height: 2.25rem;
+    padding: .35rem .5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    cursor: text;
+    transition: border-color .15s;
+}
+
+.tag-pill-widget:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+}
+
+.tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: .15rem .5rem;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.tag-pill__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1em;
+    height: 1em;
+    background: rgba(255,255,255,.35);
+    border: none;
+    border-radius: 50%;
+    color: inherit;
+    font-size: .85em;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.tag-pill__remove:hover { background: rgba(255,255,255,.55); }
+
+.tag-pill-widget__input {
+    flex: 1;
+    min-width: 80px;
+    border: none;
+    outline: none;
+    background: transparent;
+    font: inherit;
+    font-size: .875rem;
+    color: var(--color-text);
+    padding: 0;
+    width: auto;
+    box-shadow: none;
+}
+
 /* ── Media grid (editor sidebar) ─────────────────────────────────────────── */
 .media-grid {
     display: grid;

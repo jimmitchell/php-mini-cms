@@ -122,6 +122,98 @@ function setAction(action) {
     });
 })();
 
+// ── Tag pill widget ───────────────────────────────────────────────────────────
+// Progressively enhances the tags_csv text input into a pill-based tag editor.
+
+(function initTagPills() {
+    const csvInput = document.querySelector('input[name="tags_csv"]');
+    if (!csvInput) return;
+
+    // Build the widget container.
+    const widget = document.createElement('div');
+    widget.className = 'tag-pill-widget';
+
+    // Visible text input inside the widget.
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.className = 'tag-pill-widget__input';
+    textInput.placeholder = csvInput.placeholder || 'Add a tag…';
+    widget.appendChild(textInput);
+
+    // Hide the original input but keep it in the form.
+    csvInput.type = 'hidden';
+    csvInput.insertAdjacentElement('afterend', widget);
+
+    let tags = csvInput.value
+        ? csvInput.value.split(',').map(t => t.trim()).filter(Boolean)
+        : [];
+
+    function sync() {
+        csvInput.value = tags.join(', ');
+    }
+
+    function renderPill(tag) {
+        const pill = document.createElement('span');
+        pill.className = 'tag-pill';
+        pill.textContent = tag;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tag-pill__remove';
+        btn.setAttribute('aria-label', 'Remove ' + tag);
+        btn.textContent = '×';
+        btn.addEventListener('click', () => {
+            tags = tags.filter(t => t !== tag);
+            pill.remove();
+            sync();
+        });
+
+        pill.appendChild(btn);
+        widget.insertBefore(pill, textInput);
+    }
+
+    function addTag(raw) {
+        const name = raw.trim();
+        if (!name || tags.includes(name)) return;
+        tags.push(name);
+        renderPill(name);
+        sync();
+    }
+
+    // Render initial tags.
+    tags.forEach(renderPill);
+    tags = [...tags]; // keep reference clean after render
+
+    // Re-sync tags array from pills (avoids duplication on initial render).
+    tags = csvInput.value
+        ? csvInput.value.split(',').map(t => t.trim()).filter(Boolean)
+        : [];
+
+    textInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addTag(textInput.value);
+            textInput.value = '';
+        } else if (e.key === 'Backspace' && textInput.value === '' && tags.length) {
+            // Remove last pill on backspace when input is empty.
+            const last = tags[tags.length - 1];
+            tags.pop();
+            widget.querySelector(`.tag-pill:last-of-type`)?.remove();
+            sync();
+        }
+    });
+
+    textInput.addEventListener('blur', () => {
+        if (textInput.value.trim()) {
+            addTag(textInput.value);
+            textInput.value = '';
+        }
+    });
+
+    // Clicking anywhere in the widget focuses the text input.
+    widget.addEventListener('click', () => textInput.focus());
+})();
+
 // ── Sidebar toggle + tooltip ──────────────────────────────────────────────────
 
 (function initSidebarToggle() {
