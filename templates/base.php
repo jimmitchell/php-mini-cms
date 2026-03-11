@@ -83,7 +83,15 @@ if (!function_exists('_e')) {
     <!-- Font preloads — must come before the stylesheet -->
     <link rel="preload" href="/fonts/ProximaNova-Regular.woff2"
           as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/ProximaNova-Italic.woff2"
+          as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/ProximaNova-Semibold.woff2"
+          as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/ProximaNova-SemiboldItalic.woff2"
+          as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/fonts/ProximaNova-Bold.woff2"
+          as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/fonts/ProximaNova-BoldItalic.woff2"
           as="font" type="font/woff2" crossorigin>
     <!-- Feeds -->
     <link rel="alternate" type="application/atom+xml"
