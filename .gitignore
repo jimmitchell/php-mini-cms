@@ -28,6 +28,7 @@ composer.phar
 
 # Proxima Nova font files (commercial license — do not commit)
 /fonts/ProximaNova*
+/fonts/og/ProximaNova*
 
 # Editor temp files
 *.swp
