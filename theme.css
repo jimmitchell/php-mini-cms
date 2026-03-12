@@ -1002,7 +1002,7 @@ audio { width: 100%; }
     .post__title { font-size: 1.6rem; }
     .post-card__title { font-size: 1.2rem; }
     .site-header { padding: 1rem; }
-    .site-header__title { font-size: 1.25rem; }
+    .site-header__title { font-size: .9rem; }
     .site-header__inner { gap: .5rem; }
     .site-main { margin: 2rem auto; }
 }

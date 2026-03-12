@@ -30,14 +30,26 @@ class OgImage
     public function __construct(string $fontDir)
     {
         $fontDir = rtrim($fontDir, '/\\');
-        $this->fontRegular = $fontDir . '/ProximaNova-Regular.ttf';
-        $this->fontBold    = $fontDir . '/ProximaNova-Bold.ttf';
 
         if (!extension_loaded('gd')) {
             throw new RuntimeException('GD extension is not loaded.');
         }
-        if (!file_exists($this->fontRegular) || !file_exists($this->fontBold)) {
-            throw new RuntimeException('Proxima Nova font files not found in ' . $fontDir);
+
+        // Prefer Proxima Nova; fall back to Inter if not present.
+        if (
+            file_exists($fontDir . '/ProximaNova-Regular.ttf') &&
+            file_exists($fontDir . '/ProximaNova-Bold.ttf')
+        ) {
+            $this->fontRegular = $fontDir . '/ProximaNova-Regular.ttf';
+            $this->fontBold    = $fontDir . '/ProximaNova-Bold.ttf';
+        } elseif (
+            file_exists($fontDir . '/Inter-Regular.ttf') &&
+            file_exists($fontDir . '/Inter-Bold.ttf')
+        ) {
+            $this->fontRegular = $fontDir . '/Inter-Regular.ttf';
+            $this->fontBold    = $fontDir . '/Inter-Bold.ttf';
+        } else {
+            throw new RuntimeException('No usable OG font files found in ' . $fontDir);
         }
     }
 
