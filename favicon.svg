@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Background rounded square in theme blue -->
-  <rect width="32" height="32" rx="7" fill="#2563eb"/>
+  <!-- Background rounded square in neutral grey -->
+  <rect width="32" height="32" rx="7" fill="#6b7280"/>
   <!-- Heading line — shorter and thicker -->
   <rect x="6" y="7"  width="13" height="3.5" rx="1.75" fill="white"/>
   <!-- Body lines — full width, slightly transparent -->
