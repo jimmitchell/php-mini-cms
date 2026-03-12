@@ -311,7 +311,7 @@ audio { width: 100%; }
     display: flex;
     flex-wrap: wrap;
     gap: .375rem;
-    margin: .75rem 0 0;
+    margin: .5rem 0 0;
     padding: 0;
 }
 
@@ -320,7 +320,7 @@ audio { width: 100%; }
     align-items: center;
     padding: .15rem .45rem;
     border-radius: 4px;
-    font-size: .7rem;
+    font-size: .75rem;
     font-weight: 500;
     line-height: 1.4;
     text-decoration: none;
