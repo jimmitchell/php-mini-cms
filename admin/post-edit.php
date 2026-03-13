@@ -55,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $builder->buildJsonFeed();
                 $builder->buildSitemap();
             }
+            $activityLog->log('delete', 'post', $post->id, $post->title);
             $auth->flash('Post deleted.', 'info');
             header('Location: /admin/posts.php');
             exit;
@@ -158,6 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             && $hasBluesky
             && $post->bluesky_skip === 0;
 
+        $wasNew = $isNew || !$post->id;
         $post->save();
 
         // Save category and tag associations.
@@ -215,6 +217,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $builder->buildAll();
         }
         // Scheduled and draft-only saves don't need a build.
+
+        $logAction = match (true) {
+            $action === 'unpublish'                                => 'unpublish',
+            $action === 'publish' && $post->status === 'scheduled' => 'schedule',
+            $action === 'publish'                                   => 'publish',
+            $wasNew                                                => 'create',
+            default                                                => 'update',
+        };
+        $activityLog->log($logAction, 'post', $post->id, $post->title);
 
         $label = match (true) {
             $action === 'unpublish'                                        => 'Post unpublished.',

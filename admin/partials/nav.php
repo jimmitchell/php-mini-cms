@@ -10,8 +10,9 @@ $navItems = [
     '/admin/categories.php' => ['label' => 'Categories', 'icon' => 'fa-tag'],
     '/admin/tags.php'       => ['label' => 'Tags',       'icon' => 'fa-tags'],
     '/admin/media.php'      => ['label' => 'Media',      'icon' => 'fa-picture-o'],
-    '/admin/settings.php'  => ['label' => 'Settings',  'icon' => 'fa-cog'],
-    '/admin/account.php'   => ['label' => 'Account',   'icon' => 'fa-user'],
+    '/admin/settings.php'   => ['label' => 'Settings',  'icon' => 'fa-cog'],
+    '/admin/account.php'    => ['label' => 'Account',   'icon' => 'fa-user'],
+    '/admin/login-log.php'  => ['label' => 'Logs',      'icon' => 'fa-list'],
 ];
 ?>
 <link rel="stylesheet" href="/admin/assets/font-awesome.min.css">

@@ -8,6 +8,7 @@ $auth->check();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rebuild') {
     $auth->verifyCsrf($_POST['csrf_token'] ?? '');
     $builder->buildAll();
+    $activityLog->log('rebuild', 'site');
     $auth->flash('Full site rebuild complete.');
     header('Location: /admin/dashboard.php');
     exit;

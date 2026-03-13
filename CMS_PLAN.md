@@ -53,6 +53,7 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 │   ├── settings.php        ← Site-wide settings
 │   ├── account.php         ← Change admin password
 │   ├── xmlrpc.php          ← WordPress + MetaWeblog XML-RPC API endpoint
+│   ├── login-log.php       ← Activity log + login attempts viewer
 │   └── assets/
 │       ├── admin.css
 │       ├── admin.js
@@ -78,6 +79,7 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 │   ├── Feed.php
 │   ├── Helpers.php
 │   ├── HighlightFencedCodeRenderer.php  ← league/commonmark renderer for syntax highlighting
+│   ├── ActivityLog.php     ← Admin activity logger (writes to activity_log table)
 │   ├── Mastodon.php        ← Mastodon API client
 │   ├── Media.php
 │   ├── OgImage.php         ← GD-based OG image generator
@@ -219,6 +221,22 @@ CREATE TABLE login_attempts (
 CREATE INDEX login_attempts_ip_time ON login_attempts(ip, attempted_at);
 ```
 
+### `activity_log` (schema v10)
+
+```sql
+CREATE TABLE activity_log (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    action      TEXT    NOT NULL,   -- create | update | publish | unpublish | schedule |
+                                    -- delete | upload | settings | password | rebuild
+    object_type TEXT    NOT NULL,   -- post | page | media | settings | account | site
+    object_id   INTEGER,            -- DB id of the affected record (NULL for settings/account/site)
+    detail      TEXT    NOT NULL DEFAULT '',  -- post title, filename, etc.
+    ip          TEXT    NOT NULL DEFAULT '',
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+-- Pruned probabilistically (~1% of requests); entries older than 90 days are deleted.
+```
+
 ---
 
 ## Configuration File (`config.php`)
@@ -310,6 +328,11 @@ API clients for social syndication:
 
 ### `OgImage`
 Generates 1200×630 PNG Open Graph images using GD + FreeType. Caches by `og_image_hash` stored on the post; regenerates only when title or site name changes.
+
+### `ActivityLog`
+- `log(action, objectType, objectId, detail)` — inserts a row into `activity_log` with the calling IP
+- Used by all admin POST handlers: post/page create, update, publish, unpublish, schedule, delete; media upload/delete; settings save; password change; manual site rebuild
+- Instantiated as `$activityLog` in `admin/bootstrap.php`, available on every admin page
 
 ### `Helpers`
 - `slugify(title)` — URL-safe slug generation
@@ -468,6 +491,8 @@ Features added after the initial build phases:
 | CSP + security headers | `nginx.conf.example`, `docker/nginx.conf` |
 | Pages at `/pages/{slug}/` via Nginx | `src/Builder.php`, `nginx.conf.example` |
 | `theme.min.css` auto-generation | `src/Builder.php`, `admin/bootstrap.php` |
+| Activity logging | `src/ActivityLog.php`, `src/Database.php` (v10), `admin/bootstrap.php`, `admin/post-edit.php`, `admin/page-edit.php`, `admin/media.php`, `admin/settings.php`, `admin/account.php`, `admin/dashboard.php` |
+| Logs admin page (activity + login attempts) | `admin/login-log.php` |
 
 ---
 

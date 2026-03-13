@@ -14,7 +14,7 @@ class Database
     private PDO $pdo;
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 9;
+    private const SCHEMA_VERSION = 10;
 
     public function __construct(string $dbPath)
     {
@@ -185,6 +185,10 @@ class Database
             $this->applySchemaV9();
         }
 
+        if ($current < 10) {
+            $this->applySchemaV10();
+        }
+
         if ($current < self::SCHEMA_VERSION) {
             $this->upsertSetting('schema_version', (string) self::SCHEMA_VERSION);
         }
@@ -345,6 +349,22 @@ class Database
                 post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
                 tag_id  INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
                 PRIMARY KEY (post_id, tag_id)
+            )
+        SQL);
+    }
+
+    private function applySchemaV10(): void
+    {
+        // Admin activity log — tracks content and settings changes.
+        $this->pdo->exec(<<<SQL
+            CREATE TABLE IF NOT EXISTS activity_log (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                action      TEXT    NOT NULL,
+                object_type TEXT    NOT NULL,
+                object_id   INTEGER,
+                detail      TEXT    NOT NULL DEFAULT '',
+                ip          TEXT    NOT NULL DEFAULT '',
+                created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         SQL);
     }

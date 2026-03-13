@@ -105,7 +105,7 @@
     --color-bg:         #181818;
     --color-chrome-bg:  #0e0e0e;
     --color-code-bg:    #2a2a2a;
-    --color-link:       #60a5fa;
+    --color-link:       #ffbc00;
 }
 
 html { font-size: 17px; scroll-behavior: smooth; overflow-y: scroll; }

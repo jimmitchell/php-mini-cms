@@ -45,7 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
                 'error'    => $files['error'][$i],
             ];
             try {
-                $results[] = $media->upload($single);
+                $result    = $media->upload($single);
+                $results[] = $result;
+                $activityLog->log('upload', 'media', $result['id'], $single['name']);
             } catch (\RuntimeException $e) {
                 $failures[] = $files['name'][$i] . ': ' . $e->getMessage();
             }
@@ -53,7 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
     } elseif (isset($files['name'])) {
         // Single file, non-array structure.
         try {
-            $results[] = $media->upload($files);
+            $result    = $media->upload($files);
+            $results[] = $result;
+            $activityLog->log('upload', 'media', $result['id'], $files['name'] ?? '');
         } catch (\RuntimeException $e) {
             $failures[] = ($files['name'] ?? 'file') . ': ' . $e->getMessage();
         }
@@ -76,8 +80,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     $auth->verifyCsrf($_POST['csrf_token'] ?? '');
-    $id = (int) ($_POST['id'] ?? 0);
-    $ok = $media->delete($id);
+    $id         = (int) ($_POST['id'] ?? 0);
+    $mediaItem  = $db->selectOne("SELECT original_name FROM media WHERE id = :id", ['id' => $id]);
+    $ok         = $media->delete($id);
+    if ($ok) {
+        $activityLog->log('delete', 'media', $id, $mediaItem['original_name'] ?? '');
+    }
 
     if ($isAjax) {
         $jsonResponse(['ok' => $ok], $ok ? 200 : 404);

@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'Could not write config.php — check file permissions.';
         } else {
             file_put_contents($configPath, $updated);
+            $activityLog->log('password', 'account');
             $auth->flash('Password changed successfully.');
             header('Location: /admin/account.php');
             exit;

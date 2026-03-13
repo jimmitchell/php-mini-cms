@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($page === null) {
         $page = new Page($db);
     }
+    $wasNew = $isNew || !$page->id;
 
     $page->title     = trim($_POST['title']     ?? '');
     $page->slug      = trim($_POST['slug']      ?? '');
@@ -67,6 +68,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $page->save();
         $builder->buildAll();
 
+        $logAction = match ($action) {
+            'publish'   => 'publish',
+            'unpublish' => 'unpublish',
+            default     => $wasNew ? 'create' : 'update',
+        };
+        $activityLog->log($logAction, 'page', $page->id, $page->title);
+
         $label = match ($action) {
             'publish'   => 'Page published.',
             'unpublish' => 'Page unpublished.',
@@ -80,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     if ($page && $page->id) {
+        $activityLog->log('delete', 'page', $page->id, $page->title);
         $page->delete();
         $builder->buildPage($page);
         $auth->flash('Page deleted.', 'info');

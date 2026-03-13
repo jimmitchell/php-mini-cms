@@ -70,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $builder->buildJsonFeed();
         $builder->buildSitemap();
 
+        $activityLog->log('settings', 'settings');
         $auth->flash('Settings saved and site rebuilt.');
         header('Location: /admin/settings.php');
         exit;
