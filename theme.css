@@ -204,7 +204,7 @@ audio { width: 100%; }
 }
 
 .theme-toggle:hover { color: var(--color-text); }
-.theme-toggle svg   { width: 1.1rem; height: 1.1rem; }
+.theme-toggle svg   { width: 1rem; height: 1rem; }
 
 /* ── Search (header) ──────────────────────────────────────────────────────── */
 .search-toggle {
@@ -222,7 +222,7 @@ audio { width: 100%; }
 }
 .search-toggle { text-decoration: none; }
 .search-toggle:hover { color: var(--color-text); }
-.search-toggle svg   { width: 1.1rem; height: 1.1rem; }
+.search-toggle svg   { width: 1rem; height: 1rem; }
 
 /* ── Search results page ──────────────────────────────────────────────────── */
 .search-page { max-width: var(--max-content); margin: 0 auto; }
@@ -257,7 +257,7 @@ audio { width: 100%; }
     align-items: center;
     line-height: 0;
 }
-.search-page__form button svg { width: 1.1rem; height: 1.1rem; }
+.search-page__form button svg { width: 1rem; height: 1rem; }
 
 .search-empty { color: var(--color-muted); font-style: italic; }
 
