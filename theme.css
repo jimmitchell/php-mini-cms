@@ -332,9 +332,9 @@ audio { width: 100%; }
     margin-bottom: .5em;
 }
 
-.prose h1 { font-size: 1.75rem; }
-.prose h2 { font-size: 1.4rem; }
-.prose h3 { font-size: 1.15rem; }
+.prose h1 { font-size: 1.7rem; }
+.prose h2 { font-size: 1.35rem; }
+.prose h3 { font-size: 1.1rem; }
 .prose h4, .prose h5, .prose h6 { font-size: 1rem; }
 
 .prose p { margin-top: 1em; }
@@ -366,7 +366,6 @@ audio { width: 100%; }
 .prose table {
     width: 100%;
     border-collapse: collapse;
-    font-size: .9em;
     margin-top: 1em;
 }
 
@@ -437,7 +436,7 @@ audio { width: 100%; }
 .prose pre code {
     background: none;
     padding: 0;
-    font-size: .85em;
+    font-size: .75em;
 }
 
 /* ── Syntax highlighting — xcode-dark theme ───────────────────────────────── */
@@ -493,7 +492,7 @@ audio { width: 100%; }
 
 .prose figure { margin-top: 1.5em; }
 .prose figcaption {
-    font-size: .8rem;
+    font-size: .75rem;
     color: var(--color-muted);
     margin-top: .4em;
     text-align: center;
