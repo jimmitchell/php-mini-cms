@@ -381,7 +381,7 @@ audio { width: 100%; }
 /* Code */
 .prose code {
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: .875em;
+    font-size: .7em;
     background: var(--color-code-bg);
     border-radius: 3px;
     padding: .1em .3em;
