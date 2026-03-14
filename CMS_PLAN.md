@@ -68,8 +68,8 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 ├── data/                   ← BLOCKED: Nginx denies all access
 │   └── cms.db              ← SQLite database
 │
-├── fonts/                  ← Public: Nunito Sans WOFF2 files
-│   └── og/                 ← OG image fonts (NunitoSans-Regular/Bold.ttf)
+├── fonts/                  ← Public: Figtree + Crimson Pro WOFF2 files
+│   └── og/                 ← OG image fonts (Figtree-Regular/Bold.ttf)
 │
 ├── src/                    ← BLOCKED: Nginx denies all access
 │   ├── Auth.php
@@ -442,7 +442,7 @@ The Nginx config uses two rewrites for the date-URL block:
 - [x] Single post template with Open Graph meta
 - [x] Static page template
 - [x] Index/listing template with pagination
-- [x] Responsive CSS (single column; Nunito Sans typeface)
+- [x] Responsive CSS (single column; Figtree UI + Crimson Pro prose typefaces)
 
 ### Phase 7 — Admin Polish & Settings ✓
 - [x] Settings screen + DB-backed site config
@@ -487,7 +487,7 @@ Features added after the initial build phases:
 | Dark / light mode toggle | `theme.css`, `templates/base.php` |
 | Probabilistic DB cleanup | `admin/bootstrap.php` |
 | Self-hosted Font Awesome (admin) | `admin/assets/font-awesome.min.css`, `admin/assets/fonts/` |
-| Nunito Sans public typeface | `fonts/`, `templates/base.php` |
+| Figtree + Crimson Pro public typefaces | `fonts/`, `templates/base.php`, `theme.css` |
 | CSP + security headers | `nginx.conf.example`, `docker/nginx.conf` |
 | Pages at `/pages/{slug}/` via Nginx | `src/Builder.php`, `nginx.conf.example` |
 | `theme.min.css` auto-generation | `src/Builder.php`, `admin/bootstrap.php` |

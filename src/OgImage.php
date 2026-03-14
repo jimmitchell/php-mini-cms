@@ -35,19 +35,12 @@ class OgImage
             throw new RuntimeException('GD extension is not loaded.');
         }
 
-        // Prefer GT Walsheim; fall back to Inter if not present.
         if (
-            file_exists($fontDir . '/GT-Walsheim-Regular.ttf') &&
-            file_exists($fontDir . '/GT-Walsheim-Bold.ttf')
+            file_exists($fontDir . '/Figtree-Regular.ttf') &&
+            file_exists($fontDir . '/Figtree-Bold.ttf')
         ) {
-            $this->fontRegular = $fontDir . '/GT-Walsheim-Regular.ttf';
-            $this->fontBold    = $fontDir . '/GT-Walsheim-Bold.ttf';
-        } elseif (
-            file_exists($fontDir . '/Inter-Regular.ttf') &&
-            file_exists($fontDir . '/Inter-Bold.ttf')
-        ) {
-            $this->fontRegular = $fontDir . '/Inter-Regular.ttf';
-            $this->fontBold    = $fontDir . '/Inter-Bold.ttf';
+            $this->fontRegular = $fontDir . '/Figtree-Regular.ttf';
+            $this->fontBold    = $fontDir . '/Figtree-Bold.ttf';
         } else {
             throw new RuntimeException('No usable OG font files found in ' . $fontDir);
         }

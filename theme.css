@@ -1,54 +1,38 @@
 /* ── PHP Mini CMS — Public Theme ──────────────────────────────────────────── */
 
-/* ── Inter — self-hosted web font (Google Fonts, OFL license) ───────────────── */
+/* ── Figtree — self-hosted (Google Fonts, OFL license) ──────────────────────── */
 
 @font-face {
-    font-family: 'Inter';
-    src: url('/fonts/Inter-Regular.woff2') format('woff2');
-    font-weight: 400 700;
+    font-family: 'Figtree';
+    src: url('/fonts/Figtree-Regular.woff2') format('woff2');
+    font-weight: 300 900;
     font-style:  normal;
     font-display: swap;
 }
 
 @font-face {
-    font-family: 'Inter';
-    src: url('/fonts/Inter-Italic.woff2') format('woff2');
-    font-weight: 400 700;
+    font-family: 'Figtree';
+    src: url('/fonts/Figtree-Italic.woff2') format('woff2');
+    font-weight: 300 900;
     font-style:  italic;
     font-display: swap;
 }
 
-/* ── GT Walsheim — self-hosted (licensed) ────────────────────────────────────── */
+/* ── Crimson Pro — self-hosted (Google Fonts, OFL license) ──────────────────── */
 
 @font-face {
-    font-family: 'GT Walsheim';
-    src: url('/fonts/GT-Walsheim-Regular.woff2') format('woff2');
-    font-weight: 400;
+    font-family: 'Crimson Pro';
+    src: url('/fonts/CrimsonPro-Regular.woff2') format('woff2');
+    font-weight: 400 900;
     font-style:  normal;
     font-display: swap;
 }
 
 @font-face {
-    font-family: 'GT Walsheim';
-    src: url('/fonts/GT-Walsheim-RegularOblique.woff2') format('woff2');
-    font-weight: 400;
-    font-style:  oblique;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'GT Walsheim';
-    src: url('/fonts/GT-Walsheim-Bold.woff2') format('woff2');
-    font-weight: 700;
-    font-style:  normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'GT Walsheim';
-    src: url('/fonts/GT-Walsheim-BoldOblique.woff2') format('woff2');
-    font-weight: 700;
-    font-style:  oblique;
+    font-family: 'Crimson Pro';
+    src: url('/fonts/CrimsonPro-Italic.woff2') format('woff2');
+    font-weight: 400 900;
+    font-style:  italic;
     font-display: swap;
 }
 
@@ -96,8 +80,8 @@ html { font-size: 17px; scroll-behavior: smooth; overflow-y: scroll; }
 
 
 body {
-    font-family: 'GT Walsheim', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    line-height: 1.75;
+    font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.7;
     color: var(--color-text);
     background: var(--color-bg);
     -webkit-font-smoothing: antialiased;
@@ -328,6 +312,12 @@ audio { width: 100%; }
 
 
 /* ── Prose styles ─────────────────────────────────────────────────────────── */
+.prose {
+    font-family: 'Crimson Pro', Georgia, 'Times New Roman', serif;
+    font-size: 1.2rem;
+    line-height: 1.5;
+}
+
 .prose > * + * { margin-top: 1.25em; }
 
 .prose h1,
@@ -336,6 +326,7 @@ audio { width: 100%; }
 .prose h4,
 .prose h5,
 .prose h6 {
+    font-family: 'Figtree', system-ui, -apple-system, sans-serif;
     line-height: 1.25;
     margin-top: 2em;
     margin-bottom: .5em;
@@ -369,7 +360,7 @@ audio { width: 100%; }
     margin: 2.5em 0;
 }
 
-.prose strong { font-weight: 700; }
+.prose strong { font-weight: 600; }
 .prose em     { font-style: italic; }
 
 .prose table {
@@ -386,7 +377,7 @@ audio { width: 100%; }
     text-align: left;
 }
 
-.prose th { background: var(--color-code-bg); font-weight: 700; }
+.prose th { background: var(--color-code-bg); font-weight: 600; }
 
 /* Code */
 .prose code {
@@ -604,7 +595,7 @@ audio { width: 100%; }
     vertical-align: super;
     line-height: 0;
     text-decoration: none;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .footnote-backref {
@@ -658,6 +649,7 @@ audio { width: 100%; }
 
 .post-nav__link {
     font-size: .95rem;
+    font-weight: 600;
     color: var(--color-text);
     text-decoration: none;
     line-height: 1.3;
@@ -751,7 +743,7 @@ audio { width: 100%; }
 
 .error-page__message {
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: 600;
     margin: 0 0 .5rem;
 }
 
@@ -979,7 +971,7 @@ audio { width: 100%; }
 
 .wm-group-label {
     font-size: .8rem;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--color-muted);
     margin-bottom: .9rem;
 }
@@ -1016,7 +1008,7 @@ audio { width: 100%; }
 }
 
 .wm-reply__author {
-    font-weight: 700;
+    font-weight: 600;
     font-size: .875rem;
     color: var(--color-text);
     text-decoration: none;
