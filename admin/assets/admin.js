@@ -89,6 +89,9 @@ function setAction(action) {
     if (!grid) return;
 
     grid.addEventListener('click', (e) => {
+        // Don't single-insert when gallery-select mode is active.
+        if (grid.classList.contains('gallery-select-mode')) return;
+
         const btn = e.target.closest('[data-url]');
         if (!btn) return;
 
@@ -119,6 +122,89 @@ function setAction(action) {
                 ta.value = ta.value.slice(0, start) + '\n' + markdown + '\n' + ta.value.slice(start);
             }
         }
+    });
+})();
+
+// ── Gallery multi-select ──────────────────────────────────────────────────────
+
+(function initGallerySelect() {
+    const grid      = document.getElementById('media-insert-grid');
+    const toggleBtn = document.getElementById('gallery-select-btn');
+    const insertBtn = document.getElementById('gallery-insert-btn');
+    if (!grid || !toggleBtn || !insertBtn) return;
+
+    let galleryMode = false;
+    const selected  = new Set();
+
+    function updateInsertBtn() {
+        if (selected.size >= 2) {
+            insertBtn.style.display = '';
+            insertBtn.textContent   = `Insert gallery (${selected.size} images)`;
+        } else {
+            insertBtn.style.display = 'none';
+        }
+    }
+
+    function enterGalleryMode() {
+        galleryMode = true;
+        grid.classList.add('gallery-select-mode');
+        toggleBtn.textContent = 'Cancel';
+        toggleBtn.classList.add('btn--danger');
+        toggleBtn.classList.remove('btn--secondary');
+    }
+
+    function exitGalleryMode() {
+        galleryMode = false;
+        selected.clear();
+        grid.classList.remove('gallery-select-mode');
+        grid.querySelectorAll('.media-thumb--selected').forEach(el => el.classList.remove('media-thumb--selected'));
+        toggleBtn.textContent = 'Select for gallery';
+        toggleBtn.classList.remove('btn--danger');
+        toggleBtn.classList.add('btn--secondary');
+        insertBtn.style.display = 'none';
+    }
+
+    toggleBtn.addEventListener('click', () => {
+        galleryMode ? exitGalleryMode() : enterGalleryMode();
+    });
+
+    grid.addEventListener('click', (e) => {
+        if (!galleryMode) return;
+        const thumb = e.target.closest('.media-thumb[data-type="image"]');
+        if (!thumb) return;
+
+        const id = thumb.dataset.id;
+        if (!id) return;
+
+        if (selected.has(id)) {
+            selected.delete(id);
+            thumb.classList.remove('media-thumb--selected');
+        } else {
+            selected.add(id);
+            thumb.classList.add('media-thumb--selected');
+        }
+        updateInsertBtn();
+    });
+
+    insertBtn.addEventListener('click', () => {
+        if (selected.size < 2) return;
+
+        const shortcode = `[gallery ids="${[...selected].join(',')}"]`;
+        const editor    = window._editor;
+        if (editor) {
+            const cm  = editor.codemirror;
+            const pos = cm.getCursor();
+            cm.replaceRange('\n' + shortcode + '\n', pos);
+            cm.focus();
+        } else {
+            const ta = document.getElementById('content');
+            if (ta) {
+                const start = ta.selectionStart;
+                ta.value = ta.value.slice(0, start) + '\n' + shortcode + '\n' + ta.value.slice(start);
+            }
+        }
+
+        exitGalleryMode();
     });
 })();
 

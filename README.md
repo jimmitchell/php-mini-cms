@@ -13,6 +13,7 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Scheduling** — set a future publish date; posts promote automatically on next admin load
 - **Categories & tags** — full taxonomy system; posts can belong to multiple categories and tags; archive pages generated at `/category/{slug}/` and `/tag/{slug}/`
 - **Media library** — drag-and-drop uploads with MIME validation; images, video, and audio supported (50 MB limit)
+- **Image galleries** — select multiple images in the post editor and insert a `[gallery]` shortcode; renders as a responsive masonry grid (3 columns desktop, 1 column mobile) with a looping lightbox
 - **Atom feed** — generated automatically at `/feed.xml`
 - **JSON Feed** — generated automatically at `/feed.json` (JSON Feed 1.1); linked in `<head>` for feed reader discovery
 - **OG images** — auto-generated 1200×630 PNG per post (requires GD + FreeType)
@@ -144,7 +145,7 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 | Login | `/admin/` | Two-step login: password then TOTP code (if 2FA is enabled) |
 | Dashboard | `/admin/dashboard.php` | Stats, scheduled posts due soon, full site rebuild |
 | Posts | `/admin/posts.php` | List with status filter tabs, title search, inline delete |
-| Post editor | `/admin/post-edit.php` | Title, slug, Markdown editor, status, schedule date, categories, tags |
+| Post editor | `/admin/post-edit.php` | Title, slug, Markdown editor, status, schedule date, categories, tags, image gallery insert |
 | Pages | `/admin/pages.php` | List with inline delete |
 | Page editor | `/admin/page-edit.php` | Same as post editor + nav order field |
 | Categories | `/admin/categories.php` | Create, edit, and delete post categories |
@@ -199,6 +200,32 @@ Categories and tags are displayed as styled pills in the post header on public p
 ### Media
 
 Files are uploaded to `content/media/` and served through a Nginx alias at `/media/`. Filenames are sanitized to `{stem}_{8hex}.{canonical_ext}`. Accepted MIME types: JPEG, PNG, GIF, WebP, SVG, MP4, WebM, MP3, OGG. Maximum size: 50 MB.
+
+### Image Galleries
+
+You can insert a masonry image gallery into any post directly from the post editor:
+
+1. Open a post in **Admin → Post editor**
+2. In the **Insert media** sidebar panel, click **Select for gallery**
+3. Click two or more images to select them (selected images show a blue outline)
+4. Click **Insert gallery (N images)** — a `[gallery ids="…"]` shortcode is inserted at the cursor position
+5. Save or publish the post; the gallery renders automatically
+
+The shortcode format is:
+
+```
+[gallery ids="8,5,1,6"]
+```
+
+IDs correspond to media library records and are stored in the order you selected them, which controls the left-to-right display order.
+
+**Display:**
+- Desktop (> 600 px): 3-column masonry grid with equal 8 px gutters
+- Mobile (≤ 600 px): single-column stacked layout
+
+**Lightbox:** clicking any gallery image opens a full-screen lightbox. Prev/Next buttons and ← → arrow keys navigate through the gallery with looping (wraps from last image back to first and vice versa). Click the backdrop or press Escape to close.
+
+The gallery JavaScript (masonry layout + lightbox) is injected inline only on post pages that contain a gallery shortcode — pages without a gallery load no extra script.
 
 ---
 

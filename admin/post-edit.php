@@ -447,7 +447,8 @@ if ($post->published_at) {
                 <?php if (!empty($mediaItems)): ?>
                 <div class="panel">
                     <h2>Insert media</h2>
-                    <p class="form-hint" style="margin-bottom:.75rem">Click to insert at cursor.</p>
+                    <p class="form-hint" style="margin-bottom:.5rem">Click to insert at cursor.</p>
+                    <button type="button" id="gallery-select-btn" class="btn btn--secondary btn--sm" style="margin-bottom:.75rem">Select for gallery</button>
                     <div class="media-grid" id="media-insert-grid">
                         <?php foreach ($mediaItems as $m): ?>
                         <?php
@@ -457,6 +458,7 @@ if ($post->published_at) {
                             $isAudio  = str_starts_with($m['mime_type'], 'audio/');
                         ?>
                         <button type="button" class="media-thumb"
+                                data-id="<?= (int) $m['id'] ?>"
                                 data-url="<?= Helpers::e($url) ?>"
                                 data-type="<?= $isImage ? 'image' : ($isVideo ? 'video' : 'audio') ?>"
                                 data-name="<?= Helpers::e($m['original_name']) ?>"
@@ -471,6 +473,7 @@ if ($post->published_at) {
                         </button>
                         <?php endforeach; ?>
                     </div>
+                    <button type="button" id="gallery-insert-btn" class="btn" style="display:none;width:100%;margin-top:.5rem">Insert gallery</button>
                     <a href="/admin/media.php" class="form-hint" style="display:block;margin-top:.5rem">Manage media →</a>
                 </div>
                 <?php endif; ?>

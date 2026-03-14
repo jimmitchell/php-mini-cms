@@ -119,5 +119,5 @@ $bodyContent = ob_get_clean();
 
 echo $render('base.php', compact(
     'pageTitle', 'description', 'canonical', 'ogType', 'ogImageUrl', 'bodyContent',
-    'jsonLd', 'settings', 'navPages', 'siteUrl', 'render'
+    'jsonLd', 'settings', 'navPages', 'siteUrl', 'render', 'hasGallery'
 ));

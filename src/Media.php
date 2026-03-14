@@ -144,6 +144,42 @@ class Media
         );
     }
 
+    /**
+     * Return media records for an ordered list of IDs.
+     * The returned array preserves the same order as $ids.
+     *
+     * @param  int[]  $ids
+     * @return array<array<string,mixed>>
+     */
+    public function findByIds(array $ids): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        $ids          = array_map('intval', $ids);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $rows         = $this->db->select(
+            "SELECT id, filename, original_name, mime_type FROM media WHERE id IN ({$placeholders})",
+            $ids
+        );
+
+        // Index by id, then re-order to match the requested sequence.
+        $indexed = [];
+        foreach ($rows as $row) {
+            $indexed[(int) $row['id']] = $row;
+        }
+
+        $result = [];
+        foreach ($ids as $id) {
+            if (isset($indexed[$id])) {
+                $result[] = $indexed[$id];
+            }
+        }
+
+        return $result;
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**

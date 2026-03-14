@@ -819,6 +819,94 @@ audio { width: 100%; }
 
 .prose img { cursor: zoom-in; }
 
+/* ── Image gallery ────────────────────────────────────────────────────────── */
+
+.gallery {
+    position: relative;
+    margin: 2rem 0;
+    /* height set by JS */
+}
+
+.gallery__item {
+    position: absolute;
+    display: block;
+    overflow: hidden;
+    border-radius: 4px;
+    /* top / left / width set by JS */
+}
+
+.gallery__item img {
+    width: 100%;
+    height: auto;
+    display: block;
+    margin-top: 0;
+    border-radius: 4px;
+    cursor: zoom-in;
+    transition: opacity .15s;
+}
+
+.gallery__item:hover img { opacity: .88; }
+
+/* Before JS runs or on mobile, stack images naturally */
+@media (max-width: 600px) {
+    .gallery         { position: static !important; height: auto !important; }
+    .gallery__item   { position: static !important; width: 100% !important; display: block; margin-bottom: 8px; }
+}
+
+/* ── Gallery lightbox ─────────────────────────────────────────────────────── */
+
+.gallery-lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    background: rgba(0,0,0,.92);
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 4rem;
+}
+
+.gallery-lightbox.is-open { display: flex; }
+
+.gallery-lightbox__img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 3px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.6);
+    cursor: default;
+}
+
+.gallery-lightbox__btn {
+    position: fixed;
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    opacity: .75;
+    line-height: 1;
+    padding: .25rem .5rem;
+    transition: opacity .15s;
+}
+
+.gallery-lightbox__btn:hover { opacity: 1; }
+
+.gallery-lightbox__close {
+    top: 1rem;
+    right: 1.25rem;
+    font-size: 2rem;
+}
+
+.gallery-lightbox__prev,
+.gallery-lightbox__next {
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 3.5rem;
+}
+
+.gallery-lightbox__prev { left: .75rem; }
+.gallery-lightbox__next { right: .75rem; }
+
 /* ── Webmentions ──────────────────────────────────────────────────────────── */
 
 .webmentions {

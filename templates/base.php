@@ -248,6 +248,8 @@ if (!function_exists('_e')) {
     }
 
     document.querySelectorAll('.prose img').forEach(function (el) {
+        // Gallery images have their own lightbox — skip them here.
+        if (el.closest('[data-gallery-item]')) return;
         el.addEventListener('click', function () {
             openLightbox(el.src, el.alt, el.naturalWidth, el.naturalHeight);
         });
@@ -333,6 +335,150 @@ if (!function_exists('_e')) {
 <?php $tinylyticsCode = $settings['tinylytics_code'] ?? ''; ?>
 <?php if ($tinylyticsCode !== ''): ?>
 <script src="https://tinylytics.app/embed/<?= _e($tinylyticsCode) ?>.js" defer></script>
+<?php endif; ?>
+<?php if (!empty($hasGallery)): ?>
+<script>
+(function () {
+'use strict';
+
+// ── Masonry layout ────────────────────────────────────────────────────────────
+var GAP = 8;
+
+function layoutGallery(gallery) {
+    var items = Array.from(gallery.querySelectorAll('.gallery__item'));
+    if (!items.length) return;
+
+    var cols    = window.innerWidth <= 600 ? 1 : 3;
+    var total   = gallery.offsetWidth;
+    var colW    = Math.floor((total - GAP * (cols - 1)) / cols);
+    var heights = new Array(cols).fill(0);
+
+    items.forEach(function (item) {
+        var shortest = heights.indexOf(Math.min.apply(null, heights));
+        item.style.position = 'absolute';
+        item.style.width    = colW + 'px';
+        item.style.left     = (shortest * (colW + GAP)) + 'px';
+        item.style.top      = heights[shortest] + 'px';
+        heights[shortest]  += item.offsetHeight + GAP;
+    });
+
+    gallery.style.position = 'relative';
+    gallery.style.height   = Math.max.apply(null, heights) + 'px';
+}
+
+function layoutAll() {
+    document.querySelectorAll('.gallery[data-gallery]').forEach(layoutGallery);
+}
+
+// Run after all gallery images are loaded.
+var galleries = document.querySelectorAll('.gallery[data-gallery]');
+galleries.forEach(function (gallery) {
+    var imgs   = Array.from(gallery.querySelectorAll('img'));
+    var loaded = 0;
+
+    function onLoad() {
+        loaded++;
+        // Re-layout on every image load so the grid grows progressively.
+        layoutGallery(gallery);
+        if (loaded === imgs.length) {
+            layoutGallery(gallery); // final pass
+        }
+    }
+
+    imgs.forEach(function (img) {
+        if (img.complete) {
+            onLoad();
+        } else {
+            img.addEventListener('load',  onLoad);
+            img.addEventListener('error', onLoad); // count errors so layout still runs
+        }
+    });
+});
+
+// Debounced resize.
+var _resizeTimer;
+window.addEventListener('resize', function () {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(layoutAll, 120);
+}, { passive: true });
+
+// ── Gallery lightbox ──────────────────────────────────────────────────────────
+var glItems  = [];
+var glCursor = 0;
+
+var glOverlay = document.createElement('div');
+glOverlay.className = 'gallery-lightbox';
+glOverlay.setAttribute('role', 'dialog');
+glOverlay.setAttribute('aria-modal', 'true');
+glOverlay.setAttribute('aria-label', 'Gallery');
+
+var glImg   = document.createElement('img');
+glImg.className = 'gallery-lightbox__img';
+glImg.setAttribute('alt', '');
+
+var glClose = document.createElement('button');
+glClose.className = 'gallery-lightbox__btn gallery-lightbox__close';
+glClose.setAttribute('aria-label', 'Close');
+glClose.innerHTML = '&times;';
+
+var glPrev = document.createElement('button');
+glPrev.className = 'gallery-lightbox__btn gallery-lightbox__prev';
+glPrev.setAttribute('aria-label', 'Previous image');
+glPrev.innerHTML = '&#8249;';
+
+var glNext = document.createElement('button');
+glNext.className = 'gallery-lightbox__btn gallery-lightbox__next';
+glNext.setAttribute('aria-label', 'Next image');
+glNext.innerHTML = '&#8250;';
+
+glOverlay.appendChild(glImg);
+glOverlay.appendChild(glClose);
+glOverlay.appendChild(glPrev);
+glOverlay.appendChild(glNext);
+document.body.appendChild(glOverlay);
+
+function glShow(index) {
+    glCursor = (index + glItems.length) % glItems.length;
+    glImg.src = glItems[glCursor].href;
+    glImg.alt = glItems[glCursor].alt;
+    glOverlay.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+    glClose.focus();
+}
+
+function glClose_() {
+    glOverlay.classList.remove('is-open');
+    document.body.style.overflow = '';
+    glImg.src = '';
+}
+
+// Collect all gallery items across all galleries on the page.
+document.querySelectorAll('.gallery[data-gallery] [data-gallery-item]').forEach(function (a) {
+    glItems.push({ href: a.href, alt: (a.querySelector('img') || {}).alt || '' });
+    var idx = glItems.length - 1;
+    a.addEventListener('click', function (e) {
+        e.preventDefault();
+        glShow(idx);
+    });
+});
+
+glClose.addEventListener('click', glClose_);
+glPrev.addEventListener('click', function () { glShow(glCursor - 1); });
+glNext.addEventListener('click', function () { glShow(glCursor + 1); });
+
+glOverlay.addEventListener('click', function (e) {
+    if (e.target === glOverlay) glClose_();
+});
+
+document.addEventListener('keydown', function (e) {
+    if (!glOverlay.classList.contains('is-open')) return;
+    if (e.key === 'Escape')      glClose_();
+    if (e.key === 'ArrowLeft')  glShow(glCursor - 1);
+    if (e.key === 'ArrowRight') glShow(glCursor + 1);
+});
+
+}());
+</script>
 <?php endif; ?>
 <?php if (($settings['webmention_domain'] ?? '') !== ''): ?>
 <script>

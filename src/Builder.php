@@ -74,12 +74,15 @@ class Builder
         // Generate OG image first so the URL is available to the HTML template.
         $ogImageUrl = $this->buildOgImage($post);
 
-        $html     = $this->md->convert($post->content)->getContent();
-        $prevPost = Post::findPrev($this->db, $post);
-        $nextPost = Post::findNext($this->db, $post);
-        $rendered = $this->render('post.php', [
+        $html       = $this->md->convert($post->content)->getContent();
+        $html       = $this->processShortcodes($html);
+        $hasGallery = str_contains($html, 'data-gallery');
+        $prevPost   = Post::findPrev($this->db, $post);
+        $nextPost   = Post::findNext($this->db, $post);
+        $rendered   = $this->render('post.php', [
             'post'        => $post,
             'html'        => $html,
+            'hasGallery'  => $hasGallery,
             'prevPost'    => $prevPost,
             'nextPost'    => $nextPost,
             'ogImageUrl'  => $ogImageUrl,
@@ -507,6 +510,65 @@ class Builder
         if ($migrated) {
             $this->db->exec("UPDATE pages SET content_hash = NULL, built_at = NULL");
         }
+    }
+
+    // ── Shortcodes ────────────────────────────────────────────────────────────
+
+    /**
+     * Replace supported shortcodes in rendered HTML.
+     * Must be called on the HTML output of the Markdown converter, not on raw Markdown.
+     */
+    private function processShortcodes(string $html): string
+    {
+        // CommonMark wraps a bare shortcode paragraph in <p>…</p>.
+        // SmartPunctExtension converts ASCII " to Unicode curly quotes, so we
+        // skip over whatever quote character appears and match just the digits/commas.
+        return preg_replace_callback(
+            '/<p>\s*\[gallery\s+ids=[^0-9]*([0-9][0-9,\s]*)[^\]]*\]\s*<\/p>/iu',
+            function (array $m): string {
+                $ids = array_filter(array_map('intval', explode(',', $m[1])));
+                return $this->renderGallery($ids);
+            },
+            $html
+        );
+    }
+
+    /**
+     * Build the HTML for a [gallery ids="…"] shortcode.
+     *
+     * @param int[] $ids  Ordered list of media IDs.
+     */
+    private function renderGallery(array $ids): string
+    {
+        if (empty($ids)) {
+            return '';
+        }
+
+        $media = new Media($this->db, $this->mediaDir);
+        $items = $media->findByIds($ids);
+
+        if (empty($items)) {
+            return '';
+        }
+
+        $x    = fn(string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $html = '<div class="gallery" data-gallery>' . "\n";
+
+        foreach ($items as $item) {
+            if (!Media::isImage($item['mime_type'])) {
+                continue;
+            }
+            $url  = '/media/' . rawurlencode($item['filename']);
+            $alt  = $x($item['original_name']);
+            $href = $x($url);
+            $html .= '  <a href="' . $href . '" class="gallery__item" data-gallery-item>'
+                   . '<img src="' . $href . '" alt="' . $alt . '" loading="lazy">'
+                   . '</a>' . "\n";
+        }
+
+        $html .= '</div>' . "\n";
+
+        return $html;
     }
 
     // ── Rendering ─────────────────────────────────────────────────────────────

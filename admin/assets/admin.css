@@ -825,6 +825,23 @@ th:last-child { text-align: right; }
     box-shadow: 0 0 0 2px rgba(37,99,235,.2);
 }
 
+/* Gallery select mode */
+.gallery-select-mode .media-thumb[data-type="image"] {
+    cursor: pointer;
+}
+
+.gallery-select-mode .media-thumb[data-type="image"]:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.35);
+}
+
+.media-thumb--selected {
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,.5) !important;
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+}
+
 .media-thumb img {
     width: 100%;
     height: 100%;
