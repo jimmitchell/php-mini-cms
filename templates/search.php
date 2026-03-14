@@ -21,7 +21,7 @@ ob_start();
         <input type="search" name="q" id="search-page-q"
                placeholder="Search posts…"
                autocomplete="off" aria-label="Search posts"
-               value="">
+               autofocus value="">
         <button type="submit" aria-label="Search">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2" stroke-linecap="round"
