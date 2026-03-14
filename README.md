@@ -11,6 +11,7 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Posts & pages** — separate content types; pages can appear in site navigation
 - **Date-based post URLs** — posts live at `/YYYY/MM/DD/{slug}/` for clean, chronological permalinks
 - **Scheduling** — set a future publish date; posts promote automatically on next admin load
+- **Categories & tags** — full taxonomy system; posts can belong to multiple categories and tags; archive pages generated at `/category/{slug}/` and `/tag/{slug}/`
 - **Media library** — drag-and-drop uploads with MIME validation; images, video, and audio supported (50 MB limit)
 - **Atom feed** — generated automatically at `/feed.xml`
 - **JSON Feed** — generated automatically at `/feed.json` (JSON Feed 1.1); linked in `<head>` for feed reader discovery
@@ -23,11 +24,14 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Outgoing webmentions** — CLI script (`bin/send-webmentions.php`) discovers endpoints and sends pings for all external links in published posts; safe to schedule via cron
 - **MarsEdit support** — full WordPress XML-RPC API at `/admin/xmlrpc.php`; write and publish from MarsEdit with post and page management
 - **Google Analytics** — optional GA4 integration; add a measurement ID in Settings to inject the tracking script
+- **Custom CSS** — paste override styles directly in Settings; injected as a `<style>` block on every public page after the main stylesheet
 - **Dark / light mode** — system-preference aware with manual toggle; no flash on load
 - **Search** — client-side full-text search of posts at `/search/`; no server-side PHP required
 - **Favicon** — SVG favicon matching the site theme color
 - **Collapsible admin sidebar** — sidebar collapses to icon-only mode to maximize editor space; preference stored in localStorage
-- **Single admin user** — bcrypt password, CSRF protection, IP-based rate limiting; password changeable from within the admin panel
+- **Activity log** — every content and settings change is recorded with action, object, and IP; viewable in Admin → Logs
+- **Two-factor authentication** — optional TOTP 2FA (Google Authenticator, Authy, 1Password, etc.); setup via Admin → Account; backup codes generated on enable
+- **Single admin user** — bcrypt password, CSRF protection, IP-based rate limiting; password and 2FA managed from within the admin panel
 - **Docker-ready** — one command to run locally
 
 ---
@@ -119,7 +123,17 @@ return [
 ];
 ```
 
-Runtime settings (site title, description, URL, footer text, author name, pagination, Mastodon/Bluesky credentials, Google Analytics measurement ID, webmention.io domain, etc.) are stored in the SQLite `settings` table and edited through **Admin → Settings**. The Settings page is organized into panels: Site identity, Content, Mastodon, Bluesky, IndieWeb, Analytics.
+Runtime settings are stored in the SQLite `settings` table and edited through **Admin → Settings**. The Settings page is organized into panels:
+
+| Panel | Settings |
+|-------|----------|
+| Site identity | Title, author name, description, URL, footer text, timezone, locale |
+| Content | Posts per page, feed post count |
+| Mastodon | Handle, instance URL, access token |
+| Bluesky | Profile URL, handle, app password |
+| IndieWeb | webmention.io domain |
+| Analytics | Tinylytics site ID, Google Analytics measurement ID |
+| Custom CSS | Freeform CSS injected into every public page |
 
 ---
 
@@ -127,23 +141,27 @@ Runtime settings (site title, description, URL, footer text, author name, pagina
 
 | Page | Path | Description |
 |------|------|-------------|
-| Login | `/admin/` | Single-user login with rate limiting |
+| Login | `/admin/` | Two-step login: password then TOTP code (if 2FA is enabled) |
 | Dashboard | `/admin/dashboard.php` | Stats, scheduled posts due soon, full site rebuild |
 | Posts | `/admin/posts.php` | List with status filter tabs, title search, inline delete |
-| Post editor | `/admin/post-edit.php` | Title, slug, Markdown editor, status, schedule date |
+| Post editor | `/admin/post-edit.php` | Title, slug, Markdown editor, status, schedule date, categories, tags |
 | Pages | `/admin/pages.php` | List with inline delete |
 | Page editor | `/admin/page-edit.php` | Same as post editor + nav order field |
+| Categories | `/admin/categories.php` | Create, edit, and delete post categories |
+| Tags | `/admin/tags.php` | Create, edit, bulk-add, and delete post tags |
 | Media | `/admin/media.php` | Upload (drag-and-drop), library, copy URL to clipboard |
-| Settings | `/admin/settings.php` | Site identity, content options, social/analytics credentials |
-| Account | `/admin/account.php` | Change admin password |
+| Settings | `/admin/settings.php` | Site identity, content options, social/analytics credentials, custom CSS |
+| Account | `/admin/account.php` | Change admin password; set up, manage, or disable TOTP 2FA |
+| Logs | `/admin/login-log.php` | Login attempt history and admin activity log |
 | XML-RPC API | `/admin/xmlrpc.php` | WordPress-compatible API for MarsEdit and similar clients |
 
 ### Security
 
 - CSRF token on every form POST
 - Passwords hashed with bcrypt (`PASSWORD_BCRYPT`)
-- IP-based login rate limiting: 5 attempts → 15-minute lockout (applies to XML-RPC auth too)
+- IP-based login rate limiting: 5 attempts → 15-minute lockout (applies to TOTP verification and XML-RPC auth too)
 - Sessions: `HttpOnly`, `Secure`, `SameSite=Strict`
+- Optional TOTP two-factor authentication (RFC 6238); backup codes generated on setup; rate-limited independently from the password step
 - Nginx blocks direct access to `src/`, `templates/`, `data/`, `content/`, `vendor/`, and `config.php`
 - Separate Content-Security-Policy headers for admin (allows `unsafe-inline` for EasyMDE) and public pages (strict)
 
@@ -166,6 +184,17 @@ The paginated index (`index.html`, `page/2/index.html`, …) and `feed.xml` are 
 Pages work the same as posts but without scheduling. The **nav order** field controls whether a page appears in the site header navigation and in what order (`0` = hidden from nav and sorted to the bottom of the pages list).
 
 Published pages are output to `pages/{slug}/index.html` and served at `/{slug}/` via an Nginx named location fallback.
+
+### Categories & Tags
+
+Posts can be assigned to any number of **categories** and **tags** from the post editor. Categories are a hierarchical taxonomy; tags are flat.
+
+Manage them in **Admin → Categories** and **Admin → Tags** (the Tags page has a bulk-add textarea for quickly creating multiple tags at once). When a post is published, the CMS rebuilds archive pages for every category and tag the post belongs to:
+
+- `/category/{slug}/` → `category/{slug}/index.html`
+- `/tag/{slug}/` → `tag/{slug}/index.html`
+
+Categories and tags are displayed as styled pills in the post header on public post pages.
 
 ### Media
 
@@ -194,6 +223,28 @@ Code blocks without a language tag receive auto-detection and fall back to plain
 
 ---
 
+## Two-Factor Authentication
+
+TOTP-based 2FA can be enabled per account from **Admin → Account**.
+
+**Setup:**
+1. Click **Set up two-factor authentication**
+2. Scan the QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.) or enter the manual key
+3. Enter the 6-digit verification code to confirm
+4. Save the 8 one-time backup codes that are displayed — they will not be shown again
+
+**Logging in with 2FA enabled:**
+1. Enter your username and password as usual
+2. Enter the 6-digit code from your authenticator app (or a backup code)
+
+**Managing 2FA:**
+- Regenerate backup codes at any time from the Account page (requires password confirmation)
+- Disable 2FA from the Account page (requires password confirmation)
+
+TOTP verification attempts are rate-limited separately from the password step using the same thresholds (5 failures → 15-minute lockout per IP).
+
+---
+
 ## Search
 
 The CMS generates a `/search.json` file alongside every index rebuild. The search page at `/search/` fetches this file client-side and filters posts by title and excerpt — no server-side PHP or external service required.
@@ -210,7 +261,7 @@ The feed is generated at `/feed.xml` and includes the most recent N posts (confi
 
 ## Open Graph Images
 
-When PHP's GD extension is compiled with FreeType support, the CMS generates a 1200×630 PNG for each published post. The image includes the post title and site name rendered in Nunito Sans. Images are cached by a hash of the title + site name; they regenerate only when either changes.
+When PHP's GD extension is compiled with FreeType support, the CMS generates a 1200×630 PNG for each published post. The image includes the post title and site name rendered in Inter. Images are cached by a hash of the title + site name; they regenerate only when either changes.
 
 The font files at `fonts/og/` must be present. The Docker image includes FreeType.
 
@@ -230,7 +281,7 @@ Set your Bluesky handle and an app password in **Settings → Bluesky**. New pos
 
 Both platforms are independent — you can enable one, both, or neither.
 
-When a post is syndicated, the URL of the Mastodon toot or Bluesky post is stored and displayed at the bottom of the public post page as a small "Also on: Mastodon / Bluesky" footer. Posts published before syndication URLs were captured simply show no footer (graceful degradation).
+When a post is syndicated, the URL of the Mastodon toot or Bluesky post is stored and displayed at the bottom of the public post page as a small "Also on: Mastodon / Bluesky" footer.
 
 ---
 
@@ -250,8 +301,6 @@ The CMS will:
 Webmentions are grouped by type:
 - **Likes and reposts** — displayed as a compact avatar grid with reaction counts
 - **Replies and mentions** — displayed as individual reply cards with author, date, and content
-
-Because the site generates static HTML, webmentions are fetched on each page load from the webmention.io API (no build step needed).
 
 ### Outgoing
 
@@ -284,6 +333,25 @@ MarsEdit will show both a **Posts** and a **Pages** section. All post and page C
 
 ---
 
+## Custom CSS
+
+Paste any CSS into **Settings → Custom CSS** and save. The styles are injected as a `<style>` block at the end of every public page's `<head>`, after `theme.css`, so they naturally take precedence. Leave the field empty to inject nothing.
+
+This is intended for small overrides (fonts, colors, spacing). For larger changes, edit `theme.css` directly.
+
+---
+
+## Activity Log
+
+**Admin → Logs** shows two tables:
+
+- **Activity log** — the last 200 content and settings actions (create, update, publish, unpublish, schedule, delete, upload, settings save, password change, site rebuild, 2FA enable/disable/regen), with timestamp, action, detail, and IP address
+- **Login attempts** — the last 200 login attempts with timestamp, IP, and success/failure badge; includes TOTP verification attempts (prefixed with `totp:`)
+
+Log entries older than 90 days are pruned automatically on a ~1% probabilistic cleanup triggered on each admin page load.
+
+---
+
 ## Static Output Structure
 
 ```
@@ -291,13 +359,15 @@ MarsEdit will show both a **Posts** and a **Pages** section. All post and page C
 /page/2/                    → page/2/index.html        (paginated index)
 /YYYY/MM/DD/{slug}/         → posts/YYYY/MM/DD/{slug}/index.html
 /{slug}/                    → pages/{slug}/index.html  (via Nginx @page fallback)
+/category/{slug}/           → category/{slug}/index.html
+/tag/{slug}/                → tag/{slug}/index.html
 /search/                    → search/index.html        (client-side search page)
 /search.json                → search index (title, excerpt, date, URL for all published posts)
 /feed.xml                   → Atom 1.0 feed
 /feed.json                  → JSON Feed 1.1
 /media/{filename}           → content/media/ alias
 /theme.css                  → public stylesheet
-/fonts/                     → Nunito Sans web font files
+/fonts/                     → Inter web font files
 ```
 
 Stale pagination pages and unpublished post/page files are removed automatically on rebuild.
@@ -319,7 +389,7 @@ The public theme is a single file, `theme.css`, with no build step. It uses CSS 
 
 Dark mode activates automatically when the system preference is `dark`. The toggle button in the header overrides this and persists the choice in `localStorage`. An inline script in `<head>` applies the stored preference before the stylesheet loads, preventing any flash of the wrong color scheme.
 
-The body typeface is [Nunito Sans](https://fonts.google.com/specimen/Nunito+Sans) (self-hosted WOFF2, OFL license).
+The body typeface is [Inter](https://rsms.me/inter/) (self-hosted variable WOFF2, OFL license). To add custom styles without editing `theme.css`, use **Settings → Custom CSS**.
 
 ---
 
@@ -338,9 +408,9 @@ php-mini-cms/
 │   └── media/              # Uploaded files (not committed)
 ├── data/                   # SQLite database (not committed)
 ├── docker/                 # Docker-specific Nginx config, PHP ini, entrypoint
-├── fonts/                  # Nunito Sans WOFF2 files + OG image fonts (fonts/og/)
+├── fonts/                  # Inter WOFF2 files + OG image fonts (fonts/og/)
 ├── src/                    # PHP source classes (namespace CMS\)
-│   ├── Auth.php
+│   ├── Auth.php            # Login, session, CSRF, rate limiting, TOTP 2FA
 │   ├── Bluesky.php
 │   ├── Builder.php
 │   ├── Database.php
@@ -360,7 +430,8 @@ php-mini-cms/
 │   ├── index.php
 │   ├── page.php
 │   ├── post.php
-│   └── search.php
+│   ├── search.php
+│   └── taxonomy.php        # Category and tag archive pages
 ├── storage/                # Runtime logs (not committed; create on server)
 ├── config.php              # Credentials + paths (not committed)
 ├── composer.json

@@ -163,9 +163,33 @@ Visit `https://example.com/admin/` and log in with the credentials set during se
 
 Click **Settings** to enter your site URL, then **Rebuild entire site** on the dashboard to generate the initial HTML output.
 
+### Recommended first-login steps
+
+1. **Settings** — fill in site title, URL, description, author name, timezone, and footer text, then save
+2. **Dashboard → Rebuild entire site** — generates the index and feed with your new settings
+3. **Account → Set up two-factor authentication** — scan the QR code with an authenticator app, confirm with a code, and save your backup codes somewhere safe
+
 ---
 
-## 10 — MarsEdit setup (optional)
+## 10 — Two-factor authentication
+
+TOTP 2FA is optional but strongly recommended. It is configured per-account in **Admin → Account**.
+
+**Setup:**
+1. Click **Set up two-factor authentication**
+2. Scan the QR code with Google Authenticator, Authy, 1Password, or any TOTP app; or enter the manual key
+3. Enter the 6-digit code from the app to confirm setup
+4. Copy and store the 8 backup codes — they will not be shown again
+
+**After setup is enabled**, login requires two steps: password, then a 6-digit TOTP code. A backup code can be used instead of the TOTP code if the device is unavailable.
+
+**Backup codes** are single-use. Regenerate them at any time from the Account page (requires password confirmation). Each regeneration invalidates all previous codes.
+
+To **disable 2FA**, click "Disable two-factor authentication" on the Account page and confirm with your password.
+
+---
+
+## 11 — MarsEdit setup (optional)
 
 The CMS exposes a WordPress-compatible XML-RPC API. To connect MarsEdit:
 
@@ -173,7 +197,7 @@ The CMS exposes a WordPress-compatible XML-RPC API. To connect MarsEdit:
 2. **Endpoint URL:** `https://example.com/admin/xmlrpc.php`
 3. **Username / Password:** your admin credentials
 
-MarsEdit will show **Posts** and **Pages** sections. All CRUD operations and media uploads work from the client. The same endpoint also supports the MetaWeblog API for other clients.
+MarsEdit will show **Posts** and **Pages** sections. All CRUD operations, category/tag assignment, and media uploads work from the client. The same endpoint also supports the MetaWeblog API for other clients.
 
 ---
 
@@ -236,6 +260,8 @@ composer install --no-dev --optimize-autoloader
 # Log in to admin and click "Rebuild entire site"
 ```
 
+Schema migrations run automatically on the next page load — no manual SQL needed.
+
 ---
 
 ## PHP extension reference
@@ -244,7 +270,7 @@ composer install --no-dev --optimize-autoloader
 |---|---|---|
 | `pdo_sqlite` | `php8.3-sqlite3` | SQLite database |
 | `fileinfo` | `php8.3-fileinfo` | Upload MIME validation |
-| `mbstring` | `php8.3-mbstring` | Required by league/commonmark |
+| `mbstring` | `php8.3-mbstring` | Required by league/commonmark and spomky-labs/otphp |
 | `simplexml` | `php8.3-xml` | XML-RPC API request parsing |
 | `gd` | `php8.3-gd` | OG image generation (requires FreeType) |
 | `curl` | `php8.3-curl` | Mastodon & Bluesky API calls |

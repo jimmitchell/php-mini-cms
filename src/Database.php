@@ -14,7 +14,7 @@ class Database
     private PDO $pdo;
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 10;
+    private const SCHEMA_VERSION = 11;
 
     public function __construct(string $dbPath)
     {
@@ -187,6 +187,10 @@ class Database
 
         if ($current < 10) {
             $this->applySchemaV10();
+        }
+
+        if ($current < 11) {
+            $this->applySchemaV11();
         }
 
         if ($current < self::SCHEMA_VERSION) {
@@ -365,6 +369,19 @@ class Database
                 detail      TEXT    NOT NULL DEFAULT '',
                 ip          TEXT    NOT NULL DEFAULT '',
                 created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        SQL);
+    }
+
+    private function applySchemaV11(): void
+    {
+        // Hashed TOTP backup/recovery codes for 2FA.
+        $this->pdo->exec(<<<SQL
+            CREATE TABLE IF NOT EXISTS totp_backup_codes (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                code_hash  TEXT    NOT NULL,
+                used_at    DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         SQL);
     }

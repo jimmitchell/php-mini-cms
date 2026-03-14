@@ -51,9 +51,12 @@ $actionLabels = [
     'schedule'  => 'Scheduled',
     'delete'    => 'Deleted',
     'upload'    => 'Uploaded',
-    'settings'  => 'Settings saved',
-    'password'  => 'Password changed',
-    'rebuild'   => 'Site rebuilt',
+    'settings'       => 'Settings saved',
+    'password'       => 'Password changed',
+    'rebuild'        => 'Site rebuilt',
+    '2fa_enable'     => '2FA enabled',
+    '2fa_disable'    => '2FA disabled',
+    '2fa_regen_codes' => '2FA backup codes regenerated',
 ];
 
 $typeLabels = [

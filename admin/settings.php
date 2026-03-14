@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'tinylytics_code'      => trim($_POST['tinylytics_code']      ?? ''),
         'ga_measurement_id'    => trim($_POST['ga_measurement_id']    ?? ''),
         'webmention_domain'    => trim($_POST['webmention_domain']    ?? ''),
+        'custom_css'           => $_POST['custom_css'] ?? '',
     ];
 
     if ($fields['site_title'] === '') {
@@ -291,6 +292,16 @@ $flash     = $auth->getFlash();
                 Your GA4 measurement ID (e.g. <code>G-XXXXXXXXXX</code>). When set, the Google Analytics
                 tag is injected into every public page. Leave blank to disable.
             </p>
+        </div>
+
+        <div class="panel">
+            <h2>Custom CSS</h2>
+
+            <label for="custom_css">Additional styles</label>
+            <textarea id="custom_css" name="custom_css" rows="10"
+                      placeholder="/* Your custom CSS here */"
+                      style="font-family:monospace;font-size:.85rem"><?= Helpers::e($_POST['custom_css'] ?? $settings['custom_css'] ?? '') ?></textarea>
+            <p class="form-hint">Injected as a <code>&lt;style&gt;</code> tag on every public page. Leave blank to add nothing.</p>
         </div>
 
         <div style="display:flex; gap:.75rem; margin-top:1rem; margin-bottom:2rem">

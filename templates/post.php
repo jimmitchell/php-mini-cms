@@ -102,12 +102,14 @@ ob_start();
 <nav class="post-nav" aria-label="Post navigation">
     <div class="post-nav__prev">
         <?php if ($prevPost): ?>
-        <a class="post-nav__link" href="/<?= CMS\Post::datePath($prevPost->published_at, $prevPost->slug) ?>/"><span class="post-nav__arrow">←</span><span><?= htmlspecialchars($prevPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span></a>
+        <span class="post-nav__label">Older</span>
+        <a class="post-nav__link" href="/<?= CMS\Post::datePath($prevPost->published_at, $prevPost->slug) ?>/"><?= htmlspecialchars($prevPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
         <?php endif; ?>
     </div>
     <div class="post-nav__next">
         <?php if ($nextPost): ?>
-        <a class="post-nav__link" href="/<?= CMS\Post::datePath($nextPost->published_at, $nextPost->slug) ?>/"><span><?= htmlspecialchars($nextPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span><span class="post-nav__arrow">→</span></a>
+        <span class="post-nav__label">Newer</span>
+        <a class="post-nav__link" href="/<?= CMS\Post::datePath($nextPost->published_at, $nextPost->slug) ?>/"><?= htmlspecialchars($nextPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
         <?php endif; ?>
     </div>
 </nav>

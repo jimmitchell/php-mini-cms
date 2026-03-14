@@ -68,9 +68,15 @@ class Auth
 
         if ($ok) {
             session_regenerate_id(true);
-            $_SESSION['authenticated'] = true;
-            $_SESSION['user']          = $username;
-            $_SESSION['csrf_token']    = $this->generateToken();
+            if ($this->isTotpEnabled()) {
+                $_SESSION['totp_pending']      = true;
+                $_SESSION['totp_pending_user'] = $username;
+                $_SESSION['csrf_token']        = $this->generateToken();
+            } else {
+                $_SESSION['authenticated'] = true;
+                $_SESSION['user']          = $username;
+                $_SESSION['csrf_token']    = $this->generateToken();
+            }
         }
 
         return $ok;
@@ -182,6 +188,123 @@ class Auth
         $lockoutEnds = strtotime($row['attempted_at']) + ($lockoutMinutes * 60);
         $remaining   = $lockoutEnds - time();
         return max(0, $remaining);
+    }
+
+    // ── TOTP 2FA ──────────────────────────────────────────────────────────────
+
+    public function isTotpEnabled(): bool
+    {
+        return $this->db->getSetting('totp_enabled', '0') === '1';
+    }
+
+    public function isTotpPending(): bool
+    {
+        return !empty($_SESSION['totp_pending']);
+    }
+
+    public function completeTotpLogin(): void
+    {
+        $user = $_SESSION['totp_pending_user'] ?? '';
+        unset($_SESSION['totp_pending'], $_SESSION['totp_pending_user']);
+        $_SESSION['authenticated'] = true;
+        $_SESSION['user']          = $user;
+        $_SESSION['csrf_token']    = $this->generateToken();
+    }
+
+    public function generateTotpSecret(): string
+    {
+        $totp = \OTPHP\TOTP::generate();
+        return $totp->getSecret();
+    }
+
+    public function verifyTotp(string $code): bool
+    {
+        $secret = $this->db->getSetting('totp_secret', '');
+        if ($secret === '') {
+            return false;
+        }
+        $totp = \OTPHP\TOTP::createFromSecret($secret);
+        return $totp->verify($code, null, 1);
+    }
+
+    public function enableTotp(string $secret): void
+    {
+        $this->db->upsertSetting('totp_secret', $secret);
+        $this->db->upsertSetting('totp_enabled', '1');
+    }
+
+    public function disableTotp(): void
+    {
+        $this->db->upsertSetting('totp_enabled', '0');
+        $this->db->upsertSetting('totp_secret', '');
+        $this->db->delete('totp_backup_codes', '1=1');
+    }
+
+    /**
+     * Generate $count backup/recovery codes, store their bcrypt hashes,
+     * and return the plaintext codes (shown once, never stored).
+     *
+     * @return string[]
+     */
+    public function generateBackupCodes(int $count = 8): array
+    {
+        $this->db->delete('totp_backup_codes', '1=1');
+        $codes = [];
+        for ($i = 0; $i < $count; $i++) {
+            $hex   = bin2hex(random_bytes(5));
+            $plain = strtoupper(substr($hex, 0, 5) . '-' . substr($hex, 5));
+            $codes[] = $plain;
+            $this->db->insert('totp_backup_codes', [
+                'code_hash' => password_hash($plain, PASSWORD_BCRYPT),
+            ]);
+        }
+        return $codes;
+    }
+
+    public function verifyBackupCode(string $input): bool
+    {
+        $rows    = $this->db->select("SELECT id, code_hash FROM totp_backup_codes WHERE used_at IS NULL");
+        $matched = null;
+        foreach ($rows as $row) {
+            if (password_verify($input, $row['code_hash'])) {
+                $matched = $row['id'];
+            }
+        }
+        if ($matched !== null) {
+            $this->db->update(
+                'totp_backup_codes',
+                ['used_at' => date('Y-m-d H:i:s')],
+                'id = :id',
+                ['id' => $matched]
+            );
+            return true;
+        }
+        return false;
+    }
+
+    public function isTotpLockedOut(string $ip): bool
+    {
+        $maxAttempts    = (int) ($this->config['security']['max_login_attempts'] ?? 5);
+        $lockoutMinutes = (int) ($this->config['security']['lockout_minutes'] ?? 15);
+
+        $row = $this->db->selectOne(
+            "SELECT COUNT(*) AS cnt
+               FROM login_attempts
+              WHERE ip = :ip
+                AND success = 0
+                AND attempted_at >= datetime('now', :window)",
+            ['ip' => 'totp:' . $ip, 'window' => "-{$lockoutMinutes} minutes"]
+        );
+
+        return ($row['cnt'] ?? 0) >= $maxAttempts;
+    }
+
+    public function recordTotpAttempt(string $ip, bool $success): void
+    {
+        $this->db->insert('login_attempts', [
+            'ip'      => 'totp:' . $ip,
+            'success' => $success ? 1 : 0,
+        ]);
     }
 
     private function recordAttempt(string $ip, bool $success): void
