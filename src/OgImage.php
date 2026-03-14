@@ -35,13 +35,13 @@ class OgImage
             throw new RuntimeException('GD extension is not loaded.');
         }
 
-        // Prefer Proxima Nova; fall back to Inter if not present.
+        // Prefer GT Walsheim; fall back to Inter if not present.
         if (
-            file_exists($fontDir . '/ProximaNova-Regular.ttf') &&
-            file_exists($fontDir . '/ProximaNova-Bold.ttf')
+            file_exists($fontDir . '/GT-Walsheim-Regular.ttf') &&
+            file_exists($fontDir . '/GT-Walsheim-Bold.ttf')
         ) {
-            $this->fontRegular = $fontDir . '/ProximaNova-Regular.ttf';
-            $this->fontBold    = $fontDir . '/ProximaNova-Bold.ttf';
+            $this->fontRegular = $fontDir . '/GT-Walsheim-Regular.ttf';
+            $this->fontBold    = $fontDir . '/GT-Walsheim-Bold.ttf';
         } elseif (
             file_exists($fontDir . '/Inter-Regular.ttf') &&
             file_exists($fontDir . '/Inter-Bold.ttf')

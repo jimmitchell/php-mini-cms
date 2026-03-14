@@ -81,17 +81,13 @@ if (!function_exists('_e')) {
     <meta name="fediverse:creator" content="<?= _e($mastodonMeta) ?>">
     <?php endif; ?>
     <!-- Font preloads — must come before the stylesheet -->
-    <link rel="preload" href="/fonts/ProximaNova-Regular.woff2"
+    <link rel="preload" href="/fonts/GT-Walsheim-Regular.woff2"
           as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/ProximaNova-Italic.woff2"
+    <link rel="preload" href="/fonts/GT-Walsheim-RegularOblique.woff2"
           as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/ProximaNova-Semibold.woff2"
+    <link rel="preload" href="/fonts/GT-Walsheim-Bold.woff2"
           as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/ProximaNova-SemiboldItalic.woff2"
-          as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/ProximaNova-Bold.woff2"
-          as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/ProximaNova-BoldItalic.woff2"
+    <link rel="preload" href="/fonts/GT-Walsheim-BoldOblique.woff2"
           as="font" type="font/woff2" crossorigin>
     <!-- Feeds -->
     <link rel="alternate" type="application/atom+xml"
