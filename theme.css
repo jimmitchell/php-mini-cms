@@ -191,7 +191,36 @@ audio { width: 100%; }
     transition: color .15s;
 }
 .nav-toggle:hover { color: var(--color-text); }
-.nav-toggle svg   { width: 1.25rem; height: 1.25rem; }
+
+.nav-toggle__bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 1.1rem;
+}
+
+.nav-toggle__bar {
+    display: block;
+    height: 2px;
+    background: currentColor;
+    border-radius: 2px;
+    transform-origin: center;
+    transition: transform .25s ease, opacity .25s ease;
+}
+
+/* Morph top bar → top arm of X */
+.nav-toggle.is-open .nav-toggle__bar:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+}
+/* Fade out middle bar */
+.nav-toggle.is-open .nav-toggle__bar:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+/* Morph bottom bar → bottom arm of X */
+.nav-toggle.is-open .nav-toggle__bar:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+}
 
 /* ── Search (header) ──────────────────────────────────────────────────────── */
 .search-toggle {
@@ -1086,12 +1115,12 @@ audio { width: 100%; }
     .site-header__inner { flex-wrap: nowrap; }
 
     .site-nav {
-        display: none;
+        display: flex;
+        flex-direction: column;
         position: absolute;
         top: 100%;
         left: 0;
         right: 0;
-        flex-direction: column;
         gap: 0;
         margin-right: 0;
         background: var(--color-chrome-bg);
@@ -1099,9 +1128,21 @@ audio { width: 100%; }
         border-bottom: 1px solid var(--color-border);
         padding: .375rem 0;
         z-index: 100;
+        /* animation */
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transform: translateY(-6px);
+        transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
     }
 
-    .site-nav.is-open { display: flex; }
+    .site-nav.is-open {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0);
+        transition: opacity .2s ease, transform .2s ease;
+    }
 
     .site-nav a {
         padding: .75rem 1.25rem;

@@ -123,13 +123,11 @@ if (!function_exists('_e')) {
             <?php if (!empty($navPages)): ?>
             <button class="nav-toggle" id="nav-toggle"
                     aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round" aria-hidden="true" focusable="false">
-                    <line x1="3" y1="6" x2="21" y2="6"/>
-                    <line x1="3" y1="12" x2="21" y2="12"/>
-                    <line x1="3" y1="18" x2="21" y2="18"/>
-                </svg>
+                <span class="nav-toggle__bars" aria-hidden="true">
+                    <span class="nav-toggle__bar"></span>
+                    <span class="nav-toggle__bar"></span>
+                    <span class="nav-toggle__bar"></span>
+                </span>
             </button>
             <nav class="site-nav" id="site-nav" aria-label="Site navigation">
                 <?php foreach ($navPages as $navPage): ?>
@@ -275,9 +273,6 @@ if (!function_exists('_e')) {
     });
 
     // ── Mobile nav toggle ────────────────────────────────────────────────────
-    var MENU_SVG  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
-    var CLOSE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-
     var navToggle = document.getElementById('nav-toggle');
     var siteNav   = document.getElementById('site-nav');
 
@@ -285,9 +280,9 @@ if (!function_exists('_e')) {
         if (!siteNav) return;
         siteNav.classList.remove('is-open');
         if (navToggle) {
+            navToggle.classList.remove('is-open');
             navToggle.setAttribute('aria-expanded', 'false');
             navToggle.setAttribute('aria-label', 'Open navigation');
-            navToggle.innerHTML = MENU_SVG;
         }
     }
 
@@ -295,9 +290,9 @@ if (!function_exists('_e')) {
         navToggle.addEventListener('click', function (e) {
             e.stopPropagation();
             var open = siteNav.classList.toggle('is-open');
+            navToggle.classList.toggle('is-open', open);
             navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
             navToggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
-            navToggle.innerHTML = open ? CLOSE_SVG : MENU_SVG;
         });
         siteNav.addEventListener('click', function (e) {
             if (e.target.tagName === 'A') { closeNav(); }
