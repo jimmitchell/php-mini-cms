@@ -359,6 +359,9 @@ class Post
     public static function datePath(string $published_at, string $slug): string
     {
         $ts = strtotime($published_at);
+        if ($ts === false) {
+            throw new \InvalidArgumentException("Invalid published_at date: {$published_at}");
+        }
         return date('Y/m/d', $ts) . '/' . $slug;
     }
 

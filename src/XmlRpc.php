@@ -225,7 +225,8 @@ class XmlRpc
 
             $dt->setTimezone(new \DateTimeZone('UTC'));
             return $dt->format('Y-m-d H:i:s');
-        } catch (\Exception) {
+        } catch (\Exception $e) {
+            error_log('[XmlRpc] parseDate failed for "' . $iso . '" (timezone: "' . $timezone . '"): ' . $e->getMessage());
             return date('Y-m-d H:i:s');
         }
     }

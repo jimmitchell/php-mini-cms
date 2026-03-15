@@ -211,7 +211,7 @@ $siteTitle = $db->getSetting('site_title', 'My CMS');
                         <input type="hidden" name="action"    value="delete">
                         <input type="hidden" name="delete_id" value="<?= (int) $cat['id'] ?>">
                         <button type="submit" class="btn btn--danger btn--sm"
-                                onclick="return confirm('Delete category &quot;<?= Helpers::e(addslashes($cat['name'])) ?>&quot;? Posts will not be deleted.')">
+                                onclick="return confirm(<?= json_encode('Delete category "' . $cat['name'] . '"? Posts will not be deleted.', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)">
                             Delete
                         </button>
                     </form>

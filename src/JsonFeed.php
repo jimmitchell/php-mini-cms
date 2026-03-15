@@ -73,7 +73,12 @@ class JsonFeed
 
         $feed['items'] = $items;
 
-        return json_encode($feed, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+        $json = json_encode($feed, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($json === false) {
+            error_log('[JsonFeed] Failed to encode feed: ' . json_last_error_msg());
+            return '';
+        }
+        return $json . "\n";
     }
 
     /** Convert a SQLite datetime string to RFC 3339. */

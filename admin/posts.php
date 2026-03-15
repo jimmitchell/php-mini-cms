@@ -170,7 +170,7 @@ $flashType = $flash['type']    ?? 'success';
                         <a href="/<?= Helpers::e(Post::datePath($post->published_at, $post->slug)) ?>/" target="_blank" class="btn btn--sm btn--secondary">View</a>
                         <?php endif; ?>
                         <form method="post" action="/admin/posts.php"
-                              onsubmit="return confirm('Delete &quot;<?= addslashes(htmlspecialchars($post->title)) ?>&quot;?')">
+                              onsubmit="return confirm(<?= json_encode('Delete "' . $post->title . '"?', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)">
                             <input type="hidden" name="csrf_token" value="<?= Helpers::e($csrf) ?>">
                             <input type="hidden" name="action"     value="delete">
                             <input type="hidden" name="id"         value="<?= $post->id ?>">

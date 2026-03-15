@@ -106,7 +106,7 @@ $csrf      = $auth->csrfToken();
                         <a href="/<?= Helpers::e($page->slug) ?>/" target="_blank" class="btn btn--sm btn--secondary">View</a>
                         <?php endif; ?>
                         <form method="post" action="/admin/pages.php"
-                              onsubmit="return confirm('Delete &quot;<?= addslashes(htmlspecialchars($page->title)) ?>&quot;?')">
+                              onsubmit="return confirm(<?= json_encode('Delete "' . $page->title . '"?', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)">
                             <input type="hidden" name="csrf_token" value="<?= Helpers::e($csrf) ?>">
                             <input type="hidden" name="action"     value="delete">
                             <input type="hidden" name="id"         value="<?= $page->id ?>">

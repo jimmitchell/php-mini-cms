@@ -259,10 +259,12 @@ class Builder
             ];
         }
 
-        $this->writeFile(
-            $this->outputDir . '/search.json',
-            json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
-        );
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            error_log('[Builder] Failed to encode search index: ' . json_last_error_msg());
+            return;
+        }
+        $this->writeFile($this->outputDir . '/search.json', $json);
     }
 
     /**
@@ -387,36 +389,40 @@ class Builder
         }
 
         // Remove stale category archive directories.
-        $catDir = $this->outputDir . '/category';
-        if (is_dir($catDir)) {
-            foreach (scandir($catDir) as $entry) {
+        $catDir     = $this->outputDir . '/category';
+        $catEntries = is_dir($catDir) ? scandir($catDir) : false;
+        if ($catEntries !== false) {
+            foreach ($catEntries as $entry) {
                 if ($entry === '.' || $entry === '..') {
                     continue;
                 }
                 if (!in_array($entry, $validCatSlugs, true)) {
                     $stale = $catDir . '/' . $entry . '/index.html';
                     $this->removeFile($stale);
-                    $dir = $catDir . '/' . $entry;
-                    if (is_dir($dir) && count(scandir($dir)) === 2) {
-                        rmdir($dir);
+                    $dir     = $catDir . '/' . $entry;
+                    $entries = is_dir($dir) ? scandir($dir) : false;
+                    if ($entries !== false && count($entries) === 2) {
+                        @rmdir($dir);
                     }
                 }
             }
         }
 
         // Remove stale tag archive directories.
-        $tagDir = $this->outputDir . '/tag';
-        if (is_dir($tagDir)) {
-            foreach (scandir($tagDir) as $entry) {
+        $tagDir     = $this->outputDir . '/tag';
+        $tagEntries = is_dir($tagDir) ? scandir($tagDir) : false;
+        if ($tagEntries !== false) {
+            foreach ($tagEntries as $entry) {
                 if ($entry === '.' || $entry === '..') {
                     continue;
                 }
                 if (!in_array($entry, $validTagSlugs, true)) {
                     $stale = $tagDir . '/' . $entry . '/index.html';
                     $this->removeFile($stale);
-                    $dir = $tagDir . '/' . $entry;
-                    if (is_dir($dir) && count(scandir($dir)) === 2) {
-                        rmdir($dir);
+                    $dir     = $tagDir . '/' . $entry;
+                    $entries = is_dir($dir) ? scandir($dir) : false;
+                    if ($entries !== false && count($entries) === 2) {
+                        @rmdir($dir);
                     }
                 }
             }
@@ -675,20 +681,22 @@ class Builder
         if (file_exists($path)) {
             unlink($path);
             // Remove parent directory if now empty.
-            $dir = dirname($path);
-            if (is_dir($dir) && count(scandir($dir)) === 2) {
-                rmdir($dir);
+            $dir     = dirname($path);
+            $entries = is_dir($dir) ? scandir($dir) : false;
+            if ($entries !== false && count($entries) === 2) {
+                @rmdir($dir);
             }
         }
     }
 
     private function removeStalePaginationPages(int $validPageCount): void
     {
-        $pageDir = $this->outputDir . '/page';
-        if (!is_dir($pageDir)) {
+        $pageDir     = $this->outputDir . '/page';
+        $pageEntries = is_dir($pageDir) ? scandir($pageDir) : false;
+        if ($pageEntries === false) {
             return;
         }
-        foreach (scandir($pageDir) as $entry) {
+        foreach ($pageEntries as $entry) {
             if (!is_numeric($entry)) {
                 continue;
             }
@@ -696,9 +704,10 @@ class Builder
             if ($n > $validPageCount) {
                 $stale = $pageDir . '/' . $entry . '/index.html';
                 $this->removeFile($stale);
-                $dir = $pageDir . '/' . $entry;
-                if (is_dir($dir) && count(scandir($dir)) === 2) {
-                    rmdir($dir);
+                $dir     = $pageDir . '/' . $entry;
+                $entries = is_dir($dir) ? scandir($dir) : false;
+                if ($entries !== false && count($entries) === 2) {
+                    @rmdir($dir);
                 }
             }
         }

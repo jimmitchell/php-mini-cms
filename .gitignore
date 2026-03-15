@@ -35,3 +35,7 @@ composer.phar
 *.swo
 .DS_Store
 Thumbs.db
+
+# Claude files
+CLAUDE.md
+CLAUDE-*

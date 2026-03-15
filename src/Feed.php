@@ -94,6 +94,10 @@ class Feed
     private function atom(string $dt): string
     {
         $ts = strtotime($dt);
-        return $ts !== false ? date('Y-m-d\TH:i:s\Z', $ts) : date('Y-m-d\TH:i:s\Z');
+        if ($ts === false) {
+            error_log('[Feed] Invalid datetime value: ' . $dt);
+            return date('Y-m-d\TH:i:s\Z');
+        }
+        return date('Y-m-d\TH:i:s\Z', $ts);
     }
 }

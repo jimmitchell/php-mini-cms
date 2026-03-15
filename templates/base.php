@@ -110,7 +110,7 @@ if (!function_exists('_e')) {
     <?php endif; ?>
     <?php $customCss = $settings['custom_css'] ?? ''; ?>
     <?php if ($customCss !== ''): ?>
-    <style><?= $customCss ?></style>
+    <style><?= str_ireplace('</style>', '', $customCss) ?></style>
     <?php endif; ?>
 </head>
 <body>

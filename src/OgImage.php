@@ -94,8 +94,8 @@ class OgImage
 
         // ── Save ──────────────────────────────────────────────────────────────
         $dir = dirname($outputPath);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new RuntimeException('Failed to create output directory: ' . $dir);
         }
 
         if (!imagepng($img, $outputPath, 9)) {

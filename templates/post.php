@@ -33,7 +33,7 @@ if ($authorName !== '') {
 if ($ogImageUrl !== '') {
     $jsonLdData['image'] = $ogImageUrl;
 }
-$jsonLd = json_encode($jsonLdData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_HEX_TAG);
+$jsonLd = json_encode($jsonLdData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_HEX_AMP);
 
 // Reading time estimate.
 $readingTime = Helpers::readingTime($html);

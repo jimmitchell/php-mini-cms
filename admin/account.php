@@ -57,13 +57,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ── Begin 2FA setup: generate secret, store in session, redirect ──────────
     } elseif ($action === 'totp_setup_begin') {
-        $_SESSION['totp_setup_secret'] = $auth->generateTotpSecret();
+        $_SESSION['totp_setup_secret']    = $auth->generateTotpSecret();
+        $_SESSION['totp_setup_secret_ts'] = time();
         header('Location: /admin/account.php');
         exit;
 
     // ── Confirm 2FA setup: verify code, enable, generate backup codes ─────────
     } elseif ($action === 'totp_setup_confirm') {
         $secret = $_SESSION['totp_setup_secret'] ?? '';
+        if ($secret !== '' && (time() - ($_SESSION['totp_setup_secret_ts'] ?? 0)) > 900) {
+            unset($_SESSION['totp_setup_secret'], $_SESSION['totp_setup_secret_ts']);
+            $secret = '';
+        }
         $code   = trim($_POST['totp_code'] ?? '');
 
         if ($secret === '') {
@@ -97,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // ── Cancel 2FA setup ─────────────────────────────────────────────────────
     } elseif ($action === 'totp_setup_cancel') {
-        unset($_SESSION['totp_setup_secret']);
+        unset($_SESSION['totp_setup_secret'], $_SESSION['totp_setup_secret_ts']);
         header('Location: /admin/account.php');
         exit;
 
@@ -108,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors[] = 'Password is incorrect.';
         } else {
             $auth->disableTotp();
-            unset($_SESSION['totp_setup_secret']);
+            unset($_SESSION['totp_setup_secret'], $_SESSION['totp_setup_secret_ts']);
             $activityLog->log('2fa_disable', 'account');
             $auth->flash('Two-factor authentication disabled.', 'success');
             header('Location: /admin/account.php');
@@ -121,7 +126,10 @@ $siteTitle = $db->getSetting('site_title', 'My CMS');
 $csrf      = $auth->csrfToken();
 $flash     = $auth->getFlash();
 
-// 2FA state
+// 2FA state — expire the in-progress setup secret after 15 minutes
+if (isset($_SESSION['totp_setup_secret_ts']) && (time() - $_SESSION['totp_setup_secret_ts']) > 900) {
+    unset($_SESSION['totp_setup_secret'], $_SESSION['totp_setup_secret_ts']);
+}
 $totpEnabled    = $auth->isTotpEnabled();
 $setupSecret    = $_SESSION['totp_setup_secret'] ?? '';
 $setupMode      = $setupSecret !== '';
