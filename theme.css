@@ -202,7 +202,7 @@ audio { width: 100%; }
 .nav-toggle__bar {
     display: block;
     height: 1px;
-    background: var(--color-muted);
+    background: currentColor;
     border-radius: 2px;
     transform-origin: center;
     transition: transform .25s ease, opacity .25s ease;
