@@ -329,7 +329,7 @@ class Builder
     }
 
     /**
-     * Rebuild the static archive page for a single category.
+     * Rebuild the static archive page(s) for a single category.
      */
     public function buildCategoryArchive(int $categoryId): void
     {
@@ -338,18 +338,11 @@ class Builder
             return;
         }
 
-        $posts    = Post::findByCategory($this->db, $categoryId);
-        $path     = $this->outputDir . '/category/' . $cat['slug'] . '/index.html';
-        $rendered = $this->render('taxonomy.php', [
-            'type'  => 'category',
-            'term'  => $cat,
-            'posts' => $posts,
-        ]);
-        $this->writeFile($path, $rendered);
+        $this->buildTaxonomyArchive('category', $cat, Post::findByCategory($this->db, $categoryId));
     }
 
     /**
-     * Rebuild the static archive page for a single tag.
+     * Rebuild the static archive page(s) for a single tag.
      */
     public function buildTagArchive(int $tagId): void
     {
@@ -358,14 +351,54 @@ class Builder
             return;
         }
 
-        $posts    = Post::findByTag($this->db, $tagId);
-        $path     = $this->outputDir . '/tag/' . $tag['slug'] . '/index.html';
-        $rendered = $this->render('taxonomy.php', [
-            'type'  => 'tag',
-            'term'  => $tag,
-            'posts' => $posts,
-        ]);
-        $this->writeFile($path, $rendered);
+        $this->buildTaxonomyArchive('tag', $tag, Post::findByTag($this->db, $tagId));
+    }
+
+    /**
+     * Render and write all paginated pages for a taxonomy term archive.
+     * Stale pagination pages beyond the new total are removed.
+     */
+    private function buildTaxonomyArchive(string $type, array $term, array $allPosts): void
+    {
+        $perPage    = max(1, (int) ($this->settings['posts_per_page'] ?? 10));
+        $total      = count($allPosts);
+        $totalPages = max(1, (int) ceil($total / $perPage));
+        $baseDir    = $this->outputDir . '/' . $type . '/' . $term['slug'];
+
+        for ($p = 1; $p <= $totalPages; $p++) {
+            $slice    = array_slice($allPosts, ($p - 1) * $perPage, $perPage);
+            $rendered = $this->render('taxonomy.php', [
+                'type'        => $type,
+                'term'        => $term,
+                'posts'       => $slice,
+                'currentPage' => $p,
+                'totalPages'  => $totalPages,
+                'totalPosts'  => $total,
+            ]);
+
+            $path = $p === 1
+                ? $baseDir . '/index.html'
+                : $baseDir . '/page/' . $p . '/index.html';
+
+            $this->writeFile($path, $rendered);
+        }
+
+        // Remove stale pagination pages beyond the new total.
+        $pageDir     = $baseDir . '/page';
+        $pageEntries = is_dir($pageDir) ? scandir($pageDir) : false;
+        if ($pageEntries !== false) {
+            foreach ($pageEntries as $entry) {
+                if (!is_numeric($entry) || (int) $entry <= $totalPages) {
+                    continue;
+                }
+                $this->removeFile($pageDir . '/' . $entry . '/index.html');
+                $dir     = $pageDir . '/' . $entry;
+                $entries = is_dir($dir) ? scandir($dir) : false;
+                if ($entries !== false && count($entries) === 2) {
+                    @rmdir($dir);
+                }
+            }
+        }
     }
 
     /**

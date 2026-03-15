@@ -2,7 +2,8 @@
 /**
  * Taxonomy archive template (categories and tags).
  * Variables: $type ('category'|'tag'), $term (assoc: id, name, slug, description?),
- *            $posts (Post[]), $settings, $navPages, $siteUrl, $render
+ *            $posts (Post[]), $currentPage, $totalPages, $totalPosts,
+ *            $settings, $navPages, $siteUrl, $render
  */
 
 use CMS\Helpers;
@@ -12,11 +13,15 @@ $termName    = htmlspecialchars($term['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF
 $heading     = $type === 'category'
     ? 'Category: ' . $term['name']
     : 'Tag: ' . $term['name'];
-$pageTitle   = $heading . ' — ' . $siteTitle;
+$suffix      = $currentPage > 1 ? ' — Page ' . $currentPage : '';
+$pageTitle   = $heading . $suffix . ' — ' . $siteTitle;
 $description = ($type === 'category' && ($term['description'] ?? '') !== '')
     ? $term['description']
     : ($siteTitle . ' posts ' . ($type === 'category' ? 'in category ' : 'tagged ') . $term['name']);
-$canonical   = rtrim($siteUrl, '/') . '/' . $type . '/' . rawurlencode($term['slug']) . '/';
+$termBaseUrl = rtrim($siteUrl, '/') . '/' . $type . '/' . rawurlencode($term['slug']);
+$canonical   = $currentPage === 1
+    ? $termBaseUrl . '/'
+    : $termBaseUrl . '/page/' . $currentPage . '/';
 $ogType      = 'website';
 $ogImageUrl  = '';
 
@@ -57,6 +62,26 @@ ob_start();
 
         <?php endif; ?>
     </div>
+
+    <?php if ($totalPages > 1): ?>
+    <nav class="pagination" aria-label="Pagination">
+        <?php if ($currentPage > 1): ?>
+        <a href="<?= $currentPage === 2 ? htmlspecialchars($termBaseUrl . '/') : htmlspecialchars($termBaseUrl . '/page/' . ($currentPage - 1) . '/') ?>"
+           class="pagination__prev">← Newer</a>
+        <?php else: ?>
+        <span class="pagination__prev pagination__prev--disabled">← Newer</span>
+        <?php endif; ?>
+
+        <span class="pagination__info">Page <?= $currentPage ?> of <?= $totalPages ?></span>
+
+        <?php if ($currentPage < $totalPages): ?>
+        <a href="<?= htmlspecialchars($termBaseUrl . '/page/' . ($currentPage + 1) . '/') ?>"
+           class="pagination__next">Older →</a>
+        <?php else: ?>
+        <span class="pagination__next pagination__next--disabled">Older →</span>
+        <?php endif; ?>
+    </nav>
+    <?php endif; ?>
 </div>
 <?php
 $bodyContent = ob_get_clean();
