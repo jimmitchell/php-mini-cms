@@ -113,6 +113,7 @@ audio { width: 100%; }
     border-bottom: 1px solid var(--color-border);
     padding: 1.5rem;
     background: var(--color-chrome-bg);
+    position: relative;
 }
 
 .site-header__inner {
@@ -173,6 +174,24 @@ audio { width: 100%; }
 
 .theme-toggle:hover { color: var(--color-text); }
 .theme-toggle svg   { width: 1rem; height: 1rem; }
+
+/* ── Mobile nav toggle (hamburger) ───────────────────────────────────────── */
+.nav-toggle {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-muted);
+    padding: .25rem;
+    border-radius: 4px;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    flex-shrink: 0;
+    transition: color .15s;
+}
+.nav-toggle:hover { color: var(--color-text); }
+.nav-toggle svg   { width: 1.25rem; height: 1.25rem; }
 
 /* ── Search (header) ──────────────────────────────────────────────────────── */
 .search-toggle {
@@ -1060,14 +1079,48 @@ audio { width: 100%; }
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
     .post-list { grid-template-columns: 1fr; }
+
+    /* Show hamburger, hide inline nav links */
+    .nav-toggle { display: flex; }
+
+    .site-header__inner { flex-wrap: nowrap; }
+
+    .site-nav {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        gap: 0;
+        margin-right: 0;
+        background: var(--color-chrome-bg);
+        border-top: 1px solid var(--color-border);
+        border-bottom: 1px solid var(--color-border);
+        padding: .375rem 0;
+        z-index: 100;
+    }
+
+    .site-nav.is-open { display: flex; }
+
+    .site-nav a {
+        padding: .75rem 1.25rem;
+        font-size: .975rem;
+        border-radius: 0;
+    }
+
+    .site-nav a:hover {
+        background: var(--color-border);
+        color: var(--color-text);
+    }
 }
 
 @media (max-width: 600px) {
     html { font-size: 16px; }
     .post__title { font-size: 1.6rem; }
     .post-card__title { font-size: 1.2rem; }
-    .site-header { padding: 1.5rem; }
+    .site-header { padding: 1rem 1.25rem; }
     .site-header__title { font-size: .95rem; }
-    .site-header__inner { gap: .25rem; }
+    .site-header__inner { gap: .5rem; }
     .site-main { margin: 1.75rem auto; }
 }

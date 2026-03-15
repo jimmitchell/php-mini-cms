@@ -121,7 +121,17 @@ if (!function_exists('_e')) {
 
         <div class="site-header__right">
             <?php if (!empty($navPages)): ?>
-            <nav class="site-nav" aria-label="Site navigation">
+            <button class="nav-toggle" id="nav-toggle"
+                    aria-label="Open navigation" aria-expanded="false" aria-controls="site-nav">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round" aria-hidden="true" focusable="false">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <nav class="site-nav" id="site-nav" aria-label="Site navigation">
                 <?php foreach ($navPages as $navPage): ?>
                 <a href="<?= _e($siteUrl . '/' . $navPage->slug . '/') ?>">
                     <?= _e($navPage->title) ?>
@@ -263,6 +273,44 @@ if (!function_exists('_e')) {
             closeLightbox();
         }
     });
+
+    // ── Mobile nav toggle ────────────────────────────────────────────────────
+    var MENU_SVG  = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+    var CLOSE_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+    var navToggle = document.getElementById('nav-toggle');
+    var siteNav   = document.getElementById('site-nav');
+
+    function closeNav() {
+        if (!siteNav) return;
+        siteNav.classList.remove('is-open');
+        if (navToggle) {
+            navToggle.setAttribute('aria-expanded', 'false');
+            navToggle.setAttribute('aria-label', 'Open navigation');
+            navToggle.innerHTML = MENU_SVG;
+        }
+    }
+
+    if (navToggle && siteNav) {
+        navToggle.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var open = siteNav.classList.toggle('is-open');
+            navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            navToggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+            navToggle.innerHTML = open ? CLOSE_SVG : MENU_SVG;
+        });
+        siteNav.addEventListener('click', function (e) {
+            if (e.target.tagName === 'A') { closeNav(); }
+        });
+        document.addEventListener('click', function (e) {
+            if (siteNav.classList.contains('is-open') && !e.target.closest('.site-header')) {
+                closeNav();
+            }
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { closeNav(); }
+        });
+    }
 
     // ── Theme toggle (three-way: light → dark → system → light) ─────────────
     var MOON_ICON   = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
