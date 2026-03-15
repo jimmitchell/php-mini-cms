@@ -201,7 +201,7 @@ audio { width: 100%; }
 
 .nav-toggle__bar {
     display: block;
-    height: 2px;
+    height: 1.5px;
     background: currentColor;
     border-radius: 2px;
     transform-origin: center;
@@ -210,7 +210,7 @@ audio { width: 100%; }
 
 /* Morph top bar → top arm of X */
 .nav-toggle.is-open .nav-toggle__bar:nth-child(1) {
-    transform: translateY(6px) rotate(45deg);
+    transform: translateY(5.5px) rotate(45deg);
 }
 /* Fade out middle bar */
 .nav-toggle.is-open .nav-toggle__bar:nth-child(2) {
@@ -219,7 +219,7 @@ audio { width: 100%; }
 }
 /* Morph bottom bar → bottom arm of X */
 .nav-toggle.is-open .nav-toggle__bar:nth-child(3) {
-    transform: translateY(-6px) rotate(-45deg);
+    transform: translateY(-5.5px) rotate(-45deg);
 }
 
 /* ── Search (header) ──────────────────────────────────────────────────────── */

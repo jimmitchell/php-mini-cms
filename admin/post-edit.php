@@ -337,16 +337,18 @@ if ($post->published_at) {
                     <input type="text" id="slug" name="slug"
                            value="<?= Helpers::e($post->slug) ?>"
                            placeholder="auto-generated"
+                           aria-describedby="slug-hint"
                            style="flex:1">
                 </div>
-                <p class="form-hint">Leave blank to auto-generate from title. Only lowercase letters, numbers, and hyphens.</p>
+                <p class="form-hint" id="slug-hint">Leave blank to auto-generate from title. Only lowercase letters, numbers, and hyphens.</p>
 
                 <label for="content" style="margin-top:1.25rem">Content</label>
                 <textarea id="content" name="content"><?= Helpers::e($post->content) ?></textarea>
 
                 <label for="excerpt">Excerpt <span style="font-weight:400;color:var(--color-muted)">(optional)</span></label>
-                <textarea id="excerpt" name="excerpt" style="min-height:80px"><?= Helpers::e($post->excerpt ?? '') ?></textarea>
-                <p class="form-hint">Shown on the post index. Leave blank to use the start of the post content.</p>
+                <textarea id="excerpt" name="excerpt" style="min-height:80px"
+                          aria-describedby="excerpt-hint"><?= Helpers::e($post->excerpt ?? '') ?></textarea>
+                <p class="form-hint" id="excerpt-hint">Shown on the post index. Leave blank to use the start of the post content.</p>
             </div>
 
             <!-- Right: sidebar -->
@@ -386,21 +388,25 @@ if ($post->published_at) {
 
                     <label for="publish_date" style="margin-top:0">Publish date</label>
                     <input type="datetime-local" id="publish_date" name="publish_date"
-                           value="<?= Helpers::e($pubInputVal) ?>">
-                    <p class="form-hint">Leave blank to use the current time. A future date will schedule the post.</p>
+                           value="<?= Helpers::e($pubInputVal) ?>"
+                           aria-describedby="publish-date-hint">
+                    <p class="form-hint" id="publish-date-hint">Leave blank to use the current time. A future date will schedule the post.</p>
 
                     <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem">
-                        <button type="submit" class="btn btn--secondary"
-                                onclick="setAction('draft')">
-                            <?= $post->status === 'published' ? 'Update post' : 'Save draft' ?>
-                        </button>
-
                         <?php if ($post->status !== 'published'): ?>
                         <button type="submit" class="btn"
                                 onclick="setAction('publish')">
                             Publish
                         </button>
+                        <button type="submit" class="btn btn--secondary"
+                                onclick="setAction('draft')">
+                            Save draft
+                        </button>
                         <?php else: ?>
+                        <button type="submit" class="btn" id="update-btn"
+                                onclick="setAction('draft')" disabled>
+                            Update post
+                        </button>
                         <button type="submit" class="btn btn--secondary"
                                 onclick="setAction('unpublish')">
                             Unpublish
@@ -438,8 +444,8 @@ if ($post->published_at) {
                     <h2>Tags</h2>
                     <input type="text" name="tags_csv"
                            value="<?= Helpers::e($tagsCsv) ?>"
-                           placeholder="<?= !empty($allTags) ? 'e.g. ' . Helpers::e($allTags[0]['name'] ?? 'php, tutorial') : 'php, tutorial' ?>">
-                    <p class="form-hint">Comma-separated. New tags are created automatically.</p>
+                           placeholder="Add a tag…">
+                    <p class="form-hint">Press Enter or comma to add. Backspace removes the last tag. New tags are created automatically.</p>
                     <a href="/admin/tags.php" class="form-hint" style="display:block;margin-top:.25rem">Manage tags →</a>
                 </div>
 
@@ -448,7 +454,10 @@ if ($post->published_at) {
                 <div class="panel">
                     <h2>Insert media</h2>
                     <p class="form-hint" style="margin-bottom:.5rem">Click to insert at cursor.</p>
-                    <button type="button" id="gallery-select-btn" class="btn btn--secondary btn--sm" style="margin-bottom:.75rem">Select for gallery</button>
+                    <button type="button" id="gallery-select-btn" class="btn btn--secondary btn--sm"
+                            style="margin-bottom:.5rem"
+                            aria-label="Select multiple images to insert as a gallery">Select for gallery</button>
+                    <p class="form-hint" id="gallery-hint" style="margin-bottom:.5rem">Select 2+ images, then click Insert gallery.</p>
                     <div class="media-grid" id="media-insert-grid">
                         <?php foreach ($mediaItems as $m): ?>
                         <?php

@@ -186,18 +186,20 @@ $csrf      = $auth->csrfToken();
                     </div>
 
                     <div style="display:flex;flex-direction:column;gap:.5rem">
-                        <button type="submit" class="btn btn--secondary"
-                                onclick="setAction('draft')"
-                                <?= $page->status === 'published' ? 'id="update-btn" disabled' : '' ?>>
-                            <?= $page->status === 'published' ? 'Update page' : 'Save draft' ?>
-                        </button>
-
                         <?php if ($page->status !== 'published'): ?>
                         <button type="submit" class="btn"
                                 onclick="setAction('publish')">
                             Publish
                         </button>
+                        <button type="submit" class="btn btn--secondary"
+                                onclick="setAction('draft')">
+                            Save draft
+                        </button>
                         <?php else: ?>
+                        <button type="submit" class="btn" id="update-btn"
+                                onclick="setAction('draft')" disabled>
+                            Update page
+                        </button>
                         <button type="submit" class="btn btn--secondary"
                                 onclick="setAction('unpublish')">
                             Unpublish

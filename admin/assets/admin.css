@@ -185,7 +185,7 @@ body.admin-page {
 }
 
 .admin-nav__links li a:hover { background: var(--nav-hover-bg); text-decoration: none; }
-.admin-nav__links li a.active { color: var(--nav-active); background: var(--nav-hover-bg); }
+.admin-nav__links li a.active { color: var(--nav-active); background: rgba(137,180,250,.15); }
 
 /* ── Actions / logout ─────────────────────────────────────────────────────── */
 
@@ -349,6 +349,7 @@ body:has(.CodeMirror-fullscreen) .admin-nav {
 .alert--error   { background: #fef2f2; border: 1px solid #fca5a5; color: var(--color-danger); }
 .alert--success { background: #f0fdf4; border: 1px solid #86efac; color: var(--color-success); }
 .alert--info    { background: #eff6ff; border: 1px solid #93c5fd; color: var(--color-primary); }
+.alert--warning { background: #fffbeb; border: 1px solid #fcd34d; color: var(--color-warning); }
 
 /* ── Forms ────────────────────────────────────────────────────────────────── */
 label {
@@ -358,6 +359,8 @@ label {
     margin-bottom: .3rem;
     margin-top: 1rem;
 }
+
+label:first-child { margin-top: 0; }
 
 input[type="text"],
 input[type="password"],
@@ -381,7 +384,7 @@ select {
 input:focus, textarea:focus, select:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.25);
 }
 
 input:disabled, textarea:disabled, button:disabled {
@@ -391,12 +394,14 @@ input:disabled, textarea:disabled, button:disabled {
 
 textarea { resize: vertical; min-height: 120px; }
 
+::placeholder { color: #9ca3af; opacity: 1; }
+
 .required { color: var(--color-danger); margin-left: .15em; }
 
 code {
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     font-size: .85em;
-    background: #f3f4f6;
+    background: #e9eaed;
     border-radius: 3px;
     padding: .1em .35em;
 }
@@ -467,7 +472,7 @@ button[type="submit"]:hover,
     color: #fff;
 }
 
-.btn--sm, button.btn--sm { padding: .3rem .7rem; font-size: .8rem; }
+.btn--sm, button.btn--sm { padding: .3rem .7rem; font-size: .8rem; gap: .25rem; }
 
 /* ── Stats grid ───────────────────────────────────────────────────────────── */
 .stats-grid {
@@ -599,8 +604,8 @@ button[type="submit"]:hover,
 }
 
 .badge--published { background: #dcfce7; color: #166534; }
-.badge--draft     { background: #f3f4f6; color: #374151; }
-.badge--scheduled { background: #fef9c3; color: #713f12; }
+.badge--draft     { background: #e5e7eb; color: #1f2937; }
+.badge--scheduled { background: #fef3c7; color: #78350f; }
 .badge--success   { background: #dcfce7; color: #166534; }
 .badge--error     { background: #fee2e2; color: #991b1b; }
 
@@ -997,6 +1002,8 @@ th:last-child { text-align: right; }
     .filter-tabs {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent 100%);
+        mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent 100%);
     }
 
     .search-form {
@@ -1050,8 +1057,14 @@ th:last-child { text-align: right; }
         padding: 0;
     }
 
-    /* Published date: hidden at this breakpoint (posts col 3) */
-    .data-table td:nth-child(3) { display: none; }
+    /* Published date: inline meta text next to status badge */
+    .data-table td:nth-child(3) {
+        flex: 0 0 auto;
+        padding: 0 0 0 .4rem;
+        font-size: .72rem;
+        color: var(--color-muted);
+        align-self: center;
+    }
 
     /* Pages table: hide slug + nav order; surface status as the badge */
     .data-table--pages td:nth-child(2) { display: none; }   /* slug */
@@ -1104,6 +1117,19 @@ th:last-child { text-align: right; }
 
     .tags-form-grid {
         grid-template-columns: 1fr !important;
+    }
+
+    /* ── Pagination: stack info above buttons ── */
+    .pagination {
+        flex-wrap: wrap;
+        gap: .5rem;
+        padding: 1rem 0 .25rem;
+    }
+
+    .pagination__info {
+        flex: 0 0 100%;
+        text-align: center;
+        order: -1;
     }
 
     /* ── Editor: tighten layout gap ── */
