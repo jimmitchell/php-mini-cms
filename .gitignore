@@ -18,6 +18,7 @@ composer.phar
 /feed.json
 /sitemap.xml
 /theme.min.css
+/theme.critical.css
 /search.json
 /posts/
 /page/

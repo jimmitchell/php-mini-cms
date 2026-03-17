@@ -15,6 +15,9 @@ use League\CommonMark\MarkdownConverter;
 
 class Builder
 {
+    /** Marker comment that separates critical CSS from deferred CSS in theme.css. */
+    private const CRITICAL_MARKER = '/* =END CRITICAL= */';
+
     private Database           $db;
     private MarkdownConverter $md;
     private string             $outputDir;
@@ -23,6 +26,7 @@ class Builder
     private string             $fontDir;
     private array              $settings;
     private array              $navPages;
+    private string             $criticalCss = '';
 
     public function __construct(array $config, Database $db)
     {
@@ -286,19 +290,35 @@ class Builder
     }
 
     /**
-     * Generate theme.min.css from theme.css.
+     * Generate theme.min.css (full) and theme.critical.css (above-the-fold subset)
+     * from theme.css. The critical portion is everything before the marker comment
+     * "=END CRITICAL="; the full file is always written regardless.
      * Safe to call repeatedly — skips silently if theme.css is absent.
      */
     public function buildCss(): void
     {
-        $src  = $this->outputDir . '/theme.css';
-        $dest = $this->outputDir . '/theme.min.css';
+        $src      = $this->outputDir . '/theme.css';
+        $dest     = $this->outputDir . '/theme.min.css';
+        $critDest = $this->outputDir . '/theme.critical.css';
 
         if (!file_exists($src)) {
             return;
         }
 
-        $this->writeFile($dest, $this->minifyCss((string) file_get_contents($src)));
+        $css = (string) file_get_contents($src);
+        $pos = strpos($css, self::CRITICAL_MARKER);
+
+        if ($pos !== false) {
+            // Minify each half once; concatenate for the full file so the critical
+            // prefix is never processed twice.
+            $critMinified = $this->minifyCss(substr($css, 0, $pos));
+            $restMinified = $this->minifyCss(substr($css, $pos + strlen(self::CRITICAL_MARKER)));
+            $this->writeFile($critDest, $critMinified);
+            $this->writeFile($dest, $critMinified . $restMinified);
+            $this->criticalCss = $critMinified;
+        } else {
+            $this->writeFile($dest, $this->minifyCss($css));
+        }
     }
 
     /**
@@ -306,8 +326,8 @@ class Builder
      */
     public function buildAll(): void
     {
+        $this->buildCss();       // must run before refreshContext so criticalCss is current
         $this->refreshContext();
-        $this->buildCss();
         $this->migrateOldPagePaths();
         $this->migrateOldPostPaths();
 
@@ -635,7 +655,8 @@ class Builder
         };
 
         // Give templates access to a $render closure for including base.php.
-        $vars['render'] = $render;
+        $vars['render']      = $render;
+        $vars['criticalCss'] = $this->criticalCss;
 
         return $render($template, $vars);
     }
@@ -759,5 +780,7 @@ class Builder
             Page::findAll($this->db, 'published'),
             fn($p) => $p->nav_order > 0
         ));
+
+        $this->criticalCss = @file_get_contents($this->outputDir . '/theme.critical.css') ?: '';
     }
 }

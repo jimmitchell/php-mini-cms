@@ -104,7 +104,13 @@ if (!function_exists('_e')) {
     <?php endif; ?>
     <!-- Anti-FOUC: apply saved/system theme before CSS renders to avoid flash -->
     <script>(function(){var t=localStorage.getItem('theme');var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;if(t==='dark'||(t!=='light'&&sys)){document.documentElement.setAttribute('data-theme','dark');}else{document.documentElement.setAttribute('data-theme','light');}})();</script>
+    <?php if (!empty($criticalCss)): ?>
+    <style><?= $criticalCss ?></style>
+    <link rel="preload" href="/theme.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="/theme.min.css"></noscript>
+    <?php else: ?>
     <link rel="stylesheet" href="/theme.min.css">
+    <?php endif; ?>
     <?php if (!empty($jsonLd)): ?>
     <script type="application/ld+json"><?= $jsonLd ?></script>
     <?php endif; ?>
@@ -214,63 +220,67 @@ if (!function_exists('_e')) {
     });
 
     // ── Lightbox ────────────────────────────────────────────────────────────
-    var overlay = document.createElement('div');
-    overlay.className = 'lightbox';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', 'Image lightbox');
-
-    var img = document.createElement('img');
-    img.className = 'lightbox__img';
-    img.setAttribute('alt', '');
-
-    var closeBtn = document.createElement('button');
-    closeBtn.className = 'lightbox__close';
-    closeBtn.setAttribute('aria-label', 'Close lightbox');
-    closeBtn.textContent = '×';
-
-    overlay.appendChild(img);
-    overlay.appendChild(closeBtn);
-    document.body.appendChild(overlay);
-
-    function openLightbox(src, alt, naturalW, naturalH) {
-        img.src = src;
-        img.alt = alt || '';
-        img.style.maxWidth  = naturalW > 0 ? 'min(' + naturalW + 'px, 100%)' : '';
-        img.style.maxHeight = naturalH > 0 ? 'min(' + naturalH + 'px, 100%)' : '';
-        overlay.classList.add('is-open');
-        document.body.style.overflow = 'hidden';
-        closeBtn.focus();
-    }
-
-    function closeLightbox() {
-        overlay.classList.remove('is-open');
-        document.body.style.overflow = '';
-        img.src = '';
-        img.style.maxWidth  = '';
-        img.style.maxHeight = '';
-    }
-
-    document.querySelectorAll('.prose img').forEach(function (el) {
-        // Gallery images have their own lightbox — skip them here.
-        if (el.closest('[data-gallery-item]')) return;
-        el.addEventListener('click', function () {
-            openLightbox(el.src, el.alt, el.naturalWidth, el.naturalHeight);
-        });
+    // Only wire up the lightbox when the page actually contains prose images.
+    var _proseImgs = Array.from(document.querySelectorAll('.prose img')).filter(function (el) {
+        return !el.closest('[data-gallery-item]');
     });
 
-    closeBtn.addEventListener('click', closeLightbox);
+    if (_proseImgs.length) {
+        var overlay = document.createElement('div');
+        overlay.className = 'lightbox';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', 'Image lightbox');
 
-    // Click on backdrop (not the image) closes lightbox
-    overlay.addEventListener('click', function (e) {
-        if (e.target === overlay) { closeLightbox(); }
-    });
+        var img = document.createElement('img');
+        img.className = 'lightbox__img';
+        img.setAttribute('alt', '');
 
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && overlay.classList.contains('is-open')) {
-            closeLightbox();
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'lightbox__close';
+        closeBtn.setAttribute('aria-label', 'Close lightbox');
+        closeBtn.textContent = '×';
+
+        overlay.appendChild(img);
+        overlay.appendChild(closeBtn);
+        document.body.appendChild(overlay);
+
+        function openLightbox(src, alt, naturalW, naturalH) {
+            img.src = src;
+            img.alt = alt || '';
+            img.style.maxWidth  = naturalW > 0 ? 'min(' + naturalW + 'px, 100%)' : '';
+            img.style.maxHeight = naturalH > 0 ? 'min(' + naturalH + 'px, 100%)' : '';
+            overlay.classList.add('is-open');
+            document.body.style.overflow = 'hidden';
+            closeBtn.focus();
         }
-    });
+
+        function closeLightbox() {
+            overlay.classList.remove('is-open');
+            document.body.style.overflow = '';
+            img.src = '';
+            img.style.maxWidth  = '';
+            img.style.maxHeight = '';
+        }
+
+        _proseImgs.forEach(function (el) {
+            el.addEventListener('click', function () {
+                openLightbox(el.src, el.alt, el.naturalWidth, el.naturalHeight);
+            });
+        });
+
+        closeBtn.addEventListener('click', closeLightbox);
+
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) { closeLightbox(); }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && overlay.classList.contains('is-open')) {
+                closeLightbox();
+            }
+        });
+    }
 
     // ── Mobile nav toggle ────────────────────────────────────────────────────
     var navToggle = document.getElementById('nav-toggle');
@@ -528,6 +538,16 @@ document.addEventListener('keydown', function (e) {
     var target = section.dataset.url;
     if (!target) return;
 
+    var _wmCacheKey  = 'wm:' + target;
+    var _wmCached    = null;
+    var _wmRaw       = sessionStorage.getItem(_wmCacheKey);
+    if (_wmRaw) {
+        try {
+            var _wmEntry = JSON.parse(_wmRaw);
+            if (_wmEntry.ts && (Date.now() - _wmEntry.ts) < 300000) { _wmCached = _wmEntry.data; }
+        } catch (e) {}
+    }
+
     function esc(s) {
         return String(s || '')
             .replace(/&/g, '&amp;')
@@ -546,76 +566,85 @@ document.addEventListener('keydown', function (e) {
         return '<span class="' + cls + ' wm-avatar--fallback">' + esc(initial) + '</span>';
     }
 
-    fetch('https://webmention.io/api/mentions.jf2?target=' + encodeURIComponent(target) + '&per-page=100')
-        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
-        .then(function (data) {
-            var all      = data.children || [];
-            var likes    = all.filter(function (m) { return m['wm-property'] === 'like-of'; });
-            var reposts  = all.filter(function (m) { return m['wm-property'] === 'repost-of'; });
-            var replies  = all.filter(function (m) { return m['wm-property'] === 'in-reply-to'; });
-            var mentions = all.filter(function (m) { return m['wm-property'] === 'mention-of'; });
+    function renderMentions(data) {
+        var all      = data.children || [];
+        var likes    = all.filter(function (m) { return m['wm-property'] === 'like-of'; });
+        var reposts  = all.filter(function (m) { return m['wm-property'] === 'repost-of'; });
+        var replies  = all.filter(function (m) { return m['wm-property'] === 'in-reply-to'; });
+        var mentions = all.filter(function (m) { return m['wm-property'] === 'mention-of'; });
 
-            if (!all.length) return;
+        if (!all.length) return;
 
-            var html = '';
+        var html = '';
 
-            // ── Reactions (likes + reposts) ─────────────────────────────────
-            var reactions = likes.concat(reposts);
-            if (reactions.length) {
-                html += '<div class="webmentions__reactions">';
-                html += '<p class="wm-counts">';
-                if (likes.length)   html += '<span class="wm-count"><span aria-hidden="true">♥</span> ' + likes.length   + (likes.length   === 1 ? ' like'   : ' likes')   + '</span>';
-                if (reposts.length) html += '<span class="wm-count"><span aria-hidden="true">↺</span> ' + reposts.length + (reposts.length === 1 ? ' repost' : ' reposts') + '</span>';
-                html += '</p><div class="wm-avatars">';
-                reactions.forEach(function (m) {
-                    var a    = m.author || {};
-                    var link = a.url || m.url || '#';
-                    html += '<a href="' + esc(link) + '" target="_blank" rel="noopener noreferrer" title="' + esc(a.name || 'Anonymous') + '" class="wm-avatar-link">' + buildAvatar(a, 'lg') + '</a>';
-                });
-                html += '</div></div>';
-            }
+        // ── Reactions (likes + reposts) ─────────────────────────────────
+        var reactions = likes.concat(reposts);
+        if (reactions.length) {
+            html += '<div class="webmentions__reactions">';
+            html += '<p class="wm-counts">';
+            if (likes.length)   html += '<span class="wm-count"><span aria-hidden="true">♥</span> ' + likes.length   + (likes.length   === 1 ? ' like'   : ' likes')   + '</span>';
+            if (reposts.length) html += '<span class="wm-count"><span aria-hidden="true">↺</span> ' + reposts.length + (reposts.length === 1 ? ' repost' : ' reposts') + '</span>';
+            html += '</p><div class="wm-avatars">';
+            reactions.forEach(function (m) {
+                var a    = m.author || {};
+                var link = a.url || m.url || '#';
+                html += '<a href="' + esc(link) + '" target="_blank" rel="noopener noreferrer" title="' + esc(a.name || 'Anonymous') + '" class="wm-avatar-link">' + buildAvatar(a, 'lg') + '</a>';
+            });
+            html += '</div></div>';
+        }
 
-            // ── Replies + mentions ──────────────────────────────────────────
-            var allReplies = replies.concat(mentions);
-            if (allReplies.length) {
-                html += '<div class="webmentions__replies">';
-                html += '<p class="wm-group-label">' + allReplies.length + (allReplies.length === 1 ? ' Reply' : ' Replies') + '</p>';
-                allReplies.forEach(function (m) {
-                    var a       = m.author || {};
-                    var name    = a.name || 'Anonymous';
-                    var srcLink = a.url || m.url || '#';
-                    var pub     = m.published || m['wm-received'] || '';
-                    var dateStr = '';
-                    if (pub) {
-                        try { dateStr = new Date(pub).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) {}
-                    }
-                    var text = (m.content && m.content.text) ? m.content.text : '';
-                    if (text.length > 300) text = text.slice(0, 300) + '\u2026';
+        // ── Replies + mentions ──────────────────────────────────────────
+        var allReplies = replies.concat(mentions);
+        if (allReplies.length) {
+            html += '<div class="webmentions__replies">';
+            html += '<p class="wm-group-label">' + allReplies.length + (allReplies.length === 1 ? ' Reply' : ' Replies') + '</p>';
+            allReplies.forEach(function (m) {
+                var a       = m.author || {};
+                var name    = a.name || 'Anonymous';
+                var srcLink = a.url || m.url || '#';
+                var pub     = m.published || m['wm-received'] || '';
+                var dateStr = '';
+                if (pub) {
+                    try { dateStr = new Date(pub).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) {}
+                }
+                var text = (m.content && m.content.text) ? m.content.text : '';
+                if (text.length > 300) text = text.slice(0, 300) + '\u2026';
 
-                    html += '<article class="wm-reply">';
-                    html += '<header class="wm-reply__header">';
-                    html += '<a href="' + esc(srcLink) + '" target="_blank" rel="noopener noreferrer" class="wm-avatar-link">' + buildAvatar(a, 'sm') + '</a>';
-                    html += '<div class="wm-reply__meta">';
-                    html += '<a href="' + esc(srcLink) + '" target="_blank" rel="noopener noreferrer" class="wm-reply__author">' + esc(name) + '</a>';
-                    if (dateStr) {
-                        html += '<a href="' + esc(m.url || '#') + '" target="_blank" rel="noopener noreferrer" class="wm-reply__date-link"><time class="wm-reply__date" datetime="' + esc(pub) + '">' + esc(dateStr) + '</time></a>';
-                    }
-                    html += '</div></header>';
-                    if (text) {
-                        html += '<p class="wm-reply__content">' + esc(text) + '</p>';
-                    }
-                    html += '</article>';
-                });
-                html += '</div>';
-            }
+                html += '<article class="wm-reply">';
+                html += '<header class="wm-reply__header">';
+                html += '<a href="' + esc(srcLink) + '" target="_blank" rel="noopener noreferrer" class="wm-avatar-link">' + buildAvatar(a, 'sm') + '</a>';
+                html += '<div class="wm-reply__meta">';
+                html += '<a href="' + esc(srcLink) + '" target="_blank" rel="noopener noreferrer" class="wm-reply__author">' + esc(name) + '</a>';
+                if (dateStr) {
+                    html += '<a href="' + esc(m.url || '#') + '" target="_blank" rel="noopener noreferrer" class="wm-reply__date-link"><time class="wm-reply__date" datetime="' + esc(pub) + '">' + esc(dateStr) + '</time></a>';
+                }
+                html += '</div></header>';
+                if (text) {
+                    html += '<p class="wm-reply__content">' + esc(text) + '</p>';
+                }
+                html += '</article>';
+            });
+            html += '</div>';
+        }
 
-            if (html) {
-                var body = section.querySelector('.webmentions__body');
-                if (body) body.innerHTML = html;
-                section.classList.add('webmentions--loaded');
-            }
-        })
-        .catch(function () { /* fail silently */ });
+        if (html) {
+            var body = section.querySelector('.webmentions__body');
+            if (body) body.innerHTML = html;
+            section.classList.add('webmentions--loaded');
+        }
+    }
+
+    if (_wmCached) {
+        try { renderMentions(JSON.parse(_wmCached)); } catch (e) { /* ignore stale cache */ }
+    } else {
+        fetch('https://webmention.io/api/mentions.jf2?target=' + encodeURIComponent(target) + '&per-page=100')
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+            .then(function (data) {
+                try { sessionStorage.setItem(_wmCacheKey, JSON.stringify({ts: Date.now(), data: data})); } catch (e) {}
+                renderMentions(data);
+            })
+            .catch(function () { /* fail silently */ });
+    }
 }());
 </script>
 <?php endif; ?>
