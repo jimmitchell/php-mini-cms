@@ -459,13 +459,15 @@ button[type="submit"]:hover,
     color: var(--color-text);
 }
 
-.btn--danger {
+.btn--danger,
+button[type="submit"].btn--danger {
     background: var(--color-danger);
     color: #fff;
     border-color: var(--color-danger);
 }
 
-.btn--danger:hover {
+.btn--danger:hover,
+button[type="submit"].btn--danger:hover {
     background: var(--color-danger-h);
     border-color: var(--color-danger-h);
     text-decoration: none;
