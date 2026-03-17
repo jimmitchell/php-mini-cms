@@ -60,7 +60,7 @@ body.login-page {
     text-align: center;
 }
 
-.login-box button[type="submit"] {
+.login-box .btn {
     margin-top: 1rem;
     width: 100%;
     justify-content: center;
@@ -413,7 +413,7 @@ code {
 }
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
-.btn, button[type="submit"] {
+.btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -430,7 +430,6 @@ code {
 }
 
 /* Primary (default submit) */
-button[type="submit"],
 .btn,
 .btn--primary {
     background: var(--color-primary);
@@ -438,7 +437,6 @@ button[type="submit"],
     border-color: var(--color-primary);
 }
 
-button[type="submit"]:hover,
 .btn:hover,
 .btn--primary:hover {
     background: var(--color-primary-h);
@@ -459,22 +457,20 @@ button[type="submit"]:hover,
     color: var(--color-text);
 }
 
-.btn--danger,
-button[type="submit"].btn--danger {
+.btn--danger {
     background: var(--color-danger);
     color: #fff;
     border-color: var(--color-danger);
 }
 
-.btn--danger:hover,
-button[type="submit"].btn--danger:hover {
+.btn--danger:hover {
     background: var(--color-danger-h);
     border-color: var(--color-danger-h);
     text-decoration: none;
     color: #fff;
 }
 
-.btn--sm, button.btn--sm { padding: .3rem .7rem; font-size: .8rem; gap: .25rem; }
+.btn--sm { padding: .3rem .7rem; font-size: .8rem; gap: .25rem; }
 
 /* ── Stats grid ───────────────────────────────────────────────────────────── */
 .stats-grid {
@@ -1096,8 +1092,7 @@ th:last-child { text-align: right; }
     }
 
     /* ── Buttons: smaller on mobile ── */
-    .btn,
-    button[type="submit"] {
+    .btn {
         padding: .4rem .85rem;
         font-size: .85rem;
     }
@@ -1179,8 +1174,7 @@ th:last-child { text-align: right; }
     }
 
     /* Buttons even more compact on very small phones */
-    .btn,
-    button[type="submit"] {
+    .btn {
         padding: .35rem .7rem;
         font-size: .82rem;
     }

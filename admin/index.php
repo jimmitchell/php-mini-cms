@@ -119,7 +119,7 @@ $siteTitle = $db->getSetting('site_title', 'My CMS');
                 autofocus
                 <?= $lockout ? 'disabled' : '' ?>>
 
-            <button type="submit" <?= $lockout ? 'disabled' : '' ?>>Verify</button>
+            <button type="submit" class="btn" <?= $lockout ? 'disabled' : '' ?>>Verify</button>
         </form>
 
         <p style="margin-top:1rem;font-size:.875rem">
@@ -150,7 +150,7 @@ $siteTitle = $db->getSetting('site_title', 'My CMS');
                 required
                 <?= $lockout ? 'disabled' : '' ?>>
 
-            <button type="submit" <?= $lockout ? 'disabled' : '' ?>>Log in</button>
+            <button type="submit" class="btn" <?= $lockout ? 'disabled' : '' ?>>Log in</button>
         </form>
 
     <?php endif; ?>
