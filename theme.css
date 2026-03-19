@@ -573,7 +573,7 @@ audio { width: 100%; }
 }
 
 .post-card__title {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     line-height: 1.2;
 }
 
@@ -857,7 +857,7 @@ audio { width: 100%; }
 @media (max-width: 600px) {
     html { font-size: 16px; }
     .post__title { font-size: 1.6rem; }
-    .post-card__title { font-size: 1.2rem; }
+    .post-card__title { font-size: 1.35rem; }
     .site-header { padding: 1rem 1.25rem; }
     .site-header__title { font-size: .95rem; }
     .site-header__inner { gap: .5rem; }
