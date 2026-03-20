@@ -113,7 +113,7 @@ server {
         add_header X-XSS-Protection       "1; mode=block" always;
         add_header Referrer-Policy        "strict-origin-when-cross-origin" always;
         add_header Permissions-Policy     "geolocation=()" always;
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://tinylytics.app https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.webmention.io; media-src 'self'; connect-src 'self' https://tinylytics.app https://webmention.io https://www.google-analytics.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://tinylytics.app https://www.googletagmanager.com https://platform.twitter.com https://www.instagram.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.webmention.io; media-src 'self'; connect-src 'self' https://tinylytics.app https://webmention.io https://www.google-analytics.com; frame-src https://www.youtube-nocookie.com https://player.vimeo.com https://gist.github.com https://www.instagram.com https://platform.twitter.com https://www.linkedin.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
     }
 
     # ── Static HTML output ────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ server {
         add_header Permissions-Policy     "geolocation=()" always;
         # 'unsafe-inline' required for the inline <script> block in base.php.
         # tinylytics.app whitelisted for optional analytics.
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://tinylytics.app https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.webmention.io; media-src 'self'; connect-src 'self' https://tinylytics.app https://webmention.io https://www.google-analytics.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://tinylytics.app https://www.googletagmanager.com https://platform.twitter.com https://www.instagram.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.webmention.io; media-src 'self'; connect-src 'self' https://tinylytics.app https://webmention.io https://www.google-analytics.com; frame-src https://www.youtube-nocookie.com https://player.vimeo.com https://gist.github.com https://www.instagram.com https://platform.twitter.com https://www.linkedin.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
     }
 
     # Fallback for pages stored under pages/{slug}/index.html.
@@ -143,7 +143,7 @@ server {
         add_header X-XSS-Protection       "1; mode=block" always;
         add_header Referrer-Policy        "strict-origin-when-cross-origin" always;
         add_header Permissions-Policy     "geolocation=()" always;
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://tinylytics.app https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.webmention.io; media-src 'self'; connect-src 'self' https://tinylytics.app https://webmention.io https://www.google-analytics.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://tinylytics.app https://www.googletagmanager.com https://platform.twitter.com https://www.instagram.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.webmention.io; media-src 'self'; connect-src 'self' https://tinylytics.app https://webmention.io https://www.google-analytics.com; frame-src https://www.youtube-nocookie.com https://player.vimeo.com https://gist.github.com https://www.instagram.com https://platform.twitter.com https://www.linkedin.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
     }
 
     # ── Feed ──────────────────────────────────────────────────────────────────

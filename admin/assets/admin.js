@@ -43,6 +43,79 @@ function setAction(action) {
     const textarea = document.getElementById('content');
     if (!textarea || typeof EasyMDE === 'undefined') return;
 
+    function insertShortcode(editor, shortcode) {
+        const cm  = editor.codemirror;
+        const pos = cm.getCursor();
+        cm.replaceRange('\n' + shortcode + '\n', pos);
+        cm.focus();
+    }
+
+    const embedButtons = [
+        {
+            name: 'embed-youtube',
+            action: function(editor) {
+                const id = prompt('YouTube video ID (e.g. dQw4w9WgXcQ):');
+                if (id && id.trim()) insertShortcode(editor, `[youtube id="${id.trim()}"]`);
+            },
+            className: 'fa fa-youtube-play',
+            title: 'Embed YouTube video',
+        },
+        {
+            name: 'embed-vimeo',
+            action: function(editor) {
+                const id = prompt('Vimeo video ID (e.g. 123456789):');
+                if (id && id.trim()) insertShortcode(editor, `[vimeo id="${id.trim()}"]`);
+            },
+            className: 'fa fa-vimeo',
+            title: 'Embed Vimeo video',
+        },
+        {
+            name: 'embed-gist',
+            action: function(editor) {
+                const url = prompt('GitHub Gist URL (e.g. https://gist.github.com/user/abc123):');
+                if (url && url.trim()) insertShortcode(editor, `[gist url="${url.trim()}"]`);
+            },
+            className: 'fa fa-github',
+            title: 'Embed GitHub Gist',
+        },
+        {
+            name: 'embed-mastodon',
+            action: function(editor) {
+                const url = prompt('Mastodon post URL (e.g. https://mastodon.social/@user/123):');
+                if (url && url.trim()) insertShortcode(editor, `[mastodon url="${url.trim()}"]`);
+            },
+            className: 'fa fa-at',
+            title: 'Embed Mastodon post',
+        },
+        {
+            name: 'embed-instagram',
+            action: function(editor) {
+                const url = prompt('Instagram post URL (e.g. https://www.instagram.com/p/ABC123/):');
+                if (url && url.trim()) insertShortcode(editor, `[instagram url="${url.trim()}"]`);
+            },
+            className: 'fa fa-instagram',
+            title: 'Embed Instagram post',
+        },
+        {
+            name: 'embed-tweet',
+            action: function(editor) {
+                const url = prompt('X / Twitter post URL (e.g. https://x.com/user/status/123):');
+                if (url && url.trim()) insertShortcode(editor, `[tweet url="${url.trim()}"]`);
+            },
+            className: 'fa fa-twitter',
+            title: 'Embed X / Twitter post',
+        },
+        {
+            name: 'embed-linkedin',
+            action: function(editor) {
+                const urn = prompt('LinkedIn URN from "Embed this post" (e.g. urn:li:share:1234567890):');
+                if (urn && urn.trim()) insertShortcode(editor, `[linkedin urn="${urn.trim()}"]`);
+            },
+            className: 'fa fa-linkedin',
+            title: 'Embed LinkedIn post',
+        },
+    ];
+
     window._editor = new EasyMDE({
         element: textarea,
         autoDownloadFontAwesome: false,
@@ -58,6 +131,7 @@ function setAction(action) {
             'quote', 'unordered-list', 'ordered-list', '|',
             'link', 'image', 'table', '|',
             'preview', 'side-by-side', 'fullscreen', '|',
+            ...embedButtons, '|',
             'guide'
         ],
         minHeight: '360px',

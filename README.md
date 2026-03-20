@@ -201,6 +201,28 @@ Categories and tags are displayed as styled pills in the post header on public p
 
 Files are uploaded to `content/media/` and served through a Nginx alias at `/media/`. Filenames are sanitized to `{stem}_{8hex}.{canonical_ext}`. Accepted MIME types: JPEG, PNG, GIF, WebP, SVG, MP4, WebM, MP3, OGG. Maximum size: 50 MB.
 
+### Shortcode Embeds
+
+The post editor toolbar includes embed buttons (YouTube, Vimeo, GitHub Gist, Mastodon, Instagram, X/Twitter, LinkedIn) that insert the appropriate shortcode at the cursor. You can also type shortcodes directly. Shortcodes must appear alone on their own line.
+
+| Shortcode | Description |
+|-----------|-------------|
+| `[youtube id="dQw4w9WgXcQ"]` | YouTube video (privacy-enhanced via youtube-nocookie.com) |
+| `[vimeo id="123456789"]` | Vimeo video (privacy-friendly with `dnt=1`) |
+| `[gist url="https://gist.github.com/user/abc123"]` | GitHub Gist (optional: `file="foo.php"`) |
+| `[mastodon url="https://mastodon.social/@user/123456789"]` | Mastodon post |
+| `[instagram url="https://www.instagram.com/p/ABC123/"]` | Instagram post |
+| `[tweet url="https://x.com/user/status/123456789"]` | X / Twitter post (also accepts `twitter.com` URLs) |
+| `[linkedin urn="urn:li:share:1234567890"]` | LinkedIn post — get the URN from LinkedIn's "Embed this post" option |
+
+**Notes:**
+- YouTube and Vimeo render as responsive 16:9 iframes with no cookies (YouTube nocookie, Vimeo dnt=1).
+- GitHub Gist uses the static `.pibb` render — no external JavaScript is loaded into your page.
+- Mastodon uses each instance's native `/embed` URL — no external JavaScript needed.
+- Instagram and X/Twitter inject their respective embed scripts (`embed.js`, `widgets.js`). If a page has multiple embeds of the same type, the script is deduplicated automatically. Both degrade gracefully to a plain link if the script fails to load.
+- LinkedIn embeds require the post's URN, which you can find in the `<iframe src>` shown by LinkedIn's "Embed this post" feature.
+- Shortcodes work in both posts and pages.
+
 ### Image Galleries
 
 You can insert a masonry image gallery into any post directly from the post editor:
