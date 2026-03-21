@@ -81,6 +81,63 @@ class JsonFeed
         return $json . "\n";
     }
 
+    /**
+     * Render JSON Feed 1.1 for a taxonomy term (category or tag).
+     *
+     * @param string  $type  'category' or 'tag'
+     * @param array   $term  Assoc array with keys: id, name, slug
+     * @param Post[]  $posts Published Post objects for this term
+     */
+    public function renderForTerm(string $type, array $term, array $posts): string
+    {
+        $count     = (int) ($this->settings['feed_post_count'] ?? 20);
+        $siteUrl   = rtrim($this->settings['site_url'] ?? '', '/');
+        $siteTitle = $this->settings['site_title'] ?? 'My CMS';
+        $label     = $type === 'category' ? 'Category' : 'Tag';
+        $title     = $siteTitle . ' — ' . $label . ': ' . $term['name'];
+        $termUrl   = $siteUrl . '/' . $type . '/' . rawurlencode($term['slug']) . '/';
+        $feedUrl   = $siteUrl . '/' . $type . '/' . rawurlencode($term['slug']) . '/feed.json';
+
+        $posts = array_slice($posts, 0, $count);
+
+        $feed = [
+            'version'       => 'https://jsonfeed.org/version/1.1',
+            'title'         => $title,
+            'home_page_url' => $termUrl,
+            'feed_url'      => $feedUrl,
+        ];
+
+        $items = [];
+        foreach ($posts as $post) {
+            $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+            $html    = $this->converter->convert($post->content)->getContent();
+
+            $item = [
+                'id'             => $postUrl,
+                'url'            => $postUrl,
+                'title'          => $post->title,
+                'content_html'   => $html,
+                'date_published' => $this->rfc3339($post->published_at),
+                'date_modified'  => $this->rfc3339($post->updated_at ?? $post->published_at),
+            ];
+
+            if (!empty($post->excerpt)) {
+                $item['summary'] = $post->excerpt;
+            }
+
+            $items[] = $item;
+        }
+
+        $feed['items'] = $items;
+
+        $json = json_encode($feed, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($json === false) {
+            error_log('[JsonFeed] Failed to encode term feed: ' . json_last_error_msg());
+            return '';
+        }
+        return $json . "\n";
+    }
+
     /** Convert a SQLite datetime string to RFC 3339. */
     private function rfc3339(string $dt): string
     {

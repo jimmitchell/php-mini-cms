@@ -84,6 +84,59 @@ class Feed
         return $xml;
     }
 
+    /**
+     * Render Atom 1.0 XML for a taxonomy term (category or tag).
+     *
+     * @param string  $type  'category' or 'tag'
+     * @param array   $term  Assoc array with keys: id, name, slug
+     * @param Post[]  $posts Published Post objects for this term
+     */
+    public function renderForTerm(string $type, array $term, array $posts): string
+    {
+        $count    = (int) ($this->settings['feed_post_count'] ?? 20);
+        $siteUrl  = rtrim($this->settings['site_url'] ?? '', '/');
+        $siteTitle = $this->settings['site_title'] ?? 'My CMS';
+        $label    = $type === 'category' ? 'Category' : 'Tag';
+        $title    = $siteTitle . ' — ' . $label . ': ' . $term['name'];
+        $termUrl  = $siteUrl . '/' . $type . '/' . rawurlencode($term['slug']) . '/';
+        $feedUrl  = $siteUrl . '/' . $type . '/' . rawurlencode($term['slug']) . '/feed.xml';
+
+        $posts = array_slice($posts, 0, $count);
+
+        $feedUpdated = !empty($posts)
+            ? $this->atom($posts[0]->updated_at ?? $posts[0]->published_at)
+            : $this->atom(date('Y-m-d H:i:s'));
+
+        $feedId = $siteUrl ?: 'urn:uuid:' . sha1($siteTitle);
+
+        $xml  = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<feed xmlns="http://www.w3.org/2005/Atom">' . "\n";
+        $xml .= '  <title>' . $this->x($title) . '</title>' . "\n";
+        $xml .= '  <link href="' . $this->x($termUrl) . '" rel="alternate" type="text/html"/>' . "\n";
+        $xml .= '  <link href="' . $this->x($feedUrl) . '" rel="self" type="application/atom+xml"/>' . "\n";
+        $xml .= '  <id>' . $this->x($feedId . '/' . $type . '/' . $term['slug'] . '/feed.xml') . '</id>' . "\n";
+        $xml .= '  <updated>' . $feedUpdated . '</updated>' . "\n";
+        $xml .= '  <generator uri="https://github.com/php-mini-cms">php-mini-cms</generator>' . "\n";
+
+        foreach ($posts as $post) {
+            $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+            $html    = $this->converter->convert($post->content)->getContent();
+
+            $xml .= '  <entry>' . "\n";
+            $xml .= '    <title>' . $this->x($post->title) . '</title>' . "\n";
+            $xml .= '    <link href="' . $this->x($postUrl) . '" rel="alternate" type="text/html"/>' . "\n";
+            $xml .= '    <id>' . $this->x($postUrl) . '</id>' . "\n";
+            $xml .= '    <published>' . $this->atom($post->published_at) . '</published>' . "\n";
+            $xml .= '    <updated>' . $this->atom($post->updated_at ?? $post->published_at) . '</updated>' . "\n";
+            $xml .= '    <content type="html"><![CDATA[' . $html . ']]></content>' . "\n";
+            $xml .= '  </entry>' . "\n";
+        }
+
+        $xml .= '</feed>' . "\n";
+
+        return $xml;
+    }
+
     /** XML-encode a plain string. */
     private function x(string $s): string
     {

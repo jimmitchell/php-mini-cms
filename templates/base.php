@@ -99,6 +99,11 @@ if (!function_exists('_e')) {
     <link rel="alternate" type="application/feed+json"
           title="<?= _e($siteTitle) ?>"
           href="<?= _e($siteUrl . '/feed.json') ?>">
+    <?php foreach ($extraFeedLinks ?? [] as $feedLink): ?>
+    <link rel="alternate" type="<?= _e($feedLink['type']) ?>"
+          title="<?= _e($feedLink['title']) ?>"
+          href="<?= _e($feedLink['href']) ?>">
+    <?php endforeach; ?>
     <!-- Webmention -->
     <?php $webmentionDomain = $settings['webmention_domain'] ?? ''; ?>
     <?php if ($webmentionDomain !== ''): ?>

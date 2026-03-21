@@ -350,7 +350,7 @@ class Builder
     }
 
     /**
-     * Rebuild the static archive page(s) for a single category.
+     * Rebuild the static archive page(s) and feeds for a single category.
      */
     public function buildCategoryArchive(int $categoryId): void
     {
@@ -359,11 +359,13 @@ class Builder
             return;
         }
 
-        $this->buildTaxonomyArchive('category', $cat, Post::findByCategory($this->db, $categoryId));
+        $posts = Post::findByCategory($this->db, $categoryId);
+        $this->buildTaxonomyArchive('category', $cat, $posts);
+        $this->buildTaxonomyFeed('category', $cat, $posts);
     }
 
     /**
-     * Rebuild the static archive page(s) for a single tag.
+     * Rebuild the static archive page(s) and feeds for a single tag.
      */
     public function buildTagArchive(int $tagId): void
     {
@@ -372,7 +374,25 @@ class Builder
             return;
         }
 
-        $this->buildTaxonomyArchive('tag', $tag, Post::findByTag($this->db, $tagId));
+        $posts = Post::findByTag($this->db, $tagId);
+        $this->buildTaxonomyArchive('tag', $tag, $posts);
+        $this->buildTaxonomyFeed('tag', $tag, $posts);
+    }
+
+    /**
+     * Write feed.xml and feed.json for a taxonomy term.
+     *
+     * @param Post[] $posts
+     */
+    private function buildTaxonomyFeed(string $type, array $term, array $posts): void
+    {
+        $baseDir = $this->outputDir . '/' . $type . '/' . $term['slug'];
+
+        $atomFeed = new Feed($this->db, $this->settings);
+        $this->writeFile($baseDir . '/feed.xml', $atomFeed->renderForTerm($type, $term, $posts));
+
+        $jsonFeed = new JsonFeed($this->db, $this->settings);
+        $this->writeFile($baseDir . '/feed.json', $jsonFeed->renderForTerm($type, $term, $posts));
     }
 
     /**
@@ -451,9 +471,10 @@ class Builder
                     continue;
                 }
                 if (!in_array($entry, $validCatSlugs, true)) {
-                    $stale = $catDir . '/' . $entry . '/index.html';
-                    $this->removeFile($stale);
-                    $dir     = $catDir . '/' . $entry;
+                    $dir = $catDir . '/' . $entry;
+                    $this->removeFile($dir . '/index.html');
+                    $this->removeFile($dir . '/feed.xml');
+                    $this->removeFile($dir . '/feed.json');
                     $entries = is_dir($dir) ? scandir($dir) : false;
                     if ($entries !== false && count($entries) === 2) {
                         @rmdir($dir);
@@ -471,9 +492,10 @@ class Builder
                     continue;
                 }
                 if (!in_array($entry, $validTagSlugs, true)) {
-                    $stale = $tagDir . '/' . $entry . '/index.html';
-                    $this->removeFile($stale);
-                    $dir     = $tagDir . '/' . $entry;
+                    $dir = $tagDir . '/' . $entry;
+                    $this->removeFile($dir . '/index.html');
+                    $this->removeFile($dir . '/feed.xml');
+                    $this->removeFile($dir . '/feed.json');
                     $entries = is_dir($dir) ? scandir($dir) : false;
                     if ($entries !== false && count($entries) === 2) {
                         @rmdir($dir);

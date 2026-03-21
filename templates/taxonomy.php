@@ -24,6 +24,20 @@ $canonical   = $currentPage === 1
     : $termBaseUrl . '/page/' . $currentPage . '/';
 $ogType      = 'website';
 $ogImageUrl  = '';
+$label       = $type === 'category' ? 'Category' : 'Tag';
+$termFeedBase = rtrim($siteUrl, '/') . '/' . $type . '/' . rawurlencode($term['slug']);
+$extraFeedLinks = [
+    [
+        'type'  => 'application/atom+xml',
+        'title' => ($settings['site_title'] ?? 'My CMS') . ' — ' . $label . ': ' . $term['name'],
+        'href'  => $termFeedBase . '/feed.xml',
+    ],
+    [
+        'type'  => 'application/feed+json',
+        'title' => ($settings['site_title'] ?? 'My CMS') . ' — ' . $label . ': ' . $term['name'],
+        'href'  => $termFeedBase . '/feed.json',
+    ],
+];
 
 ob_start();
 ?>
@@ -89,5 +103,5 @@ $wideLayout  = true;
 
 echo $render('base.php', compact(
     'pageTitle', 'description', 'canonical', 'ogType', 'ogImageUrl', 'bodyContent',
-    'settings', 'navPages', 'siteUrl', 'render', 'wideLayout'
+    'settings', 'navPages', 'siteUrl', 'render', 'wideLayout', 'extraFeedLinks'
 ));
