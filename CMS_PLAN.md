@@ -209,6 +209,7 @@ CREATE TABLE settings (
 --               posts_per_page, feed_post_count, locale, timezone,
 --               mastodon_handle, mastodon_instance, mastodon_token,
 --               bluesky_handle, bluesky_url, bluesky_app_password,
+--               github_url,
 --               webmention_domain,
 --               ga_measurement_id,
 --               tinylytics_code

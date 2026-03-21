@@ -331,6 +331,10 @@ Set your Bluesky handle and an app password in **Settings → Bluesky**. New pos
 
 Both platforms are independent — you can enable one, both, or neither.
 
+### GitHub
+
+Set your GitHub profile URL in **Settings → GitHub** (e.g. `https://github.com/username`). When set, a GitHub icon link appears in the site footer between the Bluesky icon and the RSS icon, with `rel="me noopener"` for IndieAuth compatibility.
+
 When a post is syndicated, the URL of the Mastodon toot or Bluesky post is stored and displayed at the bottom of the public post page as a small "Also on: Mastodon / Bluesky" footer.
 
 ---
