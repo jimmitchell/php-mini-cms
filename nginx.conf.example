@@ -57,6 +57,17 @@ server {
         add_header Content-Security-Policy "default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'" always;
     }
 
+    # ── Web fonts ─────────────────────────────────────────────────────────────
+    # Fonts are content-hashed filenames and never change; cache for 1 year.
+    location /fonts/ {
+        expires 1y;
+        add_header Cache-Control          "public, immutable"  always;
+        add_header X-Content-Type-Options "nosniff"            always;
+        add_header X-Frame-Options        "SAMEORIGIN"         always;
+        add_header Referrer-Policy        "strict-origin-when-cross-origin" always;
+        add_header Content-Security-Policy "default-src 'none'; font-src 'self'" always;
+    }
+
     # ── REST API ──────────────────────────────────────────────────────────────
     # All /admin/api/* requests are handled by a single api.php router.
     # Nginx longest-prefix match routes this before the /admin/ block below.
