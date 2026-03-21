@@ -43,12 +43,15 @@ ob_start();
 <article class="post h-entry">
     <header class="post__header">
         <h1 class="post__title p-name"><?= htmlspecialchars($post->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h1>
-        <data class="p-author" value="<?= htmlspecialchars($siteTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"></data>
+        <a class="p-author h-card" href="<?= htmlspecialchars($siteUrl . '/', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" rel="author"><?= htmlspecialchars($authorName !== '' ? $authorName : $siteTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
         <?php if ($post->published_at): ?>
         <time class="post__date dt-published" datetime="<?= htmlspecialchars($post->published_at) ?>">
             <a class="u-url" href="<?= htmlspecialchars($canonical, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= Helpers::formatDate($post->published_at, 'l, F j, Y', $settings['locale'] ?? '', $settings['timezone'] ?? '') ?></a>
         </time>
         <span class="post__reading-time"><?= $readingTime ?> min read</span>
+        <?php if ($post->updated_at && $post->updated_at !== $post->published_at): ?>
+        <time class="u-update" datetime="<?= htmlspecialchars($post->updated_at) ?>" hidden></time>
+        <?php endif; ?>
         <?php endif; ?>
         <?php
         $terms = [];
@@ -68,7 +71,7 @@ ob_start();
         <ul class="post__terms">
             <?php foreach ($terms as $term): ?>
             <li><a href="<?= htmlspecialchars($term['url'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
-                   class="term term--<?= $term['type'] ?>"><?= htmlspecialchars($term['label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a></li>
+                   class="term term--<?= $term['type'] ?> p-category"><?= htmlspecialchars($term['label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a></li>
             <?php endforeach; ?>
         </ul>
         <?php endif; ?>
@@ -82,11 +85,11 @@ ob_start();
         <span>Also on:</span>
         <?php if ($post->mastodon_url): ?>
         <a href="<?= htmlspecialchars($post->mastodon_url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
-           target="_blank" rel="noopener noreferrer">Mastodon</a>
+           class="u-syndication" target="_blank" rel="noopener noreferrer">Mastodon</a>
         <?php endif; ?>
         <?php if ($post->bluesky_url): ?>
         <a href="<?= htmlspecialchars($post->bluesky_url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
-           target="_blank" rel="noopener noreferrer">Bluesky</a>
+           class="u-syndication" target="_blank" rel="noopener noreferrer">Bluesky</a>
         <?php endif; ?>
     </footer>
     <?php endif; ?>
