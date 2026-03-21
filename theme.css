@@ -300,10 +300,21 @@ audio { width: 100%; }
     margin-bottom: .1rem;
 }
 
+.post__author {
+    display: inline;
+    font-size: .875rem;
+    color: var(--color-muted);
+    text-decoration: none;
+}
+
 .post__date {
     display: inline;
     font-size: .875rem;
     color: var(--color-muted);
+}
+
+.post__date::before {
+    content: ' · ';
 }
 
 .post__date a {
