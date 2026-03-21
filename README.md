@@ -155,6 +155,7 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 | Account | `/admin/account.php` | Change admin password; set up, manage, or disable TOTP 2FA |
 | Logs | `/admin/login-log.php` | Login attempt history and admin activity log |
 | XML-RPC API | `/admin/xmlrpc.php` | WordPress-compatible API for MarsEdit and similar clients |
+| REST API | `/admin/api/{resource}` | HTTP Basic Auth REST API for posts, pages, media, categories, tags, and settings |
 
 ### Security
 
@@ -382,6 +383,37 @@ MarsEdit will show both a **Posts** and a **Pages** section. All post and page C
 
 ---
 
+## REST API
+
+The CMS exposes a lightweight REST API at `/admin/api/`. Authentication is HTTP Basic with the same admin credentials used for the panel. Rate-limiting reuses the same `login_attempts` table and lockout rules as the web login.
+
+**Base URL:** `/admin/api/{resource}/{id}`
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/admin/api/posts` | List posts (optional `?status=draft\|published\|scheduled`) |
+| `GET` | `/admin/api/posts/{id}` | Get a single post |
+| `POST` | `/admin/api/posts` | Create a post |
+| `PUT` | `/admin/api/posts/{id}` | Update a post |
+| `DELETE` | `/admin/api/posts/{id}` | Delete a post |
+| `GET` | `/admin/api/pages` | List pages |
+| `GET` | `/admin/api/pages/{id}` | Get a single page |
+| `POST` | `/admin/api/pages` | Create a page |
+| `PUT` | `/admin/api/pages/{id}` | Update a page |
+| `DELETE` | `/admin/api/pages/{id}` | Delete a page |
+| `GET` | `/admin/api/media` | List media library items |
+| `POST` | `/admin/api/media` | Upload a file (`multipart/form-data`, field `file`) |
+| `DELETE` | `/admin/api/media/{id}` | Delete a media item |
+| `GET` | `/admin/api/categories` | List categories |
+| `GET` | `/admin/api/tags` | List tags |
+| `GET` | `/admin/api/settings` | Read site settings (sensitive keys excluded) |
+
+Write endpoints (`POST`/`PUT`) accept `application/json`. Creating or updating a published post triggers the same static rebuild as the admin UI (post HTML, index, feed).
+
+CORS is open (`Access-Control-Allow-Origin: *`) to support native app clients and local development; the Nginx TLS and CSP configuration provides the real security boundary in production.
+
+---
+
 ## Custom CSS
 
 Paste any CSS into **Settings → Custom CSS** and save. The styles are injected as a `<style>` block at the end of every public page's `<head>`, after `theme.css`, so they naturally take precedence. Leave the field empty to inject nothing.
@@ -449,6 +481,7 @@ php-mini-cms/
 ├── admin/                  # Admin panel PHP pages
 │   ├── assets/             # Admin CSS, JS, EasyMDE, Font Awesome
 │   ├── partials/           # Shared nav partial
+│   ├── api.php             # REST API endpoint (HTTP Basic Auth)
 │   └── xmlrpc.php          # WordPress/MetaWeblog XML-RPC API endpoint
 ├── bin/
 │   ├── setup.php           # CLI installer (password hash + DB init)
@@ -459,22 +492,25 @@ php-mini-cms/
 ├── docker/                 # Docker-specific Nginx config, PHP ini, entrypoint
 ├── fonts/                  # Figtree + Crimson Pro WOFF2 files + OG image fonts (fonts/og/)
 ├── src/                    # PHP source classes (namespace CMS\)
+│   ├── ActivityLog.php     # Admin activity logger
 │   ├── Auth.php            # Login, session, CSRF, rate limiting, TOTP 2FA
-│   ├── Bluesky.php
-│   ├── Builder.php
-│   ├── Database.php
-│   ├── Feed.php
+│   ├── Bluesky.php         # Bluesky AT Protocol API client
+│   ├── Builder.php         # Static site build engine
+│   ├── Database.php        # PDO/SQLite wrapper + schema migrations
+│   ├── Feed.php            # Atom 1.0 feed generator
 │   ├── Helpers.php
-│   ├── HighlightFencedCodeRenderer.php
-│   ├── JsonFeed.php
-│   ├── Mastodon.php
+│   ├── HighlightFencedCodeRenderer.php  # Syntax highlighting for fenced code blocks
+│   ├── ImageRenderer.php   # Lazy loading, WebP <picture>, CLS-safe dimensions
+│   ├── JsonFeed.php        # JSON Feed 1.1 generator
+│   ├── Mastodon.php        # Mastodon API client
 │   ├── Media.php
-│   ├── OgImage.php
+│   ├── OgImage.php         # GD + FreeType OG image generator
 │   ├── Page.php
 │   ├── Post.php
-│   ├── Webmention.php
+│   ├── Webmention.php      # Outgoing webmention discovery and sending
 │   └── XmlRpc.php
 ├── templates/              # Public HTML templates
+│   ├── 404.php             # 404 Not Found error page
 │   ├── base.php
 │   ├── index.php
 │   ├── page.php

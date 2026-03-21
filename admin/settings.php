@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'bluesky_url'          => rtrim(trim($_POST['bluesky_url']          ?? ''), '/'),
         'bluesky_handle'       => trim($_POST['bluesky_handle']       ?? ''),
         'bluesky_app_password' => trim($_POST['bluesky_app_password'] ?? ''),
+        'github_url'           => rtrim(trim($_POST['github_url']           ?? ''), '/'),
         'tinylytics_code'      => trim($_POST['tinylytics_code']      ?? ''),
         'ga_measurement_id'    => trim($_POST['ga_measurement_id']    ?? ''),
         'webmention_domain'    => trim($_POST['webmention_domain']    ?? ''),
@@ -251,6 +252,20 @@ $flash     = $auth->getFlash();
                 Create one in Bluesky under Settings → Privacy and Security → App Passwords.
                 Never use your main password. When both Handle and App password are set,
                 new posts will be automatically shared on first publish.
+            </p>
+        </div>
+
+        <div class="panel">
+            <h2>GitHub</h2>
+
+            <label for="github_url">Your GitHub profile URL</label>
+            <input type="url" id="github_url" name="github_url"
+                   value="<?= Helpers::e($_POST['github_url'] ?? $settings['github_url'] ?? '') ?>"
+                   placeholder="https://github.com/username"
+                   style="max-width:400px">
+            <p class="form-hint">
+                When set, a GitHub link is shown in the site footer.
+                Example: <code>https://github.com/username</code>
             </p>
         </div>
 
