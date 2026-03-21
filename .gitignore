@@ -40,3 +40,6 @@ Thumbs.db
 # Claude files
 CLAUDE.md
 CLAUDE-*
+
+# Production server nginx configs (contain real domain/cert paths)
+*.nginx.conf
