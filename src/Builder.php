@@ -94,8 +94,9 @@ class Builder
         $hash     = hash('sha256', $rendered);
 
         if ($hash !== $post->content_hash) {
-            $this->writeFile($path, $rendered);
-            $post->markBuilt($hash);
+            if ($this->writeFile($path, $rendered)) {
+                $post->markBuilt($hash);
+            }
         }
 
         // Rebuild taxonomy archive pages for this post's terms.
@@ -127,8 +128,9 @@ class Builder
         $hash     = hash('sha256', $rendered);
 
         if ($hash !== $page->content_hash) {
-            $this->writeFile($path, $rendered);
-            $page->markBuilt($hash);
+            if ($this->writeFile($path, $rendered)) {
+                $page->markBuilt($hash);
+            }
         }
     }
 
@@ -873,7 +875,7 @@ class Builder
 
     // ── File I/O ──────────────────────────────────────────────────────────────
 
-    private function writeFile(string $path, string $content): void
+    private function writeFile(string $path, string $content): bool
     {
         $dir = dirname($path);
         if (!is_dir($dir)) {
@@ -882,7 +884,7 @@ class Builder
         if (str_ends_with($path, '.html')) {
             $content = $this->minifyHtml($content);
         }
-        file_put_contents($path, $content);
+        return file_put_contents($path, $content) !== false;
     }
 
     /**
