@@ -129,6 +129,9 @@ class XmlRpc
         }
 
         if (is_string($value)) {
+            // Strip characters that are invalid in XML 1.0 (control chars except tab/LF/CR).
+            // If these reach the output, XML parsers like MarsEdit's will reject the entire post.
+            $value = (string) preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value);
             return '<value><string>' . htmlspecialchars($value, ENT_XML1, 'UTF-8') . '</string></value>';
         }
 
