@@ -1179,12 +1179,11 @@ switch ($method) {
             $all    = Post::findAll($db, $status);
             $sliced = array_slice($all, $offset, $limit);
             xmlrpc_debug("  → " . count($sliced) . " posts (of " . count($all) . " total, db_status_filter=" . ($status ?? 'all') . ")");
-            // DIAGNOSTIC: blank content for id<=37 posts to test if content causes MarsEdit to drop them
+            // DIAGNOSTIC: give id<=37 posts fake high IDs to test if MarsEdit filters by post_id value
             $structs = array_map(function($p) use ($siteUrl) {
                 $s = wpPostToStruct($p, $siteUrl);
                 if ($p->id <= 37) {
-                    $s['post_content'] = 'DIAGNOSTIC PLACEHOLDER';
-                    $s['post_excerpt'] = '';
+                    $s['post_id'] = (string) ($p->id + 1000);
                 }
                 return $s;
             }, $sliced);
