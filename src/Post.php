@@ -60,19 +60,31 @@ class Post
             );
         }
 
-        return array_map(fn($row) => self::fromRow($db, $row), $rows);
+        $posts = array_map(fn($row) => self::fromRow($db, $row), $rows);
+        self::hydrateManyTerms($db, $posts);
+        return $posts;
     }
 
     public static function findById(Database $db, int $id): ?self
     {
         $row = $db->selectOne("SELECT * FROM posts WHERE id = :id", ['id' => $id]);
-        return $row ? self::fromRow($db, $row) : null;
+        if (!$row) {
+            return null;
+        }
+        $post = self::fromRow($db, $row);
+        self::hydrateManyTerms($db, [$post]);
+        return $post;
     }
 
     public static function findBySlug(Database $db, string $slug): ?self
     {
         $row = $db->selectOne("SELECT * FROM posts WHERE slug = :slug", ['slug' => $slug]);
-        return $row ? self::fromRow($db, $row) : null;
+        if (!$row) {
+            return null;
+        }
+        $post = self::fromRow($db, $row);
+        self::hydrateManyTerms($db, [$post]);
+        return $post;
     }
 
     /**
@@ -89,7 +101,9 @@ class Post
              ORDER BY p.published_at DESC",
             ['cid' => $categoryId]
         );
-        return array_map(fn($row) => self::fromRow($db, $row), $rows);
+        $posts = array_map(fn($row) => self::fromRow($db, $row), $rows);
+        self::hydrateManyTerms($db, $posts);
+        return $posts;
     }
 
     /**
@@ -106,7 +120,9 @@ class Post
              ORDER BY p.published_at DESC",
             ['tid' => $tagId]
         );
-        return array_map(fn($row) => self::fromRow($db, $row), $rows);
+        $posts = array_map(fn($row) => self::fromRow($db, $row), $rows);
+        self::hydrateManyTerms($db, $posts);
+        return $posts;
     }
 
     // ── Persistence ───────────────────────────────────────────────────────────
@@ -464,23 +480,67 @@ class Post
         $post->og_image_hash       = $row['og_image_hash']       ?? null;
         $post->webmentions_sent_at = $row['webmentions_sent_at'] ?? null;
 
-        $post->categories = $db->select(
-            "SELECT c.id, c.name, c.slug, c.description
+        return $post;
+    }
+
+    /**
+     * Batch-load categories and tags for an array of Post objects.
+     * Executes exactly 2 queries regardless of how many posts are passed.
+     *
+     * @param self[] $posts
+     */
+    private static function hydrateManyTerms(Database $db, array $posts): void
+    {
+        if (empty($posts)) {
+            return;
+        }
+
+        $ids          = array_map(fn($p) => $p->id, $posts);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $byId         = [];
+        foreach ($posts as $post) {
+            $byId[$post->id] = $post;
+            $post->categories = [];
+            $post->tags       = [];
+        }
+
+        $catRows = $db->select(
+            "SELECT pc.post_id, c.id, c.name, c.slug, c.description
                FROM categories c
                JOIN post_categories pc ON pc.category_id = c.id
-              WHERE pc.post_id = ?
+              WHERE pc.post_id IN ($placeholders)
               ORDER BY c.name",
-            [$post->id]
+            $ids
         );
-        $post->tags = $db->select(
-            "SELECT t.id, t.name, t.slug
+        foreach ($catRows as $row) {
+            $pid = (int) $row['post_id'];
+            if (isset($byId[$pid])) {
+                $byId[$pid]->categories[] = [
+                    'id'          => $row['id'],
+                    'name'        => $row['name'],
+                    'slug'        => $row['slug'],
+                    'description' => $row['description'],
+                ];
+            }
+        }
+
+        $tagRows = $db->select(
+            "SELECT pt.post_id, t.id, t.name, t.slug
                FROM tags t
                JOIN post_tags pt ON pt.tag_id = t.id
-              WHERE pt.post_id = ?
+              WHERE pt.post_id IN ($placeholders)
               ORDER BY t.name",
-            [$post->id]
+            $ids
         );
-
-        return $post;
+        foreach ($tagRows as $row) {
+            $pid = (int) $row['post_id'];
+            if (isset($byId[$pid])) {
+                $byId[$pid]->tags[] = [
+                    'id'   => $row['id'],
+                    'name' => $row['name'],
+                    'slug' => $row['slug'],
+                ];
+            }
+        }
     }
 }
