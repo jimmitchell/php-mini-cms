@@ -364,8 +364,8 @@ if ($post->published_at) {
 
                     <?php if ($hasMastodon && $post->tooted_at === null): ?>
                     <?php $mastodonDisabled = $post->status === 'published'; ?>
-                    <label style="display:flex;gap:.5rem;align-items:center;font-size:.875rem;font-weight:400;margin-bottom:.75rem;<?= $mastodonDisabled ? 'opacity:.45;cursor:not-allowed' : '' ?>">
-                        <input type="checkbox" name="send_to_mastodon" value="1"
+                    <label for="send_to_mastodon" style="display:flex;gap:.5rem;align-items:center;font-size:.875rem;font-weight:400;margin-bottom:.75rem;<?= $mastodonDisabled ? 'opacity:.45;cursor:not-allowed' : '' ?>">
+                        <input type="checkbox" id="send_to_mastodon" name="send_to_mastodon" value="1"
                                <?= $post->mastodon_skip === 0 ? 'checked' : '' ?>
                                <?= $mastodonDisabled ? 'disabled title="Post is already published — syndication only happens on first publish"' : '' ?>>
                         Post to Mastodon on publish
@@ -376,8 +376,8 @@ if ($post->published_at) {
 
                     <?php if ($hasBluesky && $post->bluesky_at === null): ?>
                     <?php $blueskyDisabled = $post->status === 'published'; ?>
-                    <label style="display:flex;gap:.5rem;align-items:center;font-size:.875rem;font-weight:400;margin-bottom:.75rem;<?= $blueskyDisabled ? 'opacity:.45;cursor:not-allowed' : '' ?>">
-                        <input type="checkbox" name="send_to_bluesky" value="1"
+                    <label for="send_to_bluesky" style="display:flex;gap:.5rem;align-items:center;font-size:.875rem;font-weight:400;margin-bottom:.75rem;<?= $blueskyDisabled ? 'opacity:.45;cursor:not-allowed' : '' ?>">
+                        <input type="checkbox" id="send_to_bluesky" name="send_to_bluesky" value="1"
                                <?= $post->bluesky_skip === 0 ? 'checked' : '' ?>
                                <?= $blueskyDisabled ? 'disabled title="Post is already published — syndication only happens on first publish"' : '' ?>>
                         Post to Bluesky on publish

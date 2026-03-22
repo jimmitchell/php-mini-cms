@@ -62,7 +62,7 @@ $csrf      = $auth->csrfToken();
                 'draft'     => 'Draft (' . ($counts['draft'] ?? 0) . ')',
             ];
             foreach ($tabs as $key => $label): ?>
-            <a href="/admin/pages.php?status=<?= $key ?>"
+            <a href="/admin/pages.php?status=<?= Helpers::e($key) ?>"
                class="<?= $statusFilter === $key ? 'active' : '' ?>">
                 <?= Helpers::e($label) ?>
             </a>

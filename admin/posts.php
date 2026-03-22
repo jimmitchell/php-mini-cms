@@ -114,7 +114,7 @@ $flashType = $flash['type']    ?? 'success';
             foreach ($tabs as $key => $label):
                 $tabHref = '/admin/posts.php?status=' . $key . ($search !== '' ? '&q=' . urlencode($search) : '');
             ?>
-            <a href="<?= $tabHref ?>"
+            <a href="<?= Helpers::e($tabHref) ?>"
                class="<?= $statusFilter === $key ? 'active' : '' ?>">
                 <?= Helpers::e($label) ?>
             </a>
@@ -188,7 +188,7 @@ $flashType = $flash['type']    ?? 'success';
     <?php if ($totalPages > 1): ?>
     <div class="pagination">
         <?php if ($page > 1): ?>
-            <a href="<?= $_paginationBase ?>page=<?= $page - 1 ?>" class="btn btn--sm btn--secondary">&larr; Prev</a>
+            <a href="<?= Helpers::e($_paginationBase) ?>page=<?= $page - 1 ?>" class="btn btn--sm btn--secondary">&larr; Prev</a>
         <?php else: ?>
             <span class="btn btn--sm btn--secondary btn--disabled">&larr; Prev</span>
         <?php endif; ?>
@@ -200,7 +200,7 @@ $flashType = $flash['type']    ?? 'success';
         </span>
 
         <?php if ($page < $totalPages): ?>
-            <a href="<?= $_paginationBase ?>page=<?= $page + 1 ?>" class="btn btn--sm btn--secondary">Next &rarr;</a>
+            <a href="<?= Helpers::e($_paginationBase) ?>page=<?= $page + 1 ?>" class="btn btn--sm btn--secondary">Next &rarr;</a>
         <?php else: ?>
             <span class="btn btn--sm btn--secondary btn--disabled">Next &rarr;</span>
         <?php endif; ?>
