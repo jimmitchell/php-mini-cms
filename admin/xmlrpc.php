@@ -1177,11 +1177,17 @@ switch ($method) {
             $wpStat = strtolower(trim((string) ($filter['post_status'] ?? 'any')));
             $status = ($wpStat === 'any' || $wpStat === '') ? null : cmsStatusFromWp($wpStat);
             $all    = Post::findAll($db, $status);
-            // DIAGNOSTIC: return ONLY posts with id <= 37 to test if MarsEdit can show them in isolation
-            $all    = array_values(array_filter($all, fn($p) => $p->id <= 37));
             $sliced = array_slice($all, $offset, $limit);
-            xmlrpc_debug("  → " . count($sliced) . " posts (DIAGNOSTIC: id<=37 only)");
-            $structs = array_map(fn($p) => wpPostToStruct($p, $siteUrl), $sliced);
+            xmlrpc_debug("  → " . count($sliced) . " posts (of " . count($all) . " total, db_status_filter=" . ($status ?? 'all') . ")");
+            // DIAGNOSTIC: blank content for id<=37 posts to test if content causes MarsEdit to drop them
+            $structs = array_map(function($p) use ($siteUrl) {
+                $s = wpPostToStruct($p, $siteUrl);
+                if ($p->id <= 37) {
+                    $s['post_content'] = 'DIAGNOSTIC PLACEHOLDER';
+                    $s['post_excerpt'] = '';
+                }
+                return $s;
+            }, $sliced);
             echo XmlRpc::encodeResponse($structs);
         }
         break;
