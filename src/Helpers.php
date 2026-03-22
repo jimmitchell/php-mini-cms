@@ -32,7 +32,7 @@ class Helpers
      * IntlDateFormatter::FULL for a fully localised date (e.g. "vendredi
      * 28 février 2026" for fr_FR).  Falls back to PHP date() otherwise.
      */
-    public static function formatDate(string $datetime, string $format = 'l, F j, Y', string $locale = '', string $timezone = ''): string
+    public static function formatDate(string $datetime, string $format = 'F j, Y', string $locale = '', string $timezone = ''): string
     {
         $ts = strtotime($datetime);
         if ($ts === false) {
@@ -44,7 +44,7 @@ class Helpers
         if ($locale !== '' && class_exists('IntlDateFormatter')) {
             $fmt = new \IntlDateFormatter(
                 $locale,
-                \IntlDateFormatter::FULL,
+                \IntlDateFormatter::LONG,
                 \IntlDateFormatter::NONE,
                 $tz ?: null
             );
