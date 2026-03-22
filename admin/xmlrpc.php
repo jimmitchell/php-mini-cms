@@ -48,9 +48,11 @@ use CMS\XmlRpc;
 
 // ── ID space ──────────────────────────────────────────────────────────────────
 // Posts and pages have separate auto-increment sequences, so IDs can collide.
-// The unified wp.*Post methods use a large offset for page IDs so MarsEdit can
-// tell them apart without ambiguity.  Offset must exceed any realistic post count.
-define('PAGE_ID_OFFSET', 1_000_000);
+// The unified wp.*Post methods use large offsets for page and media IDs so MarsEdit
+// can tell them apart from post IDs without ambiguity.
+// Offsets must exceed any realistic post/media count.
+define('PAGE_ID_OFFSET',  1_000_000);
+define('MEDIA_ID_OFFSET', 2_000_000);
 
 // ── Debug logging ─────────────────────────────────────────────────────────────
 // To enable: touch data/xmlrpc.log  (file must exist; logging stops when deleted)
@@ -1179,14 +1181,7 @@ switch ($method) {
             $all    = Post::findAll($db, $status);
             $sliced = array_slice($all, $offset, $limit);
             xmlrpc_debug("  → " . count($sliced) . " posts (of " . count($all) . " total, db_status_filter=" . ($status ?? 'all') . ")");
-            // DIAGNOSTIC: give id<=37 posts fake high IDs to test if MarsEdit filters by post_id value
-            $structs = array_map(function($p) use ($siteUrl) {
-                $s = wpPostToStruct($p, $siteUrl);
-                if ($p->id <= 37) {
-                    $s['post_id'] = (string) ($p->id + 1000);
-                }
-                return $s;
-            }, $sliced);
+            $structs = array_map(fn($p) => wpPostToStruct($p, $siteUrl), $sliced);
             echo XmlRpc::encodeResponse($structs);
         }
         break;
@@ -1451,7 +1446,7 @@ switch ($method) {
             $url      = rtrim($siteUrl, '/') . '/media/' . $row['filename'];
             $isImage  = str_starts_with((string) $row['mime_type'], 'image/');
             $items[] = [
-                'attachment_id'   => (string) $row['id'],
+                'attachment_id'   => (string) ($row['id'] + MEDIA_ID_OFFSET),
                 'date_created_gmt' => new \CMS\DateTimeValue(XmlRpc::isoDate($row['uploaded_at'])),
                 'parent'          => 0,
                 'link'            => $url,
