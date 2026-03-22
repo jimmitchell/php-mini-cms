@@ -14,7 +14,7 @@ $ogType      = 'website';
 
 ob_start();
 ?>
-<article class="page">
+<section class="page">
     <header class="post__header">
         <h1 class="post__title"><?= htmlspecialchars($page->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h1>
     </header>
@@ -22,7 +22,7 @@ ob_start();
     <div class="post__content prose">
         <?= $html ?>
     </div>
-</article>
+</section>
 <?php
 $bodyContent = ob_get_clean();
 

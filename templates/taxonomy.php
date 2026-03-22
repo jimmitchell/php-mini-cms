@@ -62,7 +62,7 @@ ob_start();
                 <a href="<?= htmlspecialchars($postUrl) ?>" class="u-url p-name"><?= htmlspecialchars($post->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
             </h2>
             <?php if ($post->published_at): ?>
-            <time class="post-card__date dt-published" datetime="<?= htmlspecialchars($post->published_at) ?>">
+            <time class="post-card__date dt-published" datetime="<?= date('Y-m-d\TH:i:s\Z', strtotime($post->published_at)) ?>">
                 <?= Helpers::formatDate($post->published_at, 'l, F j, Y', $settings['locale'] ?? '', $settings['timezone'] ?? '') ?>
             </time>
             <?php endif; ?>
@@ -81,7 +81,7 @@ ob_start();
     <nav class="pagination" aria-label="Pagination">
         <?php if ($currentPage > 1): ?>
         <a href="<?= $currentPage === 2 ? htmlspecialchars($termBaseUrl . '/') : htmlspecialchars($termBaseUrl . '/page/' . ($currentPage - 1) . '/') ?>"
-           class="pagination__prev">← Newer</a>
+           class="pagination__prev" rel="prev">← Newer</a>
         <?php else: ?>
         <span class="pagination__prev pagination__prev--disabled">← Newer</span>
         <?php endif; ?>
@@ -90,7 +90,7 @@ ob_start();
 
         <?php if ($currentPage < $totalPages): ?>
         <a href="<?= htmlspecialchars($termBaseUrl . '/page/' . ($currentPage + 1) . '/') ?>"
-           class="pagination__next">Older →</a>
+           class="pagination__next" rel="next">Older →</a>
         <?php else: ?>
         <span class="pagination__next pagination__next--disabled">Older →</span>
         <?php endif; ?>

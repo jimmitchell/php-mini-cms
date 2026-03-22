@@ -45,12 +45,12 @@ ob_start();
         <h1 class="post__title p-name"><?= htmlspecialchars($post->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></h1>
         <a class="post__author p-author h-card" href="<?= htmlspecialchars($siteUrl . '/', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" rel="author"><?= htmlspecialchars($authorName !== '' ? $authorName : $siteTitle, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
         <?php if ($post->published_at): ?>
-        <time class="post__date dt-published" datetime="<?= htmlspecialchars($post->published_at) ?>">
+        <time class="post__date dt-published" datetime="<?= date('Y-m-d\TH:i:s\Z', strtotime($post->published_at)) ?>">
             <a class="u-url" href="<?= htmlspecialchars($canonical, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"><?= Helpers::formatDate($post->published_at, 'l, F j, Y', $settings['locale'] ?? '', $settings['timezone'] ?? '') ?></a>
         </time>
         <span class="post__reading-time"><?= $readingTime ?> min read</span>
         <?php if ($post->updated_at && $post->updated_at !== $post->published_at): ?>
-        <time class="u-update" datetime="<?= htmlspecialchars($post->updated_at) ?>" hidden></time>
+        <time class="u-update" datetime="<?= date('Y-m-d\TH:i:s\Z', strtotime($post->updated_at)) ?>" hidden></time>
         <?php endif; ?>
         <?php endif; ?>
         <?php
