@@ -1177,12 +1177,22 @@ switch ($method) {
             $wpStat = strtolower(trim((string) ($filter['post_status'] ?? 'any')));
             $status = ($wpStat === 'any' || $wpStat === '') ? null : cmsStatusFromWp($wpStat);
             $all    = Post::findAll($db, $status);
-            // DIAGNOSTIC: sort by ID ASC to see if MarsEdit drops by position or by data
-            usort($all, fn($a, $b) => $a->id <=> $b->id);
             $sliced = array_slice($all, $offset, $limit);
-            xmlrpc_debug("  → " . count($sliced) . " posts (of " . count($all) . " total, db_status_filter=" . ($status ?? 'all') . ") [SORTED BY ID ASC]");
-            xmlrpc_debug("  first 5 IDs: " . implode(', ', array_map(fn($p) => $p->id, array_slice($sliced, 0, 5))));
-            xmlrpc_debug("  last 5 IDs: " . implode(', ', array_map(fn($p) => $p->id, array_slice($sliced, -5))));
+            xmlrpc_debug("  → " . count($sliced) . " posts (of " . count($all) . " total, db_status_filter=" . ($status ?? 'all') . ")");
+            // DIAGNOSTIC: log per-post data to identify what's different about "missing" posts
+            foreach ($sliced as $p) {
+                $pubAt  = $p->published_at ?? $p->created_at;
+                $struct = wpPostToStruct($p, $siteUrl);
+                xmlrpc_debug(sprintf(
+                    '  post id=%d status_db=%s status_wp=%s published_at=%s future=%s link=%s',
+                    $p->id,
+                    $p->status,
+                    $struct['post_status'],
+                    (string) ($p->published_at ?? 'NULL'),
+                    (strtotime((string) ($pubAt ?? '')) > time() ? 'YES' : 'no'),
+                    $struct['link']
+                ));
+            }
             $structs = array_map(fn($p) => wpPostToStruct($p, $siteUrl), $sliced);
             echo XmlRpc::encodeResponse($structs);
         }
