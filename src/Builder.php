@@ -337,6 +337,20 @@ class Builder
     }
 
     /**
+     * Rebuild all pages using the latest settings from the DB.
+     * Called after settings are saved so changes to custom_css, site_title,
+     * footer text, etc. are immediately reflected in every page.
+     */
+    public function rebuildPages(): void
+    {
+        $this->refreshContext();
+        $this->db->exec("UPDATE pages SET content_hash = NULL");
+        foreach (Page::findAll($this->db) as $page) {
+            $this->buildPage($page);
+        }
+    }
+
+    /**
      * Full site rebuild: all published posts, pages, index, feed, search.
      */
     public function buildAll(): void

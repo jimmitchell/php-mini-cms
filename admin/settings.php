@@ -78,7 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->upsertSetting($key, $value);
         }
 
-        // Rebuild index, feeds, and sitemap so new title/URL etc. is reflected.
+        // Rebuild pages + index/feeds/sitemap so settings changes (custom CSS,
+        // site title, footer text, etc.) are reflected everywhere immediately.
+        $builder->rebuildPages();
         $builder->buildIndex();
         $builder->buildFeed();
         $builder->buildJsonFeed();
