@@ -695,6 +695,15 @@ th:last-child { text-align: right; }
     font-size: 0.9rem !important;
 }
 
+/* Tone down EasyMDE's fluid header sizes — defaults use Bootstrap-style
+   calc() values that grow very large at normal viewport widths. */
+.cm-s-easymde .cm-header-1 { font-size: 1.35rem !important; }
+.cm-s-easymde .cm-header-2 { font-size: 1.2rem  !important; }
+.cm-s-easymde .cm-header-3 { font-size: 1.1rem  !important; }
+.cm-s-easymde .cm-header-4 { font-size: 1.05rem !important; }
+.cm-s-easymde .cm-header-5 { font-size: 1rem    !important; }
+.cm-s-easymde .cm-header-6 { font-size: 1rem    !important; }
+
 .editor-sidebar {
     display: flex;
     flex-direction: column;
