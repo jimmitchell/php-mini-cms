@@ -14,11 +14,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     $post = Post::findById($db, (int) ($_POST['id'] ?? 0));
     if ($post) {
         $wasPublished = $post->status === 'published';
+        $prevNeighbor = $wasPublished ? Post::findPrev($db, $post) : null;
+        $nextNeighbor = $wasPublished ? Post::findNext($db, $post) : null;
         $post->delete();
+        // buildPost() removal path also rebuilds taxonomy archives for $post->categories.
+        $post->status = 'draft';
         $builder->buildPost($post);
         if ($wasPublished) {
-            $builder->buildIndex();
-            $builder->buildFeed();
+            if ($prevNeighbor) $builder->buildPost($prevNeighbor);
+            if ($nextNeighbor) $builder->buildPost($nextNeighbor);
+            $builder->rebuildSharedResources();
         }
     }
     header('Location: /admin/posts.php');

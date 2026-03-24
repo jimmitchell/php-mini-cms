@@ -46,14 +46,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete') {
         if ($post && $post->id) {
             $wasPublished = $post->status === 'published';
+            $prevNeighbor = $wasPublished ? Post::findPrev($db, $post) : null;
+            $nextNeighbor = $wasPublished ? Post::findNext($db, $post) : null;
             $post->delete();
-            $post->status = 'draft'; // so buildPost() takes the removal path
-            $builder->buildPost($post); // removes the generated file
+            // buildPost() removal path also rebuilds taxonomy archives for $post->categories.
+            $post->status = 'draft';
+            $builder->buildPost($post);
             if ($wasPublished) {
-                $builder->buildIndex();
-                $builder->buildFeed();
-                $builder->buildJsonFeed();
-                $builder->buildSitemap();
+                if ($prevNeighbor) $builder->buildPost($prevNeighbor);
+                if ($nextNeighbor) $builder->buildPost($nextNeighbor);
+                $builder->rebuildSharedResources();
             }
             $activityLog->log('delete', 'post', $post->id, $post->title);
             $auth->flash('Post deleted.', 'info');
@@ -182,6 +184,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
+        $oldCategoryIds = array_column($post->categories, 'id');
+        $oldTagIds      = array_column($post->tags, 'id');
         $post->saveTerms($categoryIds, $tagIds);
 
         // Syndicate to Mastodon on first publish (unless opted out).
@@ -210,11 +214,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Trigger a full rebuild whenever the post is live or changes visibility.
+        // Rebuild this post + immediate neighbors (prev/next links) + shared resources.
+        // buildPost() handles old term archives internally; only rebuild newly added terms.
         if (($action === 'publish' && $post->status === 'published')
             || $action === 'unpublish'
             || ($action === 'draft' && $post->status === 'published')) {
-            $builder->buildAll();
+            $builder->buildPost($post);
+            $prev = Post::findPrev($db, $post);
+            if ($prev) $builder->buildPost($prev);
+            $next = Post::findNext($db, $post);
+            if ($next) $builder->buildPost($next);
+            $builder->rebuildSharedResources();
+            foreach (array_diff($categoryIds, $oldCategoryIds) as $catId) {
+                $builder->buildCategoryArchive($catId);
+            }
+            foreach (array_diff($tagIds, $oldTagIds) as $tagId) {
+                $builder->buildTagArchive($tagId);
+            }
         }
         // Scheduled and draft-only saves don't need a build.
 

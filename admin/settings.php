@@ -54,6 +54,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if ($fields['mastodon_instance'] !== '') {
+        $parsedMasto = parse_url($fields['mastodon_instance']);
+        if (!$parsedMasto || ($parsedMasto['scheme'] ?? '') !== 'https' || empty($parsedMasto['host'])) {
+            $errors[] = 'Mastodon instance URL must use https:// (e.g. https://mastodon.social).';
+        } else {
+            $resolvedIp = gethostbyname($parsedMasto['host']);
+            if (filter_var($resolvedIp, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                $errors[] = 'Mastodon instance URL must resolve to a public IP address.';
+            }
+        }
+    }
+
     if (empty($errors)) {
         foreach ($fields as $key => $value) {
             // Don't overwrite saved secrets when the field is left blank.

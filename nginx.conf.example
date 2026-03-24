@@ -31,7 +31,7 @@ server {
     error_page 404 /404.html;
 
     # ── Block sensitive directories ───────────────────────────────────────────
-    location ~* ^/(src|data|content|templates|vendor)(/|$) {
+    location ~* ^/(src|data|content|templates|vendor|bin)(/|$) {
         deny all;
         return 403;
     }

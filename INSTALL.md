@@ -73,6 +73,11 @@ chown -R deploy:www-data /var/www/cms
 chmod 775 /var/www/cms/data
 chmod 775 /var/www/cms/content/media
 
+# Restrict the SQLite database so only the www-data group can read/write it.
+# Other users on the server must not be able to read the database directly.
+# Run this after setup.php has created data/cms.db:
+chmod 660 /var/www/cms/data/cms.db
+
 # Web root writable so the Builder can write generated HTML
 chmod 775 /var/www/cms
 

@@ -59,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
+        $wasPublished = $page->status === 'published';
         $page->status = match ($action) {
             'publish'   => 'published',
             'unpublish' => 'draft',
@@ -66,7 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
 
         $page->save();
-        $builder->buildAll();
+        $builder->buildPage($page);
+        if ($page->status === 'published' || $wasPublished) {
+            $builder->buildIndex(); // pages appear in nav
+            $builder->buildSitemap();
+        }
 
         $logAction = match ($action) {
             'publish'   => 'publish',
@@ -89,8 +94,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     if ($page && $page->id) {
         $activityLog->log('delete', 'page', $page->id, $page->title);
+        $wasPublished = $page->status === 'published';
         $page->delete();
+        $page->status = 'draft'; // so buildPage() removes the static file
         $builder->buildPage($page);
+        if ($wasPublished) {
+            $builder->buildIndex();
+            $builder->buildSitemap();
+        }
         $auth->flash('Page deleted.', 'info');
         header('Location: /admin/pages.php');
         exit;

@@ -1,7 +1,8 @@
 # Composer
 /vendor/
 composer.phar
-/composer # local composer binary
+/composer        # local composer binary
+/composer-setup.php  # installer script — not web-safe, delete after use
 
 # Runtime config — contains credentials; never commit
 /config.php

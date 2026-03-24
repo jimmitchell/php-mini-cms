@@ -125,16 +125,14 @@ function xmlrpc_auth(array $params, int $userIdx, int $passIdx): void
     $cfgUser = $config['admin']['username'] ?? '';
     $cfgHash = $config['admin']['password_hash'] ?? '';
 
-    $ok = ($username === $cfgUser) && password_verify($password, $cfgHash);
-
-    // Record the attempt (mirrors what Auth::login() does internally).
-    $db->insert('login_attempts', [
-        'ip'           => $ip,
-        'success'      => $ok ? 1 : 0,
-        'attempted_at' => date('Y-m-d H:i:s'),
-    ]);
+    $ok = hash_equals($cfgUser, $username) && password_verify($password, $cfgHash);
 
     if (!$ok) {
+        $db->insert('login_attempts', [
+            'ip'           => $ip,
+            'success'      => 0,
+            'attempted_at' => date('Y-m-d H:i:s'),
+        ]);
         xmlrpc_fault(403, 'Forbidden: incorrect username or password.');
     }
 }
@@ -279,7 +277,6 @@ function xmlrpc_save_media(string $originalName, string $mimeType, string $bits)
         'image/png'     => 'png',
         'image/gif'     => 'gif',
         'image/webp'    => 'webp',
-        'image/svg+xml' => 'svg',
         'video/mp4'     => 'mp4',
         'video/webm'    => 'webm',
         'audio/mpeg'    => 'mp3',
@@ -293,6 +290,12 @@ function xmlrpc_save_media(string $originalName, string $mimeType, string $bits)
 
     if (!isset($allowed[$mimeType])) {
         xmlrpc_fault(400, 'Unsupported file type.');
+    }
+
+    // Verify actual file contents match the declared MIME type.
+    $detectedMime = (new \finfo(FILEINFO_MIME_TYPE))->buffer($bits);
+    if ($detectedMime !== $mimeType) {
+        xmlrpc_fault(400, 'File content does not match declared type.');
     }
 
     $ext      = $allowed[$mimeType];
@@ -340,17 +343,31 @@ function xmlrpc_save_media(string $originalName, string $mimeType, string $bits)
  */
 function rebuildPost(Post $post, bool $wasPublished = false): void
 {
-    global $builder;
+    global $builder, $db;
 
-    if ($post->status === 'published') {
+    if ($post->status === 'published' || $wasPublished) {
+        // buildPost() rebuilds archives for $post->categories (old in-memory terms).
+        // Re-fetch to find any newly added terms that also need their archives rebuilt.
+        $oldCatIds = array_column($post->categories, 'id');
+        $oldTagIds = array_column($post->tags, 'id');
+        $fresh     = Post::findById($db, $post->id);
+        $newCatIds = $fresh ? array_column($fresh->categories, 'id') : [];
+        $newTagIds = $fresh ? array_column($fresh->tags, 'id') : [];
+
         $builder->buildPost($post);
-        $builder->buildIndex();
-        $builder->buildFeed();
-    } elseif ($wasPublished) {
-        // Was published, now draft/scheduled — remove the static file.
-        $builder->buildPost($post);
-        $builder->buildIndex();
-        $builder->buildFeed();
+        $prev = Post::findPrev($db, $post);
+        if ($prev) $builder->buildPost($prev);
+        $next = Post::findNext($db, $post);
+        if ($next) $builder->buildPost($next);
+        $builder->rebuildSharedResources();
+
+        // Rebuild archives for terms that were added (old terms handled by buildPost above).
+        foreach (array_diff($newCatIds, $oldCatIds) as $catId) {
+            $builder->buildCategoryArchive($catId);
+        }
+        foreach (array_diff($newTagIds, $oldTagIds) as $tagId) {
+            $builder->buildTagArchive($tagId);
+        }
     } else {
         // Draft/scheduled save — no public file needed.
         $builder->buildPost($post);
@@ -837,13 +854,16 @@ switch ($method) {
             xmlrpc_fault(404, 'Post not found.');
         }
         $wasPublished = $post->status === 'published';
+        $prevNeighbor = $wasPublished ? Post::findPrev($db, $post) : null;
+        $nextNeighbor = $wasPublished ? Post::findNext($db, $post) : null;
         $post->delete();
-        // Set to draft so buildPost() removes the static file rather than rebuilding.
+        // buildPost() removal path also rebuilds taxonomy archives for $post->categories.
         $post->status = 'draft';
         $builder->buildPost($post);
         if ($wasPublished) {
-            $builder->buildIndex();
-            $builder->buildFeed();
+            if ($prevNeighbor) $builder->buildPost($prevNeighbor);
+            if ($nextNeighbor) $builder->buildPost($nextNeighbor);
+            $builder->rebuildSharedResources();
         }
         echo XmlRpc::encodeResponse(true);
         break;
@@ -883,7 +903,7 @@ switch ($method) {
 
     // ── mt.supportedMethods() ────────────────────────────────────────────────
     case 'mt.supportedMethods':
-        // No auth required by spec — return list of all implemented methods.
+        xmlrpc_auth($params, 1, 2);
         echo XmlRpc::encodeResponse([
             'blogger.getUsersBlogs',
             'metaWeblog.getRecentPosts', 'metaWeblog.getPost',
@@ -1307,12 +1327,16 @@ switch ($method) {
             xmlrpc_fault(404, 'Post not found.');
         }
         $wasPublished = $post->status === 'published';
+        $prevNeighbor = $wasPublished ? Post::findPrev($db, $post) : null;
+        $nextNeighbor = $wasPublished ? Post::findNext($db, $post) : null;
         $post->delete();
+        // buildPost() removal path also rebuilds taxonomy archives for $post->categories.
         $post->status = 'draft';
         $builder->buildPost($post);
         if ($wasPublished) {
-            $builder->buildIndex();
-            $builder->buildFeed();
+            if ($prevNeighbor) $builder->buildPost($prevNeighbor);
+            if ($nextNeighbor) $builder->buildPost($nextNeighbor);
+            $builder->rebuildSharedResources();
         }
         echo XmlRpc::encodeResponse(true);
         break;

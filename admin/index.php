@@ -10,9 +10,14 @@ if ($auth->isAuthenticated()) {
     exit;
 }
 
+// Expire a stale TOTP-pending state (5-minute window).
+if ($auth->isTotpPending() && (time() - ($_SESSION['totp_pending_at'] ?? 0)) > 300) {
+    unset($_SESSION['totp_pending'], $_SESSION['totp_pending_user'], $_SESSION['totp_pending_at']);
+}
+
 // Allow cancelling a pending TOTP step (returns to password form).
 if (isset($_GET['cancel']) && $auth->isTotpPending()) {
-    unset($_SESSION['totp_pending'], $_SESSION['totp_pending_user']);
+    unset($_SESSION['totp_pending'], $_SESSION['totp_pending_user'], $_SESSION['totp_pending_at']);
     header('Location: /admin/');
     exit;
 }

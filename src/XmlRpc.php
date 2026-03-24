@@ -32,7 +32,7 @@ class XmlRpc
     public static function parseRequest(string $body): array
     {
         libxml_use_internal_errors(true);
-        $xml = simplexml_load_string($body);
+        $xml = simplexml_load_string($body, 'SimpleXMLElement', LIBXML_NONET);
         if ($xml === false) {
             throw new \RuntimeException('Invalid XML');
         }

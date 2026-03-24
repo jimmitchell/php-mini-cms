@@ -43,10 +43,14 @@ $promotedIds = \CMS\Post::promoteScheduled($db);
 foreach ($promotedIds as $pid) {
     $promoted = \CMS\Post::findById($db, $pid);
     if ($promoted) {
+        // buildPost() rebuilds taxonomy archives for the post's own terms.
         $builder->buildPost($promoted);
+        $prev = \CMS\Post::findPrev($db, $promoted);
+        if ($prev) $builder->buildPost($prev);
+        $next = \CMS\Post::findNext($db, $promoted);
+        if ($next) $builder->buildPost($next);
     }
 }
 if (!empty($promotedIds)) {
-    $builder->buildIndex();
-    $builder->buildFeed();
+    $builder->rebuildSharedResources();
 }

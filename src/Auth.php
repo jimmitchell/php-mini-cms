@@ -53,7 +53,7 @@ class Auth
     {
         $ip = $this->clientIp();
 
-        if ($this->isLockedOut($ip)) {
+        if ($this->isLockedOut($ip) || $this->isLockedOut('user:' . $username)) {
             return false;
         }
 
@@ -64,13 +64,14 @@ class Auth
             && $hash !== ''
             && password_verify($password, $hash);
 
-        $this->recordAttempt($ip, $ok);
+        $this->recordAttempt($ip, $ok, $username);
 
         if ($ok) {
             session_regenerate_id(true);
             if ($this->isTotpEnabled()) {
                 $_SESSION['totp_pending']      = true;
                 $_SESSION['totp_pending_user'] = $username;
+                $_SESSION['totp_pending_at']   = time();
                 $_SESSION['csrf_token']        = $this->generateToken();
             } else {
                 $_SESSION['authenticated'] = true;
@@ -205,7 +206,7 @@ class Auth
     public function completeTotpLogin(): void
     {
         $user = $_SESSION['totp_pending_user'] ?? '';
-        unset($_SESSION['totp_pending'], $_SESSION['totp_pending_user']);
+        unset($_SESSION['totp_pending'], $_SESSION['totp_pending_user'], $_SESSION['totp_pending_at']);
         $_SESSION['authenticated'] = true;
         $_SESSION['user']          = $user;
         $_SESSION['csrf_token']    = $this->generateToken();
@@ -255,7 +256,7 @@ class Auth
             $plain = strtoupper(substr($hex, 0, 5) . '-' . substr($hex, 5));
             $codes[] = $plain;
             $this->db->insert('totp_backup_codes', [
-                'code_hash' => password_hash($plain, PASSWORD_BCRYPT),
+                'code_hash' => password_hash($plain, PASSWORD_BCRYPT, ['cost' => 12]),
             ]);
         }
         return $codes;
@@ -307,12 +308,18 @@ class Auth
         ]);
     }
 
-    private function recordAttempt(string $ip, bool $success): void
+    private function recordAttempt(string $ip, bool $success, string $username = ''): void
     {
         $this->db->insert('login_attempts', [
             'ip'      => $ip,
             'success' => $success ? 1 : 0,
         ]);
+        if (!$success && $username !== '') {
+            $this->db->insert('login_attempts', [
+                'ip'      => 'user:' . $username,
+                'success' => 0,
+            ]);
+        }
     }
 
     // ── Flash messages ────────────────────────────────────────────────────────

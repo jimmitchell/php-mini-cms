@@ -141,13 +141,12 @@ function api_authenticate(array $config, \CMS\Database $db): void
     $expectedUser = $config['admin']['username']      ?? '';
     $hash         = $config['admin']['password_hash'] ?? '';
 
-    $ok = ($user === $expectedUser)
+    $ok = hash_equals($expectedUser, $user)
         && $hash !== ''
         && password_verify($pass, $hash);
 
-    $db->insert('login_attempts', ['ip' => $ip, 'success' => $ok ? 1 : 0]);
-
     if (!$ok) {
+        $db->insert('login_attempts', ['ip' => $ip, 'success' => 0]);
         header('WWW-Authenticate: Basic realm="CMS API"');
         api_error('Unauthorized', 401);
     }
@@ -228,9 +227,19 @@ if ($resource === 'posts' && $method === 'POST' && $id === null) {
     $post->saveTerms($catIds, $tagIds);
 
     if ($post->status === 'published') {
+        // New post: $post->categories is empty so buildPost() won't rebuild any term archives.
         $builder->buildPost($post);
-        $builder->buildIndex();
-        $builder->buildFeed();
+        $prev = \CMS\Post::findPrev($db, $post);
+        if ($prev) $builder->buildPost($prev);
+        $next = \CMS\Post::findNext($db, $post);
+        if ($next) $builder->buildPost($next);
+        $builder->rebuildSharedResources();
+        foreach ($catIds as $catId) {
+            $builder->buildCategoryArchive($catId);
+        }
+        foreach ($tagIds as $tagId) {
+            $builder->buildTagArchive($tagId);
+        }
     }
 
     api_json(post_to_array($post, $siteUrl), 201);
@@ -242,6 +251,10 @@ if ($resource === 'posts' && $method === 'PUT' && $id !== null) {
     if (!$post) {
         api_error('Post not found', 404);
     }
+
+    $wasPublished = $post->status === 'published';
+    $oldCatIds    = array_column($post->categories, 'id');
+    $oldTagIds    = array_column($post->tags, 'id');
 
     if (isset($body['title']))   $post->title   = trim($body['title']);
     if (isset($body['slug']))    $post->slug    = \CMS\Helpers::slugify($body['slug']);
@@ -262,16 +275,29 @@ if ($resource === 'posts' && $method === 'PUT' && $id !== null) {
         api_error('Failed to save post', 500);
     }
 
+    $newCatIds = $oldCatIds;
+    $newTagIds = $oldTagIds;
     if (isset($body['category_ids']) || isset($body['tag_ids'])) {
-        $catIds = array_map('intval', $body['category_ids'] ?? array_column($post->categories, 'id'));
-        $tagIds = array_map('intval', $body['tag_ids']      ?? array_column($post->tags,       'id'));
-        $post->saveTerms($catIds, $tagIds);
+        $newCatIds = array_map('intval', $body['category_ids'] ?? $oldCatIds);
+        $newTagIds = array_map('intval', $body['tag_ids']      ?? $oldTagIds);
+        $post->saveTerms($newCatIds, $newTagIds);
     }
 
+    // buildPost() rebuilds archives for old terms ($post->categories); only explicitly
+    // rebuild archives for terms that were newly added.
     $builder->buildPost($post);
-    if ($post->status === 'published') {
-        $builder->buildIndex();
-        $builder->buildFeed();
+    if ($post->status === 'published' || $wasPublished) {
+        $prev = \CMS\Post::findPrev($db, $post);
+        if ($prev) $builder->buildPost($prev);
+        $next = \CMS\Post::findNext($db, $post);
+        if ($next) $builder->buildPost($next);
+        $builder->rebuildSharedResources();
+        foreach (array_diff($newCatIds, $oldCatIds) as $catId) {
+            $builder->buildCategoryArchive($catId);
+        }
+        foreach (array_diff($newTagIds, $oldTagIds) as $tagId) {
+            $builder->buildTagArchive($tagId);
+        }
     }
 
     api_json(post_to_array($post, $siteUrl));
@@ -284,11 +310,18 @@ if ($resource === 'posts' && $method === 'DELETE' && $id !== null) {
         api_error('Post not found', 404);
     }
 
-    $post->status = 'draft'; // Signals Builder to remove the static file.
+    $wasPublished = $post->status === 'published';
+    $prevNeighbor = $wasPublished ? \CMS\Post::findPrev($db, $post) : null;
+    $nextNeighbor = $wasPublished ? \CMS\Post::findNext($db, $post) : null;
+    // buildPost() removal path also rebuilds taxonomy archives for $post->categories.
+    $post->status = 'draft';
     $builder->buildPost($post);
     $post->delete();
-    $builder->buildIndex();
-    $builder->buildFeed();
+    if ($wasPublished) {
+        if ($prevNeighbor) $builder->buildPost($prevNeighbor);
+        if ($nextNeighbor) $builder->buildPost($nextNeighbor);
+        $builder->rebuildSharedResources();
+    }
 
     api_json(['deleted' => true]);
 }
@@ -429,7 +462,9 @@ if ($resource === 'tags' && $method === 'GET') {
 if ($resource === 'settings' && $method === 'GET') {
     $rows     = $db->select("SELECT key, value FROM settings");
     $settings = array_column($rows, 'value', 'key');
-    unset($settings['password_hash']); // belt-and-suspenders; not stored here, but guard anyway
+    foreach (['password_hash', 'mastodon_token', 'bluesky_app_password', 'totp_secret'] as $k) {
+        unset($settings[$k]);
+    }
     api_json($settings);
 }
 

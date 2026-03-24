@@ -59,7 +59,7 @@ if (!function_exists('_e')) {
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', '<?= _e($gaMeasurementId) ?>');
+  gtag('config', <?= json_encode($gaMeasurementId) ?>);
 </script>
 <?php endif; ?>
     <meta charset="UTF-8">
@@ -124,7 +124,7 @@ if (!function_exists('_e')) {
     <?php endif; ?>
     <?php $customCss = $settings['custom_css'] ?? ''; ?>
     <?php if ($customCss !== ''): ?>
-    <style><?= str_replace('</', '', $customCss) ?></style>
+    <style><?= str_replace('</style', '<\/style', $customCss) ?></style>
     <?php endif; ?>
 </head>
 <body>

@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (empty($errors)) {
-            $hash       = password_hash($newPw, PASSWORD_BCRYPT);
+            $hash       = password_hash($newPw, PASSWORD_BCRYPT, ['cost' => 12]);
             $configPath = dirname(__DIR__) . '/config.php';
             $src        = file_get_contents($configPath);
             $updated    = preg_replace_callback(
@@ -47,11 +47,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($updated === null || $updated === $src) {
                 $errors[] = 'Could not write config.php — check file permissions.';
             } else {
-                file_put_contents($configPath, $updated);
-                $activityLog->log('password', 'account');
-                $auth->flash('Password changed successfully.');
-                header('Location: /admin/account.php');
-                exit;
+                $tmp = tempnam(dirname($configPath), '.cfg_');
+                if ($tmp === false || file_put_contents($tmp, $updated) === false || !rename($tmp, $configPath)) {
+                    if ($tmp !== false && file_exists($tmp)) { unlink($tmp); }
+                    $errors[] = 'Could not write config.php — check file permissions.';
+                } else {
+                    $activityLog->log('password', 'account');
+                    $auth->flash('Password changed successfully.');
+                    header('Location: /admin/account.php');
+                    exit;
+                }
             }
         }
 

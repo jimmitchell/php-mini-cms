@@ -325,6 +325,18 @@ class Builder
     }
 
     /**
+     * Rebuild index pages, all feeds, and the sitemap.
+     * Call once after any operation that changes which posts are publicly visible.
+     */
+    public function rebuildSharedResources(): void
+    {
+        $this->buildIndex();
+        $this->buildFeed();
+        $this->buildJsonFeed();
+        $this->buildSitemap();
+    }
+
+    /**
      * Full site rebuild: all published posts, pages, index, feed, search.
      */
     public function buildAll(): void

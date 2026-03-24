@@ -76,7 +76,7 @@ if ($password !== $confirm) {
     exit(1);
 }
 
-$hash = password_hash($password, PASSWORD_BCRYPT);
+$hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
 
 // ── Write username and hash into config.php ───────────────────────────────────
 
@@ -112,8 +112,14 @@ if ($updated === null || $updated === $updatedUsername) {
     echo "Could not auto-update password_hash in config.php. Paste this hash manually:\n";
     echo "    'password_hash' => '{$hash}',\n";
 } else {
-    file_put_contents($configPath, $updated);
-    echo "Password hash written to config.php.\n";
+    $tmp = tempnam(dirname($configPath), '.cfg_');
+    if ($tmp === false || file_put_contents($tmp, $updated) === false || !rename($tmp, $configPath)) {
+        if ($tmp !== false && file_exists($tmp)) { unlink($tmp); }
+        echo "Could not write config.php atomically. Paste this hash manually:\n";
+        echo "    'password_hash' => '{$hash}',\n";
+    } else {
+        echo "Password hash written to config.php.\n";
+    }
 }
 
 // ── Initialize database ───────────────────────────────────────────────────────

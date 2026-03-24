@@ -107,7 +107,7 @@ certbot --nginx -d example.com
 return [
     'admin' => [
         'username'         => 'admin',
-        'password_hash'    => '$2y$10$...',  // set by bin/setup.php
+        'password_hash'    => '$2y$12$...',  // set by bin/setup.php
         'session_name'     => 'cms_session',
         'session_lifetime' => 3600,
     ],
@@ -160,11 +160,11 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 ### Security
 
 - CSRF token on every form POST
-- Passwords hashed with bcrypt (`PASSWORD_BCRYPT`)
-- IP-based login rate limiting: 5 attempts → 15-minute lockout (applies to TOTP verification and XML-RPC auth too)
+- Passwords hashed with bcrypt cost 12
+- IP-based and username-based login rate limiting: 5 attempts → 15-minute lockout (applies to TOTP verification and XML-RPC auth too)
 - Sessions: `HttpOnly`, `Secure`, `SameSite=Strict`
-- Optional TOTP two-factor authentication (RFC 6238); backup codes generated on setup; rate-limited independently from the password step
-- Nginx blocks direct access to `src/`, `templates/`, `data/`, `content/`, `vendor/`, and `config.php`
+- Optional TOTP two-factor authentication (RFC 6238); pending state expires after 5 minutes; backup codes generated on setup; rate-limited independently from the password step
+- Nginx blocks direct access to `src/`, `templates/`, `data/`, `content/`, `vendor/`, `bin/`, and `config.php`
 - Separate Content-Security-Policy headers for admin (allows `unsafe-inline` for EasyMDE) and public pages (strict)
 
 ---

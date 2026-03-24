@@ -13,8 +13,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     $auth->verifyCsrf($_POST['csrf_token'] ?? '');
     $page = Page::findById($db, (int) ($_POST['id'] ?? 0));
     if ($page) {
+        $wasPublished = $page->status === 'published';
         $page->delete();
+        $page->status = 'draft'; // so buildPage() removes the static file
         $builder->buildPage($page);
+        if ($wasPublished) {
+            $builder->buildIndex();
+            $builder->buildSitemap();
+        }
     }
     header('Location: /admin/pages.php');
     exit;
