@@ -389,6 +389,7 @@ audio { width: 100%; }
     line-height: 1.25;
     margin-top: 2em;
     margin-bottom: .5em;
+    text-wrap: balance;
 }
 
 .prose h1 { font-size: 1.7rem; }
@@ -396,7 +397,7 @@ audio { width: 100%; }
 .prose h3 { font-size: 1.1rem; }
 .prose h4, .prose h5, .prose h6 { font-size: 1rem; }
 
-.prose p { margin-top: 1em; }
+.prose p { margin-top: 1em; text-wrap: pretty; }
 
 .prose ul,
 .prose ol {
