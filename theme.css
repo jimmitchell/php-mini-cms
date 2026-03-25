@@ -158,7 +158,8 @@ audio { width: 100%; }
     gap: 0.5rem;
 }
 
-.theme-toggle {
+.theme-toggle,
+.nav-toggle {
     background: none;
     border: none;
     cursor: pointer;
@@ -172,25 +173,15 @@ audio { width: 100%; }
     line-height: 0;
 }
 
-.theme-toggle:hover { color: var(--color-text); }
-.theme-toggle svg   { width: 1rem; height: 1rem; }
+.theme-toggle:hover,
+.nav-toggle:hover { color: var(--color-text); }
+.theme-toggle svg { width: 1rem; height: 1rem; }
 
 /* ── Mobile nav toggle (hamburger) ───────────────────────────────────────── */
 .nav-toggle {
     display: none;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--color-muted);
-    padding: .25rem;
-    border-radius: 4px;
-    align-items: center;
     justify-content: center;
-    line-height: 0;
-    flex-shrink: 0;
-    transition: color .15s;
 }
-.nav-toggle:hover { color: var(--color-text); }
 
 .nav-toggle__bars {
     display: flex;
@@ -235,8 +226,8 @@ audio { width: 100%; }
     transition: color .15s;
     flex-shrink: 0;
     line-height: 0;
+    text-decoration: none;
 }
-.search-toggle { text-decoration: none; }
 .search-toggle:hover { color: var(--color-text); }
 .search-toggle svg   { width: 1rem; height: 1rem; }
 
@@ -300,36 +291,24 @@ audio { width: 100%; }
     margin-bottom: .1rem;
 }
 
-.post__author {
-    display: inline;
-    font-size: .875rem;
-    color: var(--color-muted);
-    text-decoration: none;
-}
-
-.post__date {
-    display: inline;
-    font-size: .875rem;
-    color: var(--color-muted);
-}
-
-.post__date::before {
-    content: ' · ';
-}
-
-.post__date a {
-    color: inherit;
-    text-decoration: none;
-}
-
+.post__author,
+.post__date,
 .post__reading-time {
     display: inline;
     font-size: .875rem;
     color: var(--color-muted);
 }
 
+.post__author { text-decoration: none; }
+
+.post__date::before,
 .post__reading-time::before {
     content: ' · ';
+}
+
+.post__date a {
+    color: inherit;
+    text-decoration: none;
 }
 
 /* ── Post taxonomy terms (categories + tags intermingled) ────────────────── */
@@ -762,41 +741,25 @@ audio { width: 100%; }
     gap: .75rem;
 }
 
-.site-footer__feed {
-    display: flex;
-    align-items: center;
-    color: var(--color-muted);
-    text-decoration: none;
-}
-.site-footer__feed:hover { color: #f26522; }
-.site-footer__feed svg  { width: 1rem; height: 1rem; }
-
-.site-footer__mastodon {
-    display: flex;
-    align-items: center;
-    color: var(--color-muted);
-    text-decoration: none;
-}
-.site-footer__mastodon:hover { color: #6364ff; }
-.site-footer__mastodon svg  { width: 1rem; height: 1rem; }
-
-.site-footer__bluesky {
-    display: flex;
-    align-items: center;
-    color: var(--color-muted);
-    text-decoration: none;
-}
-.site-footer__bluesky:hover { color: #0085ff; }
-.site-footer__bluesky svg  { width: 1rem; height: 1rem; }
-
+.site-footer__feed,
+.site-footer__mastodon,
+.site-footer__bluesky,
 .site-footer__github {
     display: flex;
     align-items: center;
     color: var(--color-muted);
     text-decoration: none;
 }
-.site-footer__github:hover { color: #24292f; }
-.site-footer__github svg  { width: 1rem; height: 1rem; }
+
+.site-footer__feed svg,
+.site-footer__mastodon svg,
+.site-footer__bluesky svg,
+.site-footer__github svg { width: 1rem; height: 1rem; }
+
+.site-footer__feed:hover     { color: #f26522; }
+.site-footer__mastodon:hover { color: #6364ff; }
+.site-footer__bluesky:hover  { color: #0085ff; }
+.site-footer__github:hover   { color: #24292f; }
 
 /* ── 404 error page ──────────────────────────────────────────────────────── */
 .error-page {
