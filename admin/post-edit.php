@@ -188,6 +188,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $oldTagIds      = array_column($post->tags, 'id');
         $post->saveTerms($categoryIds, $tagIds);
 
+        // Update syndication URLs if the user edited them.
+        if ($post->tooted_at !== null && isset($_POST['mastodon_url'])) {
+            $newMastodonUrl = trim($_POST['mastodon_url']) ?: null;
+            if ($newMastodonUrl !== $post->mastodon_url) {
+                $post->mastodon_url = $newMastodonUrl;
+                $db->update('posts', ['mastodon_url' => $newMastodonUrl], 'id = :id', ['id' => $post->id]);
+            }
+        }
+        if ($post->bluesky_at !== null && isset($_POST['bluesky_url'])) {
+            $newBlueskyUrl = trim($_POST['bluesky_url']) ?: null;
+            if ($newBlueskyUrl !== $post->bluesky_url) {
+                $post->bluesky_url = $newBlueskyUrl;
+                $db->update('posts', ['bluesky_url' => $newBlueskyUrl], 'id = :id', ['id' => $post->id]);
+            }
+        }
+
         // Syndicate to Mastodon on first publish (unless opted out).
         if ($isFirstPublish) {
             $siteUrlForToot = $db->getSetting('site_url', '');
@@ -387,7 +403,14 @@ if ($post->published_at) {
                         Post to Mastodon on publish
                     </label>
                     <?php elseif ($hasMastodon && $post->tooted_at !== null): ?>
-                    <p class="form-hint" style="margin-bottom:.75rem">&#10003; Already shared to Mastodon</p>
+                    <div style="margin-bottom:.75rem">
+                        <p class="form-hint" style="margin-bottom:.25rem">&#10003; Already shared to Mastodon</p>
+                        <label for="mastodon_url" style="font-size:.8rem;font-weight:400;color:var(--color-muted)">Toot URL</label>
+                        <input type="url" id="mastodon_url" name="mastodon_url"
+                               value="<?= Helpers::e($post->mastodon_url ?? '') ?>"
+                               placeholder="https://mastodon.social/@user/123456"
+                               style="font-size:.8rem;margin-top:.15rem">
+                    </div>
                     <?php endif; ?>
 
                     <?php if ($hasBluesky && $post->bluesky_at === null): ?>
@@ -399,7 +422,14 @@ if ($post->published_at) {
                         Post to Bluesky on publish
                     </label>
                     <?php elseif ($hasBluesky && $post->bluesky_at !== null): ?>
-                    <p class="form-hint" style="margin-bottom:.75rem">&#10003; Already shared to Bluesky</p>
+                    <div style="margin-bottom:.75rem">
+                        <p class="form-hint" style="margin-bottom:.25rem">&#10003; Already shared to Bluesky</p>
+                        <label for="bluesky_url" style="font-size:.8rem;font-weight:400;color:var(--color-muted)">Bluesky post URL</label>
+                        <input type="url" id="bluesky_url" name="bluesky_url"
+                               value="<?= Helpers::e($post->bluesky_url ?? '') ?>"
+                               placeholder="https://bsky.app/profile/user/post/abc123"
+                               style="font-size:.8rem;margin-top:.15rem">
+                    </div>
                     <?php endif; ?>
 
                     <label for="publish_date" style="margin-top:0">Publish date</label>
