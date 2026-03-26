@@ -1024,6 +1024,7 @@ audio { width: 100%; }
     border: 1px solid var(--color-border);
     border-radius: 6px;
     overflow: hidden;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 
 .embed-gist iframe {
