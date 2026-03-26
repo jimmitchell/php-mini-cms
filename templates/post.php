@@ -80,9 +80,16 @@ ob_start();
     <div class="post__content prose e-content">
         <?= $html ?>
     </div>
-    <?php if ($post->mastodon_url || $post->bluesky_url): ?>
+    <?php
+    $showKudos = ($settings['tinylytics_code'] ?? '') !== ''
+              && ($settings['tinylytics_kudos_emoji'] ?? '') !== '';
+    $kudosPath = '/' . CMS\Post::datePath($post->published_at, $post->slug) . '/';
+    ?>
+    <?php if ($showKudos || $post->mastodon_url || $post->bluesky_url): ?>
     <footer class="post__syndication">
-        <span>Also on:</span>
+        <?php if ($showKudos): ?>
+        <button class="tinylytics_kudos" data-path="<?= htmlspecialchars($kudosPath, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"></button>
+        <?php endif; ?>
         <?php if ($post->mastodon_url): ?>
         <a href="<?= htmlspecialchars($post->mastodon_url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
            class="u-syndication" target="_blank" rel="noopener noreferrer">Mastodon</a>

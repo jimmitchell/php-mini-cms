@@ -29,7 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'bluesky_handle'       => trim($_POST['bluesky_handle']       ?? ''),
         'bluesky_app_password' => trim($_POST['bluesky_app_password'] ?? ''),
         'github_url'           => rtrim(trim($_POST['github_url']           ?? ''), '/'),
-        'tinylytics_code'      => trim($_POST['tinylytics_code']      ?? ''),
+        'tinylytics_code'        => trim($_POST['tinylytics_code']        ?? ''),
+        'tinylytics_kudos_emoji' => trim($_POST['tinylytics_kudos_emoji'] ?? ''),
         'ga_measurement_id'    => trim($_POST['ga_measurement_id']    ?? ''),
         'webmention_domain'    => trim($_POST['webmention_domain']    ?? ''),
         'custom_css'           => $_POST['custom_css'] ?? '',
@@ -310,6 +311,17 @@ $flash     = $auth->getFlash();
             <p class="form-hint">
                 Your Tinylytics site ID. When set, the tracking script is added to every page.
                 Leave blank to disable tracking.
+            </p>
+
+            <label for="tinylytics_kudos_emoji">Tinylytics Kudos emoji</label>
+            <input type="text" id="tinylytics_kudos_emoji" name="tinylytics_kudos_emoji"
+                   value="<?= Helpers::e($_POST['tinylytics_kudos_emoji'] ?? $settings['tinylytics_kudos_emoji'] ?? '') ?>"
+                   placeholder="👏"
+                   style="max-width:120px">
+            <p class="form-hint">
+                Emoji for the Kudos button shown below each post. When set, the tracking script
+                is updated to enable Kudos and the button appears on post pages.
+                Leave blank to disable.
             </p>
 
             <label for="ga_measurement_id">Google Analytics measurement ID</label>

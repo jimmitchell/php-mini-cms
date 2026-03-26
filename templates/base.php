@@ -397,7 +397,9 @@ if (!function_exists('_e')) {
 </script>
 <?php $tinylyticsCode = $settings['tinylytics_code'] ?? ''; ?>
 <?php if ($tinylyticsCode !== ''): ?>
-<script src="https://tinylytics.app/embed/<?= _e($tinylyticsCode) ?>.js" defer></script>
+<?php $tinylyticsKudosEmoji = $settings['tinylytics_kudos_emoji'] ?? ''; ?>
+<?php $tinylyticsParams = $tinylyticsKudosEmoji !== '' ? '?kudos=' . rawurlencode($tinylyticsKudosEmoji) : ''; ?>
+<script src="https://tinylytics.app/embed/<?= _e($tinylyticsCode) ?>.js<?= $tinylyticsParams ?>" defer></script>
 <?php endif; ?>
 <?php if (!empty($hasGallery)): ?>
 <script>

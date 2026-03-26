@@ -133,7 +133,7 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 | Mastodon | Handle, instance URL, access token |
 | Bluesky | Profile URL, handle, app password |
 | IndieWeb | webmention.io domain |
-| Analytics | Tinylytics site ID, Google Analytics measurement ID |
+| Analytics | Tinylytics site ID, Tinylytics Kudos emoji, Google Analytics measurement ID |
 | Custom CSS | Freeform CSS injected into every public page |
 
 ---

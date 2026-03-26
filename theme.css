@@ -670,6 +670,27 @@ audio { width: 100%; }
     border-color: currentColor;
 }
 
+.tinylytics_kudos {
+    display: inline-flex;
+    align-items: center;
+    gap: .25em;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: .15rem .45rem;
+    font-size: inherit;
+    line-height: 1.4;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+}
+
+.tinylytics_kudos:hover,
+.tinylytics_kudos.did_select {
+    color: var(--color-text);
+    border-color: currentColor;
+}
+
 /* ── Post navigation (prev / next) ────────────────────────────────────────── */
 .post-nav {
     display: flex;

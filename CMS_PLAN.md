@@ -212,7 +212,8 @@ CREATE TABLE settings (
 --               github_url,
 --               webmention_domain,
 --               ga_measurement_id,
---               tinylytics_code
+--               tinylytics_code,
+--               tinylytics_kudos_emoji
 ```
 
 ### `login_attempts`
@@ -513,7 +514,7 @@ Features added after the initial build phases:
 | Image galleries with lightbox | `src/Builder.php`, `templates/post.php`, `theme.css`, `admin/assets/media.js` |
 | Custom CSS (Settings) | `admin/settings.php`, `templates/base.php` |
 | Collapsible admin sidebar | `admin/assets/admin.css`, `admin/assets/admin.js`, `admin/partials/nav.php` |
-| Tinylytics analytics | `templates/base.php`, `src/Feed.php`, `admin/settings.php` |
+| Tinylytics analytics + Kudos button | `templates/base.php`, `templates/post.php`, `src/Feed.php`, `admin/settings.php`, `theme.css` |
 | Google Analytics (GA4) | `templates/base.php`, `admin/settings.php` |
 | Webmention.io (incoming, client-side display) | `templates/base.php`, `templates/post.php`, `admin/settings.php`, `theme.css` |
 | Microformats2 (h-entry) | `templates/post.php`, `templates/index.php` |
