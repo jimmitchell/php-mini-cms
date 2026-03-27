@@ -75,6 +75,7 @@ $csrf      = $auth->csrfToken();
 <main class="admin-main">
     <header class="page-header">
         <h1>Dashboard</h1>
+        <span class="page-header__meta">Clodd CMS v<?= htmlspecialchars(CMS_VERSION) ?></span>
     </header>
 
     <?php if ($flashMsg !== ''): ?>

@@ -12,6 +12,7 @@
  */
 
 define('CMS_ROOT', dirname(__DIR__));
+define('CMS_VERSION', trim(file_get_contents(CMS_ROOT . '/VERSION')));
 
 require CMS_ROOT . '/vendor/autoload.php';
 
@@ -26,7 +27,7 @@ if (!class_exists(\CMS\Database::class)) {
 
 // ── Prompt for username ───────────────────────────────────────────────────────
 
-echo "\n=== Clodd CMS Setup ===\n\n";
+echo "\n=== Clodd CMS Setup (v" . CMS_VERSION . ") ===\n\n";
 
 $currentUsername = $config['admin']['username'] ?? 'admin';
 $username = '';

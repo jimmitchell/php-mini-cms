@@ -10,6 +10,7 @@ declare(strict_types=1);
  */
 
 define('CMS_ROOT', dirname(__DIR__));
+define('CMS_VERSION', trim(file_get_contents(CMS_ROOT . '/VERSION')));
 
 require CMS_ROOT . '/vendor/autoload.php';
 

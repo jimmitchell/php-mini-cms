@@ -55,7 +55,7 @@ class Feed
         $xml .= '  <link href="' . $this->x($siteUrl . '/feed.xml') . '" rel="self" type="application/atom+xml"/>' . "\n";
         $xml .= '  <id>' . $this->x($feedId . '/feed.xml') . '</id>' . "\n";
         $xml .= '  <updated>' . $feedUpdated . '</updated>' . "\n";
-        $xml .= '  <generator uri="https://github.com/jimmitchell/clodd-cms">Clodd CMS</generator>' . "\n";
+        $xml .= '  <generator uri="https://github.com/jimmitchell/clodd-cms" version="' . (defined('CMS_VERSION') ? CMS_VERSION : '1.0.0') . '">Clodd CMS</generator>' . "\n";
 
         foreach ($posts as $post) {
             $postUrl = $siteUrl . '/' . Post::datePath($post['published_at'], $post['slug']) . '/';
@@ -116,7 +116,7 @@ class Feed
         $xml .= '  <link href="' . $this->x($feedUrl) . '" rel="self" type="application/atom+xml"/>' . "\n";
         $xml .= '  <id>' . $this->x($feedId . '/' . $type . '/' . $term['slug'] . '/feed.xml') . '</id>' . "\n";
         $xml .= '  <updated>' . $feedUpdated . '</updated>' . "\n";
-        $xml .= '  <generator uri="https://github.com/jimmitchell/clodd-cms">Clodd CMS</generator>' . "\n";
+        $xml .= '  <generator uri="https://github.com/jimmitchell/clodd-cms" version="' . (defined('CMS_VERSION') ? CMS_VERSION : '1.0.0') . '">Clodd CMS</generator>' . "\n";
 
         foreach ($posts as $post) {
             $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug) . '/';
