@@ -1,5 +1,5 @@
 {
-    "name": "php-mini-cms/cms",
+    "name": "clodd-cms/cms",
     "description": "A lightweight flat-file CMS with PHP admin panel and static HTML output",
     "type": "project",
     "require": {

@@ -107,7 +107,7 @@ class Webmention
             CURLOPT_TIMEOUT        => $timeout,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 5,
-            CURLOPT_USERAGENT      => 'php-mini-cms/1.0 webmention-sender',
+            CURLOPT_USERAGENT      => 'clodd-cms/1.0 webmention-sender',
             CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
         ]);
         curl_exec($ch);
@@ -131,7 +131,7 @@ class Webmention
             CURLOPT_TIMEOUT        => $timeout,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 5,
-            CURLOPT_USERAGENT      => 'php-mini-cms/1.0 webmention-discovery',
+            CURLOPT_USERAGENT      => 'clodd-cms/1.0 webmention-discovery',
         ]);
         $result = curl_exec($ch);
         $error  = curl_errno($ch);
@@ -150,7 +150,7 @@ class Webmention
             CURLOPT_TIMEOUT        => $timeout,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 5,
-            CURLOPT_USERAGENT      => 'php-mini-cms/1.0 webmention-discovery',
+            CURLOPT_USERAGENT      => 'clodd-cms/1.0 webmention-discovery',
         ]);
         $result = curl_exec($ch);
         $error  = curl_errno($ch);

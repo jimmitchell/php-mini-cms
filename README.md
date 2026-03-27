@@ -1,4 +1,4 @@
-# PHP Mini CMS
+# Clodd CMS
 
 A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTML output layer. Write posts and pages in Markdown, publish them, and the CMS generates clean static HTML that Nginx serves directly — no PHP in the request path for public visitors.
 
@@ -54,8 +54,8 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 ## Quick Start (Docker)
 
 ```bash
-git clone https://github.com/yourname/php-mini-cms.git
-cd php-mini-cms
+git clone https://github.com/jimmitchell/clodd-cms.git
+cd clodd-cms
 
 # Start PHP-FPM + Nginx
 docker compose up --build
@@ -76,7 +76,7 @@ See [INSTALL.md](INSTALL.md) for the full VPS guide (Ubuntu 22.04, Nginx, PHP-FP
 
 ```bash
 # Clone and install dependencies
-git clone https://github.com/yourname/php-mini-cms.git /var/www/cms
+git clone https://github.com/jimmitchell/clodd-cms.git /var/www/cms
 cd /var/www/cms
 composer install --no-dev --optimize-autoloader
 
@@ -481,7 +481,7 @@ The UI typeface is [Figtree](https://fonts.google.com/specimen/Figtree) and the 
 ## Project Structure
 
 ```
-php-mini-cms/
+clodd-cms/
 ├── admin/                  # Admin panel PHP pages
 │   ├── assets/             # Admin CSS, JS, EasyMDE, Font Awesome
 │   ├── partials/           # Shared nav partial

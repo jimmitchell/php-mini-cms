@@ -26,7 +26,7 @@ if (!class_exists(\CMS\Database::class)) {
 
 // ── Prompt for username ───────────────────────────────────────────────────────
 
-echo "\n=== PHP Mini CMS Setup ===\n\n";
+echo "\n=== Clodd CMS Setup ===\n\n";
 
 $currentUsername = $config['admin']['username'] ?? 'admin';
 $username = '';
