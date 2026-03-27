@@ -1,5 +1,7 @@
 # Clodd CMS
 
+![Clodd CMS](docs/images/logo.png)
+
 A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTML output layer. Write posts and pages in Markdown, publish them, and the CMS generates clean static HTML that Nginx serves directly — no PHP in the request path for public visitors.
 
 ---

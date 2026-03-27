@@ -1,5 +1,7 @@
 # Installation — Clodd CMS
 
+![Clodd CMS](docs/images/logo.png)
+
 ## Requirements (VPS / production)
 
 | Component | Minimum version |
