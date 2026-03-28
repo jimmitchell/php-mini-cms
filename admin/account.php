@@ -124,6 +124,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: /admin/account.php');
             exit;
         }
+
+    // ── Remove a passkey ─────────────────────────────────────────────────────
+    } elseif ($action === 'passkey_remove') {
+        $id = (int) ($_POST['passkey_id'] ?? 0);
+        if ($id > 0) {
+            $passkey = $db->selectOne("SELECT name FROM passkeys WHERE id = :id", ['id' => $id]);
+            if ($passkey !== null) {
+                $db->delete('passkeys', 'id = :id', ['id' => $id]);
+                $activityLog->log('passkey_remove', 'security', null, 'Passkey: ' . $passkey['name']);
+                $auth->flash('Passkey removed.', 'success');
+            }
+        }
+        header('Location: /admin/account.php');
+        exit;
     }
 }
 
@@ -140,6 +154,8 @@ $setupSecret    = $_SESSION['totp_setup_secret'] ?? '';
 $setupMode      = $setupSecret !== '';
 $newBackupCodes = $_SESSION['totp_new_codes'] ?? [];
 unset($_SESSION['totp_new_codes']);
+
+$passkeys = $auth->getPasskeys();
 
 // Generate QR SVG when in setup mode
 $setupQrSvg = '';
@@ -327,6 +343,57 @@ if ($setupMode) {
 
         <?php endif; ?>
     </div>
+
+    <!-- ── Passkeys ─────────────────────────────────────────────────────── -->
+    <div class="panel" style="margin-top:1.5rem">
+        <h2>Passkeys</h2>
+
+        <p style="margin-bottom:1rem;color:var(--text-muted,#6b7280)">
+            Passkeys use your device's biometrics or PIN to sign in without a password.
+            You can register one passkey per device.
+        </p>
+
+        <p id="passkey-register-error" class="alert alert--error" style="display:none"></p>
+
+        <?php if (!empty($passkeys)): ?>
+            <table class="data-table" style="margin-bottom:1.25rem">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Registered</th>
+                        <th>Last used</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($passkeys as $pk): ?>
+                        <tr>
+                            <td><?= Helpers::e($pk['name']) ?></td>
+                            <td><?= Helpers::e($pk['created_at']) ?></td>
+                            <td><?= Helpers::e($pk['last_used_at'] ?? '—') ?></td>
+                            <td>
+                                <form method="post" action="/admin/account.php"
+                                      onsubmit="return confirm('Remove this passkey?')">
+                                    <input type="hidden" name="csrf_token"
+                                           value="<?= Helpers::e($csrf) ?>">
+                                    <input type="hidden" name="action" value="passkey_remove">
+                                    <input type="hidden" name="passkey_id"
+                                           value="<?= (int) $pk['id'] ?>">
+                                    <button type="submit" class="btn btn--danger btn--sm">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php else: ?>
+            <p style="margin-bottom:1rem">No passkeys registered yet.</p>
+        <?php endif; ?>
+
+        <button type="button" class="btn btn--secondary" id="passkey-register-btn">
+            Register a new passkey
+        </button>
+    </div>
 </main>
 
 <script>
@@ -347,5 +414,83 @@ document.querySelectorAll('a[href*="cancel_totp=1"]').forEach(function(link) {
 </script>
 
 <script src="/admin/assets/admin.js"></script>
+<script>
+(function () {
+    var btn   = document.getElementById('passkey-register-btn');
+    var errEl = document.getElementById('passkey-register-error');
+    if (!btn) return;
+
+    function b64urlToArrayBuffer(b64) {
+        var pad = (4 - b64.length % 4) % 4;
+        var b64std = b64.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice(0, pad);
+        var bin = atob(b64std);
+        var buf = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+        return buf.buffer;
+    }
+
+    function arrayBufferToB64url(buf) {
+        var bin = String.fromCharCode.apply(null, new Uint8Array(buf));
+        return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    function showError(msg) {
+        errEl.textContent = msg;
+        errEl.style.display = '';
+        btn.disabled = false;
+    }
+
+    btn.addEventListener('click', async function () {
+        btn.disabled = true;
+        errEl.style.display = 'none';
+
+        try {
+            var optResp = await fetch('/admin/passkey-api.php?action=passkey_register_options');
+            if (!optResp.ok) throw new Error('Could not start passkey registration.');
+            var options = await optResp.json();
+
+            options.publicKey.challenge = b64urlToArrayBuffer(options.publicKey.challenge);
+            options.publicKey.user.id   = b64urlToArrayBuffer(options.publicKey.user.id);
+            if (options.publicKey.excludeCredentials) {
+                options.publicKey.excludeCredentials = options.publicKey.excludeCredentials.map(function (c) {
+                    return Object.assign({}, c, { id: b64urlToArrayBuffer(c.id) });
+                });
+            }
+
+            var credential = await navigator.credentials.create(options);
+
+            var name = window.prompt('Name this passkey (e.g. "MacBook Touch ID"):', 'Passkey');
+            if (name === null) { btn.disabled = false; return; } // cancelled
+
+            var regResp = await fetch('/admin/passkey-api.php?action=passkey_register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id:   credential.id,
+                    type: credential.type,
+                    name: name.trim() || 'Passkey',
+                    response: {
+                        clientDataJSON:    arrayBufferToB64url(credential.response.clientDataJSON),
+                        attestationObject: arrayBufferToB64url(credential.response.attestationObject)
+                    }
+                })
+            });
+
+            var result = await regResp.json();
+            if (result.ok) {
+                window.location.reload();
+            } else {
+                showError(result.error || 'Registration failed.');
+            }
+        } catch (e) {
+            if (e.name !== 'NotAllowedError') {
+                showError('Passkey error: ' + e.message);
+            } else {
+                btn.disabled = false;
+            }
+        }
+    });
+}());
+</script>
 </body>
 </html>

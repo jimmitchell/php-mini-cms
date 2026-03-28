@@ -322,6 +322,183 @@ class Auth
         }
     }
 
+    // ── Passkeys (WebAuthn) ───────────────────────────────────────────────────
+
+    /** Returns true if at least one passkey is registered. */
+    public function hasPasskeys(): bool
+    {
+        $row = $this->db->selectOne("SELECT COUNT(*) AS cnt FROM passkeys");
+        return ((int) ($row['cnt'] ?? 0)) > 0;
+    }
+
+    /** Returns all registered passkeys (id, name, created_at, last_used_at). */
+    public function getPasskeys(): array
+    {
+        return $this->db->select(
+            "SELECT id, name, created_at, last_used_at FROM passkeys ORDER BY created_at DESC"
+        );
+    }
+
+    /**
+     * Generate a WebAuthn registration challenge and return the JSON options
+     * to pass to navigator.credentials.create() on the client.
+     * Stores the challenge binary in the session.
+     */
+    public function passkeyRegisterOptions(): string
+    {
+        $wa       = $this->webAuthn();
+        $username = $this->config['admin']['username'] ?? 'admin';
+        $userId   = hash('sha256', $username, true); // fixed 32-byte user ID
+
+        // Exclude already-registered credential IDs to prevent re-registration.
+        $existing   = $this->db->select("SELECT credential_id FROM passkeys");
+        $excludeIds = array_map(
+            fn($row) => \lbuchs\WebAuthn\Binary\ByteBuffer::fromBase64Url($row['credential_id']),
+            $existing
+        );
+
+        $createArgs = $wa->getCreateArgs(
+            $userId,
+            $username,
+            $username,
+            60,           // timeout (seconds)
+            'required',   // residentKey — required for passkey behaviour
+            'preferred',  // userVerification
+            null,         // any authenticator (platform or cross-platform)
+            $excludeIds
+        );
+
+        $_SESSION['webauthn_challenge'] = $wa->getChallenge()->getBinaryString();
+
+        return (string) json_encode($createArgs);
+    }
+
+    /**
+     * Verify a registration response from the browser.
+     * Returns ['credential_id', 'public_key', 'sign_count'] on success.
+     *
+     * @throws RuntimeException on verification failure
+     */
+    public function passkeyRegisterComplete(string $clientDataJSON, string $attestationObject): array
+    {
+        $wa        = $this->webAuthn();
+        $challenge = $_SESSION['webauthn_challenge'] ?? null;
+        if ($challenge === null) {
+            throw new RuntimeException('No passkey challenge in session.');
+        }
+        unset($_SESSION['webauthn_challenge']);
+
+        $data = $wa->processCreate(
+            $clientDataJSON,
+            $attestationObject,
+            new \lbuchs\WebAuthn\Binary\ByteBuffer($challenge),
+            false, // requireUserVerification
+            true,  // requireUserPresent
+            false  // failIfRootMismatch (no CA pinning needed for a single-user CMS)
+        );
+
+        return [
+            'credential_id' => rtrim(strtr(base64_encode($data->credentialId), '+/', '-_'), '='),
+            'public_key'    => $data->credentialPublicKey,
+            'sign_count'    => (int) ($data->signatureCounter ?? 0),
+        ];
+    }
+
+    /**
+     * Generate a WebAuthn authentication challenge and return the JSON options
+     * to pass to navigator.credentials.get() on the client.
+     * Stores the challenge binary in the session.
+     */
+    public function passkeyAuthOptions(): string
+    {
+        $wa           = $this->webAuthn();
+        $passkeys     = $this->db->select("SELECT credential_id FROM passkeys");
+        $credentialIds = array_map(
+            fn($row) => \lbuchs\WebAuthn\Binary\ByteBuffer::fromBase64Url($row['credential_id']),
+            $passkeys
+        );
+
+        $getArgs = $wa->getGetArgs($credentialIds, 60);
+
+        $_SESSION['webauthn_challenge'] = $wa->getChallenge()->getBinaryString();
+
+        return (string) json_encode($getArgs);
+    }
+
+    /**
+     * Verify an authentication assertion from the browser.
+     * On success, sets the session as authenticated and returns true.
+     * $credentialId is the base64url credential ID returned by the browser.
+     * $clientDataJSON, $authenticatorData, $signature are raw binary strings.
+     */
+    public function passkeyAuthVerify(
+        string $credentialId,
+        string $clientDataJSON,
+        string $authenticatorData,
+        string $signature
+    ): bool {
+        $wa        = $this->webAuthn();
+        $challenge = $_SESSION['webauthn_challenge'] ?? null;
+        if ($challenge === null) {
+            return false;
+        }
+        unset($_SESSION['webauthn_challenge']);
+
+        $passkey = $this->db->selectOne(
+            "SELECT * FROM passkeys WHERE credential_id = :id",
+            ['id' => $credentialId]
+        );
+        if ($passkey === null) {
+            return false;
+        }
+
+        try {
+            $wa->processGet(
+                $clientDataJSON,
+                $authenticatorData,
+                $signature,
+                $passkey['public_key'],
+                new \lbuchs\WebAuthn\Binary\ByteBuffer($challenge),
+                (int) $passkey['sign_count'],
+                false, // requireUserVerification
+                true   // requireUserPresent
+            );
+        } catch (\lbuchs\WebAuthn\WebAuthnException $e) {
+            return false;
+        }
+
+        // Update sign count and last-used timestamp.
+        $newCount = $wa->getSignatureCounter() ?? (int) $passkey['sign_count'];
+        $this->db->update(
+            'passkeys',
+            ['sign_count' => $newCount, 'last_used_at' => date('Y-m-d H:i:s')],
+            'id = :id',
+            ['id' => (int) $passkey['id']]
+        );
+
+        // Complete the login session.
+        session_regenerate_id(true);
+        $_SESSION['authenticated'] = true;
+        $_SESSION['user']          = $this->config['admin']['username'] ?? 'admin';
+        $_SESSION['csrf_token']    = $this->generateToken();
+
+        return true;
+    }
+
+    /**
+     * Build a WebAuthn instance using the site's rpId (hostname without port).
+     */
+    private function webAuthn(): \lbuchs\WebAuthn\WebAuthn
+    {
+        // Strip port from HTTP_HOST to get a valid rpId.
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $rpId = (string) preg_replace('/:\d+$/', '', $host);
+
+        $rpName = $this->db->getSetting('site_title', 'CMS');
+
+        return new \lbuchs\WebAuthn\WebAuthn($rpName, $rpId, null, true);
+    }
+
     // ── Flash messages ────────────────────────────────────────────────────────
 
     /**
