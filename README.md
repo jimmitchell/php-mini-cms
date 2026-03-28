@@ -27,6 +27,7 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Outgoing webmentions** — CLI script (`bin/send-webmentions.php`) discovers endpoints and sends pings for all external links in published posts; safe to schedule via cron
 - **MarsEdit support** — full WordPress XML-RPC API at `/admin/xmlrpc.php`; write and publish from MarsEdit with post and page management
 - **Google Analytics** — optional GA4 integration; add a measurement ID in Settings to inject the tracking script
+- **Built-in analytics** — first-party page-view tracking via `navigator.sendBeacon`; no cookies or third-party services; IP addresses stored as HMAC-SHA256 hashes; data retained 90 days; dashboard shows views/day, top pages, device breakdown, referrers, and 404 errors; visit `/?ti=exclude` to opt out your own browser
 - **Custom CSS** — paste override styles directly in Settings; injected as a `<style>` block on every public page after the main stylesheet
 - **Dark / light mode** — system-preference aware with manual toggle; no flash on load
 - **Search** — client-side full-text search of posts at `/search/`; no server-side PHP required
@@ -156,6 +157,7 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 | Settings | `/admin/settings.php` | Site identity, content options, social/analytics credentials, custom CSS |
 | Account | `/admin/account.php` | Change admin password; set up, manage, or disable TOTP 2FA |
 | Logs | `/admin/login-log.php` | Login attempt history and admin activity log |
+| Analytics | `/admin/analytics.php` | Views/day, top pages, devices, referrers, 404 errors; 7/30/90-day range |
 | XML-RPC API | `/admin/xmlrpc.php` | WordPress-compatible API for MarsEdit and similar clients |
 | REST API | `/admin/api/{resource}` | HTTP Basic Auth REST API for posts, pages, media, categories, tags, and settings |
 
@@ -485,8 +487,10 @@ The UI typeface is [Figtree](https://fonts.google.com/specimen/Figtree) and the 
 ```
 clodd-cms/
 ├── admin/                  # Admin panel PHP pages
-│   ├── assets/             # Admin CSS, JS, EasyMDE, Font Awesome
+│   ├── assets/             # Admin CSS, JS, EasyMDE, Font Awesome, Chart.js
+│   │   └── chart.min.js    # Chart.js 4.4.7 (vendored)
 │   ├── partials/           # Shared nav partial
+│   ├── analytics.php       # Analytics dashboard (views, top pages, devices, referrers, 404s)
 │   ├── api.php             # REST API endpoint (HTTP Basic Auth)
 │   └── xmlrpc.php          # WordPress/MetaWeblog XML-RPC API endpoint
 ├── bin/
@@ -531,6 +535,7 @@ clodd-cms/
 ├── favicon.svg             # SVG favicon (blue rounded square matching theme)
 ├── nginx.conf.example      # Production Nginx template
 ├── theme.css               # Public stylesheet
+├── track.php               # Analytics beacon endpoint (public, POST only)
 └── INSTALL.md              # Full VPS deployment guide
 ```
 

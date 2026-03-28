@@ -1,6 +1,9 @@
 # /etc/nginx/sites-available/cms
 # Replace example.com with your domain; Certbot will fill in TLS paths.
 
+# Rate-limit zone for the analytics beacon: 2 requests/second per IP, 10 MB state.
+limit_req_zone $binary_remote_addr zone=beacon:10m rate=2r/s;
+
 server {
     listen 80;
     server_name example.com www.example.com;
@@ -38,6 +41,21 @@ server {
     location = /config.php {
         deny all;
         return 403;
+    }
+
+    # ── Analytics beacon ──────────────────────────────────────────────────────
+    location = /track.php {
+        limit_except POST { deny all; }
+        limit_req zone=beacon burst=20 nodelay;
+        client_max_body_size 4k;
+
+        include        fastcgi_params;
+        fastcgi_pass   unix:/run/php/php8.3-fpm.sock;
+        fastcgi_param  SCRIPT_FILENAME $document_root/track.php;
+        fastcgi_param  HTTPS           on;
+
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Cache-Control          "no-store" always;
     }
 
     # ── Media uploads ─────────────────────────────────────────────────────────

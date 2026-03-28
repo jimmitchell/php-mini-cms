@@ -14,7 +14,7 @@ class Database
     private PDO $pdo;
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 12;
+    private const SCHEMA_VERSION = 13;
 
     public function __construct(string $dbPath)
     {
@@ -195,6 +195,10 @@ class Database
 
         if ($current < 12) {
             $this->applySchemaV12();
+        }
+
+        if ($current < 13) {
+            $this->applySchemaV13();
         }
 
         if ($current < self::SCHEMA_VERSION) {
@@ -403,6 +407,24 @@ class Database
                 created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
                 last_used_at  DATETIME
             )
+        SQL);
+    }
+
+    private function applySchemaV13(): void
+    {
+        // Page views for self-hosted analytics.
+        $this->pdo->exec(<<<SQL
+            CREATE TABLE IF NOT EXISTS page_views (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                url         TEXT    NOT NULL,
+                referrer    TEXT,
+                device_type TEXT    NOT NULL DEFAULT 'desktop',
+                is_404      INTEGER NOT NULL DEFAULT 0,
+                ip_hash     TEXT,
+                timestamp   INTEGER NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_pv_timestamp ON page_views(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_pv_url       ON page_views(url);
         SQL);
     }
 

@@ -20,8 +20,9 @@ ob_start();
 </div>
 <?php
 $bodyContent = ob_get_clean();
+$is404Page   = true;
 
 echo $render('base.php', compact(
     'pageTitle', 'description', 'canonical', 'ogType', 'bodyContent',
-    'settings', 'navPages', 'siteUrl', 'render'
+    'settings', 'navPages', 'siteUrl', 'render', 'is404Page'
 ));

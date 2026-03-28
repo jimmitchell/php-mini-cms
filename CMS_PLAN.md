@@ -52,6 +52,7 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 │   ├── media.php           ← Media library & uploader
 │   ├── settings.php        ← Site-wide settings
 │   ├── account.php         ← Change admin password + TOTP 2FA management
+│   ├── analytics.php       ← Analytics dashboard (views/day, top pages, devices, referrers, 404s)
 │   ├── api.php             ← REST API endpoint (HTTP Basic Auth; posts, pages, media, categories, tags, settings)
 │   ├── xmlrpc.php          ← WordPress + MetaWeblog XML-RPC API endpoint
 │   ├── login-log.php       ← Activity log + login attempts viewer
@@ -59,6 +60,7 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 │       ├── admin.css
 │       ├── admin.js
 │       ├── media.js
+│       ├── chart.min.js    ← Chart.js 4.4.7 (vendored)
 │       ├── easymde.min.*   ← Markdown editor (vendored)
 │       ├── font-awesome.min.css
 │       └── fonts/          ← Font Awesome icon fonts (self-hosted)
@@ -133,6 +135,7 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 ├── docker-compose.yml
 ├── favicon.svg             ← SVG favicon (blue rounded square, served publicly)
 ├── nginx.conf.example      ← Production Nginx template
+├── track.php               ← Analytics beacon endpoint (public, POST only)
 └── INSTALL.md
 ```
 
@@ -242,6 +245,23 @@ CREATE TABLE activity_log (
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 -- Pruned probabilistically (~1% of requests); entries older than 90 days are deleted.
+```
+
+### `page_views` (schema v13)
+
+```sql
+CREATE TABLE page_views (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    url         TEXT    NOT NULL,
+    referrer    TEXT    NOT NULL DEFAULT '',
+    device_type TEXT    NOT NULL DEFAULT 'unknown',  -- desktop | mobile | tablet | unknown
+    is_404      INTEGER NOT NULL DEFAULT 0,
+    ip_hash     TEXT    NOT NULL DEFAULT '',          -- HMAC-SHA256 of client IP with server-side salt
+    timestamp   DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX page_views_timestamp ON page_views(timestamp);
+-- Populated by track.php beacon (raw PDO, no autoloader).
+-- Pruned to 90 days on ~1% of admin requests in bootstrap.php.
 ```
 
 ---
@@ -532,6 +552,8 @@ Features added after the initial build phases:
 | `theme.min.css` auto-generation | `src/Builder.php`, `admin/bootstrap.php` |
 | Activity logging | `src/ActivityLog.php`, `src/Database.php` (v10), `admin/bootstrap.php`, `admin/post-edit.php`, `admin/page-edit.php`, `admin/media.php`, `admin/settings.php`, `admin/account.php`, `admin/dashboard.php` |
 | Logs admin page (activity + login attempts) | `admin/login-log.php` |
+| Built-in analytics beacon | `track.php`, `src/Database.php` (v13), `templates/base.php`, `templates/404.php`, `docker/nginx.conf`, `nginx.conf.example` |
+| Analytics dashboard (views/day, top pages, devices, referrers, 404s) | `admin/analytics.php`, `admin/assets/chart.min.js`, `admin/bootstrap.php` |
 
 ---
 
