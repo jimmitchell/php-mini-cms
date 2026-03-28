@@ -81,9 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$step      = $auth->isTotpPending() ? 'totp' : 'password';
-$csrf      = $auth->csrfToken();
-$siteTitle = $db->getSetting('site_title', 'My CMS');
+$step         = $auth->isTotpPending() ? 'totp' : 'password';
+$csrf         = $auth->csrfToken();
+$siteTitle    = $db->getSetting('site_title', 'My CMS');
+$hasPasskeys  = $auth->hasPasskeys();
 
 ?>
 <!DOCTYPE html>
@@ -101,6 +102,18 @@ $siteTitle = $db->getSetting('site_title', 'My CMS');
 
     <?php if ($error !== ''): ?>
         <p class="alert alert--error"><?= htmlspecialchars($error) ?></p>
+    <?php endif; ?>
+
+    <?php if ($hasPasskeys && $step === 'password'): ?>
+
+        <button type="button" class="btn btn--passkey" id="passkey-btn">
+            Sign in with a passkey
+        </button>
+
+        <p id="passkey-error" class="alert alert--error" style="display:none"></p>
+
+        <div class="login-divider"><span>or</span></div>
+
     <?php endif; ?>
 
     <?php if ($step === 'totp'): ?>
@@ -160,6 +173,86 @@ $siteTitle = $db->getSetting('site_title', 'My CMS');
 
     <?php endif; ?>
 </div>
+
+
+<?php if ($hasPasskeys && $step === 'password'): ?>
+<script>
+(function () {
+    function b64urlToArrayBuffer(b64) {
+        var pad = (4 - b64.length % 4) % 4;
+        var b64std = b64.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice(0, pad);
+        var bin = atob(b64std);
+        var buf = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+        return buf.buffer;
+    }
+
+    function arrayBufferToB64url(buf) {
+        var bin = String.fromCharCode.apply(null, new Uint8Array(buf));
+        return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    var btn = document.getElementById('passkey-btn');
+    var errEl = document.getElementById('passkey-error');
+
+    function showError(msg) {
+        errEl.textContent = msg;
+        errEl.style.display = '';
+        btn.disabled = false;
+    }
+
+    btn.addEventListener('click', async function () {
+        btn.disabled = true;
+        errEl.style.display = 'none';
+
+        try {
+            var optResp = await fetch('/admin/passkey-api.php?action=passkey_auth_options');
+            if (!optResp.ok) throw new Error('Could not start passkey authentication.');
+            var options = await optResp.json();
+
+            options.publicKey.challenge = b64urlToArrayBuffer(options.publicKey.challenge);
+            if (options.publicKey.allowCredentials) {
+                options.publicKey.allowCredentials = options.publicKey.allowCredentials.map(function (c) {
+                    return Object.assign({}, c, { id: b64urlToArrayBuffer(c.id) });
+                });
+            }
+
+            var credential = await navigator.credentials.get(options);
+
+            var assertResp = await fetch('/admin/passkey-api.php?action=passkey_auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id:    credential.id,
+                    rawId: arrayBufferToB64url(credential.rawId),
+                    type:  credential.type,
+                    response: {
+                        clientDataJSON:    arrayBufferToB64url(credential.response.clientDataJSON),
+                        authenticatorData: arrayBufferToB64url(credential.response.authenticatorData),
+                        signature:         arrayBufferToB64url(credential.response.signature),
+                        userHandle: credential.response.userHandle
+                            ? arrayBufferToB64url(credential.response.userHandle) : null
+                    }
+                })
+            });
+
+            var result = await assertResp.json();
+            if (result.ok) {
+                window.location = '/admin/dashboard.php';
+            } else {
+                showError(result.error || 'Passkey authentication failed.');
+            }
+        } catch (e) {
+            if (e.name !== 'NotAllowedError') {
+                showError('Passkey error: ' + e.message);
+            } else {
+                btn.disabled = false;
+            }
+        }
+    });
+}());
+</script>
+<?php endif; ?>
 
 </body>
 </html>

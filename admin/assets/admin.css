@@ -66,6 +66,33 @@ body.login-page {
     justify-content: center;
 }
 
+.btn--passkey {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+}
+
+.btn--passkey:hover {
+    background: var(--color-hover, #f3f4f6);
+}
+
+.login-divider {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    margin: .75rem 0;
+    color: var(--text-muted, #6b7280);
+    font-size: .875rem;
+}
+
+.login-divider::before,
+.login-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+}
+
 /* ── Admin layout ─────────────────────────────────────────────────────────── */
 body.admin-page {
     display: flex;

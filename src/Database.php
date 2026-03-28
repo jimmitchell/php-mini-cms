@@ -14,7 +14,7 @@ class Database
     private PDO $pdo;
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 11;
+    private const SCHEMA_VERSION = 12;
 
     public function __construct(string $dbPath)
     {
@@ -191,6 +191,10 @@ class Database
 
         if ($current < 11) {
             $this->applySchemaV11();
+        }
+
+        if ($current < 12) {
+            $this->applySchemaV12();
         }
 
         if ($current < self::SCHEMA_VERSION) {
@@ -382,6 +386,22 @@ class Database
                 code_hash  TEXT    NOT NULL,
                 used_at    DATETIME,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        SQL);
+    }
+
+    private function applySchemaV12(): void
+    {
+        // Passkeys (WebAuthn credentials) for passwordless login.
+        $this->pdo->exec(<<<SQL
+            CREATE TABLE IF NOT EXISTS passkeys (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                credential_id TEXT    NOT NULL UNIQUE,
+                public_key    TEXT    NOT NULL,
+                sign_count    INTEGER NOT NULL DEFAULT 0,
+                name          TEXT    NOT NULL DEFAULT 'Passkey',
+                created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_used_at  DATETIME
             )
         SQL);
     }
