@@ -29,6 +29,7 @@ $activityLog = new \CMS\ActivityLog($db);
 if (random_int(1, 100) === 1) {
     $db->exec("DELETE FROM login_attempts WHERE attempted_at < datetime('now', '-24 hours')");
     $db->exec("DELETE FROM activity_log WHERE created_at < datetime('now', '-90 days')");
+    $db->exec("DELETE FROM page_views WHERE timestamp < strftime('%s', datetime('now', '-90 days'))");
 }
 
 // Regenerate theme.min.css if it is missing or theme.css has been modified.

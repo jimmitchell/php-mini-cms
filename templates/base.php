@@ -664,5 +664,18 @@ document.addEventListener('keydown', function (e) {
 }());
 </script>
 <?php endif; ?>
+<?php if (!empty($is404Page)): ?><script>window.analyticsIs404=true;</script><?php endif; ?>
+<script>
+(function(){
+    try{
+        var p=new URLSearchParams(location.search);
+        if(p.get('ti')==='exclude'){localStorage.setItem('ti_exclude','1');}
+        if(p.get('ti')==='include'){localStorage.removeItem('ti_exclude');}
+        if(localStorage.getItem('ti_exclude')==='1')return;
+    }catch(e){}
+    var d={url:location.pathname,referrer:document.referrer||'',is404:window.analyticsIs404||false};
+    navigator.sendBeacon('/track.php',new Blob([JSON.stringify(d)],{type:'application/json'}));
+}());
+</script>
 </body>
 </html>
