@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.3] — 2026-03-29
+
+### Changed
+
+- **Code simplification** — migration loop, settings helpers, query patterns, slug generation, syndication logic, and build calls consolidated for clarity and consistency
+- **Standardised output escaping** — `dashboard.php` and `analytics.php` now use `Helpers::e()` consistently with the rest of the admin
+- **page-edit delete handler** — moved before save block so delete action is reachable (was previously unreachable)
+
+### Fixed
+
+- **XSS** — `$post->status` and `$page->status` now escaped with `Helpers::e()` in badge output
+- **Session cookie `secure` flag** — now also set when behind a TLS-terminating reverse proxy via `HTTP_X_FORWARDED_PROTO`
+- **WebAuthn rpId** — derived from canonical `site_url` setting instead of attacker-controllable `HTTP_HOST` header
+- **Migration seed SQL injection** — settings seed now uses a prepared statement instead of string interpolation
+- **DNS rebinding (Mastodon SSRF)** — hostname resolved immediately before curl connects and pinned via `CURLOPT_RESOLVE`
+
+---
+
 ## [1.2.2] — 2026-03-28
 
 ### Fixed
