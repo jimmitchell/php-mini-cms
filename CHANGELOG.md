@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.2] — 2026-03-28
+
+### Fixed
+
+- **Analytics timezone** — daily chart grouping, chart axis labels, and 404 "last seen" timestamps now respect the timezone configured in Settings instead of always using UTC
+
+---
+
 ## [1.2.1] — 2026-03-28
 
 ### Added

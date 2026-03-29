@@ -8,6 +8,13 @@ $auth->check();
 $siteTitle = $db->getSetting('site_title', 'My CMS');
 $siteUrl   = rtrim($db->getSetting('site_url', ''), '/');
 
+// Timezone for display and day-boundary grouping.
+$tzName = $db->getSetting('timezone', '');
+$tz     = ($tzName !== '' && @timezone_open($tzName)) ? new DateTimeZone($tzName) : new DateTimeZone('UTC');
+// Compute UTC offset in seconds for SQLite's unixepoch modifier.
+$tzOffsetSec = $tz->getOffset(new DateTime('now', $tz));
+$tzOffsetStr = ($tzOffsetSec >= 0 ? '+' : '') . $tzOffsetSec . ' seconds';
+
 // Date range: 7, 30, or 90 days (default 30).
 $range = (int) ($_GET['range'] ?? 30);
 if (!in_array($range, [7, 30, 90], true)) {
@@ -37,17 +44,19 @@ $total404 = (int) ($db->selectOne(
 
 // Daily views for line chart — fill every day in the range.
 $dailyRows = $db->select(
-    "SELECT date(timestamp, 'unixepoch') AS day, COUNT(*) AS views
+    "SELECT date(timestamp, 'unixepoch', :tz) AS day, COUNT(*) AS views
        FROM page_views
       WHERE timestamp >= :since AND is_404 = 0
       GROUP BY day
       ORDER BY day ASC",
-    ['since' => $since]
+    ['since' => $since, 'tz' => $tzOffsetStr]
 );
 // Build a complete day-keyed map so the chart has no gaps.
 $dailyMap = [];
 for ($i = $range - 1; $i >= 0; $i--) {
-    $dailyMap[date('Y-m-d', time() - $i * 86400)] = 0;
+    $d = new DateTime('now', $tz);
+    $d->modify("-{$i} days");
+    $dailyMap[$d->format('Y-m-d')] = 0;
 }
 foreach ($dailyRows as $row) {
     $dailyMap[$row['day']] = (int) $row['views'];
@@ -229,7 +238,7 @@ $excludeUrl = $siteUrl . '/?ti=exclude';
                 <tr>
                     <td><?= htmlspecialchars($row['url']) ?></td>
                     <td style="text-align:right"><?= (int) $row['cnt'] ?></td>
-                    <td><?= htmlspecialchars(date('Y-m-d H:i', (int) $row['last_seen'])) ?></td>
+                    <td><?= htmlspecialchars((new DateTime('@' . (int) $row['last_seen']))->setTimezone($tz)->format('Y-m-d H:i')) ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
