@@ -5,6 +5,8 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 $auth->check();
 
+use CMS\Helpers;
+
 $siteTitle = $db->getSetting('site_title', 'My CMS');
 $siteUrl   = rtrim($db->getSetting('site_url', ''), '/');
 
@@ -138,7 +140,7 @@ $excludeUrl = $siteUrl . '/?ti=exclude';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Analytics — <?= htmlspecialchars($siteTitle) ?></title>
+    <title>Analytics — <?= Helpers::e($siteTitle) ?></title>
     <link rel="stylesheet" href="/admin/assets/admin.css">
 </head>
 <body class="admin-page">
@@ -154,9 +156,9 @@ $excludeUrl = $siteUrl . '/?ti=exclude';
     <section class="panel" style="margin-bottom:1rem">
         <p class="form-hint" style="margin:0">
             <strong>Exclude your own visits:</strong>
-            Visit <a href="<?= htmlspecialchars($excludeUrl) ?>" target="_blank"><?= htmlspecialchars($excludeUrl) ?></a>
+            Visit <a href="<?= Helpers::e($excludeUrl) ?>" target="_blank"><?= Helpers::e($excludeUrl) ?></a>
             once in each browser you use. Your visits will be silently skipped from that point on.
-            To re-enable tracking, visit <code><?= htmlspecialchars($siteUrl) ?>/?ti=include</code>.
+            To re-enable tracking, visit <code><?= Helpers::e($siteUrl) ?>/?ti=include</code>.
         </p>
     </section>
 
@@ -236,9 +238,9 @@ $excludeUrl = $siteUrl . '/?ti=exclude';
             <tbody>
                 <?php foreach ($recent404s as $row): ?>
                 <tr>
-                    <td><?= htmlspecialchars($row['url']) ?></td>
+                    <td><?= Helpers::e($row['url']) ?></td>
                     <td style="text-align:right"><?= (int) $row['cnt'] ?></td>
-                    <td><?= htmlspecialchars((new DateTime('@' . (int) $row['last_seen']))->setTimezone($tz)->format('Y-m-d H:i')) ?></td>
+                    <td><?= Helpers::e((new DateTime('@' . (int) $row['last_seen']))->setTimezone($tz)->format('Y-m-d H:i')) ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

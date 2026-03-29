@@ -149,56 +149,10 @@ class Database
         $row     = $this->selectOne("SELECT value FROM settings WHERE key = 'schema_version'");
         $current = $row ? (int) $row['value'] : 0;
 
-        if ($current < 1) {
-            $this->applySchemaV1();
-        }
-
-        if ($current < 2) {
-            $this->applySchemaV2();
-        }
-
-        if ($current < 3) {
-            $this->applySchemaV3();
-        }
-
-        if ($current < 4) {
-            $this->applySchemaV4();
-        }
-
-        if ($current < 5) {
-            $this->applySchemaV5();
-        }
-
-        if ($current < 6) {
-            $this->applySchemaV6();
-        }
-
-        if ($current < 7) {
-            $this->applySchemaV7();
-        }
-
-        if ($current < 8) {
-            $this->applySchemaV8();
-        }
-
-        if ($current < 9) {
-            $this->applySchemaV9();
-        }
-
-        if ($current < 10) {
-            $this->applySchemaV10();
-        }
-
-        if ($current < 11) {
-            $this->applySchemaV11();
-        }
-
-        if ($current < 12) {
-            $this->applySchemaV12();
-        }
-
-        if ($current < 13) {
-            $this->applySchemaV13();
+        for ($v = 1; $v <= self::SCHEMA_VERSION; $v++) {
+            if ($current < $v) {
+                $this->{'applySchemaV' . $v}();
+            }
         }
 
         if ($current < self::SCHEMA_VERSION) {
@@ -268,11 +222,9 @@ class Database
             'feed_post_count'  => '20',
             'footer_text'      => '',
         ];
+        $stmt = $this->pdo->prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (:key, :value)');
         foreach ($defaults as $key => $value) {
-            $this->pdo->exec(
-                "INSERT OR IGNORE INTO settings (key, value) VALUES ('{$key}', " .
-                $this->pdo->quote($value) . ")"
-            );
+            $stmt->execute([':key' => $key, ':value' => $value]);
         }
     }
 
@@ -449,11 +401,6 @@ class Database
     /** Retrieve all settings as key => value array. */
     public function getAllSettings(): array
     {
-        $rows = $this->select("SELECT key, value FROM settings");
-        $out  = [];
-        foreach ($rows as $row) {
-            $out[$row['key']] = $row['value'];
-        }
-        return $out;
+        return array_column($this->select("SELECT key, value FROM settings"), 'value', 'key');
     }
 }

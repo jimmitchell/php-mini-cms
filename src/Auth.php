@@ -36,7 +36,7 @@ class Auth
         session_set_cookie_params([
             'lifetime' => $lifetime,
             'path'     => '/',
-            'secure'   => isset($_SERVER['HTTPS']),
+            'secure'   => isset($_SERVER['HTTPS']) || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https',
             'httponly' => true,
             'samesite' => 'Strict',
         ]);
@@ -264,40 +264,24 @@ class Auth
 
     public function verifyBackupCode(string $input): bool
     {
-        $rows    = $this->db->select("SELECT id, code_hash FROM totp_backup_codes WHERE used_at IS NULL");
-        $matched = null;
+        $rows = $this->db->select("SELECT id, code_hash FROM totp_backup_codes WHERE used_at IS NULL");
         foreach ($rows as $row) {
             if (password_verify($input, $row['code_hash'])) {
-                $matched = $row['id'];
+                $this->db->update(
+                    'totp_backup_codes',
+                    ['used_at' => date('Y-m-d H:i:s')],
+                    'id = :id',
+                    ['id' => (int) $row['id']]
+                );
+                return true;
             }
-        }
-        if ($matched !== null) {
-            $this->db->update(
-                'totp_backup_codes',
-                ['used_at' => date('Y-m-d H:i:s')],
-                'id = :id',
-                ['id' => $matched]
-            );
-            return true;
         }
         return false;
     }
 
     public function isTotpLockedOut(string $ip): bool
     {
-        $maxAttempts    = (int) ($this->config['security']['max_login_attempts'] ?? 5);
-        $lockoutMinutes = (int) ($this->config['security']['lockout_minutes'] ?? 15);
-
-        $row = $this->db->selectOne(
-            "SELECT COUNT(*) AS cnt
-               FROM login_attempts
-              WHERE ip = :ip
-                AND success = 0
-                AND attempted_at >= datetime('now', :window)",
-            ['ip' => 'totp:' . $ip, 'window' => "-{$lockoutMinutes} minutes"]
-        );
-
-        return ($row['cnt'] ?? 0) >= $maxAttempts;
+        return $this->isLockedOut('totp:' . $ip);
     }
 
     public function recordTotpAttempt(string $ip, bool $success): void
@@ -490,9 +474,10 @@ class Auth
      */
     private function webAuthn(): \lbuchs\WebAuthn\WebAuthn
     {
-        // Strip port from HTTP_HOST to get a valid rpId.
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $rpId = (string) preg_replace('/:\d+$/', '', $host);
+        // Derive rpId from the canonical site_url setting rather than the
+        // attacker-controllable HTTP_HOST header.
+        $siteUrl = $this->db->getSetting('site_url', '');
+        $rpId    = $siteUrl !== '' ? (parse_url($siteUrl, PHP_URL_HOST) ?? 'localhost') : 'localhost';
 
         $rpName = $this->db->getSetting('site_title', 'CMS');
 

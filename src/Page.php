@@ -34,19 +34,10 @@ class Page
      */
     public static function findAll(Database $db, ?string $status = null): array
     {
-        $order = "ORDER BY CASE WHEN nav_order = 0 THEN 1 ELSE 0 END ASC, nav_order ASC, title ASC";
-        if ($status !== null) {
-            $rows = $db->select(
-                "SELECT * FROM pages WHERE status = :status $order",
-                ['status' => $status]
-            );
-        } else {
-            $rows = $db->select(
-                "SELECT * FROM pages $order"
-            );
-        }
-
-        return array_map(fn($row) => self::fromRow($db, $row), $rows);
+        $order  = "ORDER BY CASE WHEN nav_order = 0 THEN 1 ELSE 0 END ASC, nav_order ASC, title ASC";
+        $sql    = "SELECT * FROM pages" . ($status !== null ? " WHERE status = :status" : "") . " $order";
+        $params = $status !== null ? ['status' => $status] : [];
+        return array_map(fn($row) => self::fromRow($db, $row), $db->select($sql, $params));
     }
 
     public static function findById(Database $db, int $id): ?self

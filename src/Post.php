@@ -49,18 +49,9 @@ class Post
      */
     public static function findAll(Database $db, ?string $status = null): array
     {
-        if ($status !== null) {
-            $rows = $db->select(
-                "SELECT * FROM posts WHERE status = :status ORDER BY published_at DESC, created_at DESC",
-                ['status' => $status]
-            );
-        } else {
-            $rows = $db->select(
-                "SELECT * FROM posts ORDER BY published_at DESC, created_at DESC"
-            );
-        }
-
-        $posts = array_map(fn($row) => self::fromRow($db, $row), $rows);
+        $sql    = "SELECT * FROM posts" . ($status !== null ? " WHERE status = :status" : "") . " ORDER BY published_at DESC, created_at DESC";
+        $params = $status !== null ? ['status' => $status] : [];
+        $posts  = array_map(fn($row) => self::fromRow($db, $row), $db->select($sql, $params));
         self::hydrateManyTerms($db, $posts);
         return $posts;
     }
@@ -441,16 +432,12 @@ class Post
             return [];
         }
 
-        $ids = array_column($due, 'id');
-
-        foreach ($ids as $id) {
-            $db->update(
-                'posts',
-                ['status' => 'published', 'updated_at' => date('Y-m-d H:i:s')],
-                'id = :id',
-                ['id' => $id]
-            );
-        }
+        $ids          = array_column($due, 'id');
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $db->exec(
+            "UPDATE posts SET status = 'published', updated_at = ? WHERE id IN ($placeholders)",
+            array_merge([date('Y-m-d H:i:s')], $ids)
+        );
 
         return $ids;
     }
