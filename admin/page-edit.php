@@ -30,6 +30,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $action = $_POST['action'] ?? 'draft';
 
+    // Handle delete before any save logic.
+    if ($action === 'delete') {
+        if ($page && $page->id) {
+            $activityLog->log('delete', 'page', $page->id, $page->title);
+            $wasPublished = $page->status === 'published';
+            $page->delete();
+            $page->status = 'draft'; // so buildPage() removes the static file
+            $builder->buildPage($page);
+            if ($wasPublished) {
+                $builder->buildIndex();
+                $builder->buildSitemap();
+            }
+            $auth->flash('Page deleted.', 'info');
+            header('Location: /admin/pages.php');
+            exit;
+        }
+    }
+
     if ($page === null) {
         $page = new Page($db);
     }
@@ -40,11 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $page->content   = $_POST['content'] ?? '';
     $page->nav_order = (int) ($_POST['nav_order'] ?? 0);
 
-    if ($page->slug === '') {
-        $page->slug = Helpers::slugify($page->title);
-    } else {
-        $page->slug = Helpers::slugify($page->slug);
-    }
+    $page->slug = Helpers::slugify($page->slug !== '' ? $page->slug : $page->title);
 
     if ($page->title === '') {
         $errors[] = 'Title is required.';
@@ -69,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $page->save();
         $builder->buildPage($page);
         if ($page->status === 'published' || $wasPublished) {
-            $builder->buildIndex(); // pages appear in nav
+            $builder->buildIndex();
             $builder->buildSitemap();
         }
 
@@ -87,23 +101,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
         $auth->flash($label);
         header('Location: /admin/page-edit.php?id=' . $page->id);
-        exit;
-    }
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
-    if ($page && $page->id) {
-        $activityLog->log('delete', 'page', $page->id, $page->title);
-        $wasPublished = $page->status === 'published';
-        $page->delete();
-        $page->status = 'draft'; // so buildPage() removes the static file
-        $builder->buildPage($page);
-        if ($wasPublished) {
-            $builder->buildIndex();
-            $builder->buildSitemap();
-        }
-        $auth->flash('Page deleted.', 'info');
-        header('Location: /admin/pages.php');
         exit;
     }
 }
@@ -193,7 +190,7 @@ $csrf      = $auth->csrfToken();
                     <h2>Publish</h2>
 
                     <div style="margin-bottom:.75rem">
-                        <span class="badge badge--<?= $page->status ?>"><?= $page->status ?></span>
+                        <span class="badge badge--<?= Helpers::e($page->status) ?>"><?= Helpers::e($page->status) ?></span>
                     </div>
 
                     <div style="display:flex;flex-direction:column;gap:.5rem">

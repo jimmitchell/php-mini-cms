@@ -52,6 +52,18 @@ class Mastodon
      */
     private function post(string $text): ?string
     {
+        $parsed = parse_url($this->instanceUrl);
+        $host   = $parsed['host'] ?? '';
+        $port   = $parsed['port'] ?? 443;
+
+        // Resolve hostname immediately before connecting and pin it via CURLOPT_RESOLVE
+        // to prevent DNS rebinding attacks (attacker returns public IP at validation time,
+        // private IP at request time).
+        $resolvedIp = gethostbyname($host);
+        if (filter_var($resolvedIp, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return null;
+        }
+
         $ch = curl_init($this->instanceUrl . '/api/v1/statuses');
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
@@ -59,6 +71,7 @@ class Mastodon
             CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $this->token],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 10,
+            CURLOPT_RESOLVE        => ["{$host}:{$port}:{$resolvedIp}"],
         ]);
 
         $response = curl_exec($ch);

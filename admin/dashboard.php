@@ -5,6 +5,8 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 $auth->check();
 
+use CMS\Helpers;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rebuild') {
     $auth->verifyCsrf($_POST['csrf_token'] ?? '');
     $builder->buildAll();
@@ -65,7 +67,7 @@ $csrf      = $auth->csrfToken();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard — <?= htmlspecialchars($siteTitle) ?></title>
+    <title>Dashboard — <?= Helpers::e($siteTitle) ?></title>
     <link rel="stylesheet" href="/admin/assets/admin.css">
 </head>
 <body class="admin-page">
@@ -75,11 +77,11 @@ $csrf      = $auth->csrfToken();
 <main class="admin-main">
     <header class="page-header">
         <h1>Dashboard</h1>
-        <span class="page-header__meta">Clodd CMS v<?= htmlspecialchars(CMS_VERSION) ?></span>
+        <span class="page-header__meta">Clodd CMS v<?= Helpers::e(CMS_VERSION) ?></span>
     </header>
 
     <?php if ($flashMsg !== ''): ?>
-        <p class="alert alert--<?= htmlspecialchars($flashType) ?>"><?= htmlspecialchars($flashMsg) ?></p>
+        <p class="alert alert--<?= Helpers::e($flashType) ?>"><?= Helpers::e($flashMsg) ?></p>
     <?php endif; ?>
 
     <section class="stats-grid">
@@ -112,9 +114,9 @@ $csrf      = $auth->csrfToken();
             <?php foreach ($dueSoon as $post): ?>
             <li>
                 <a href="/admin/post-edit.php?id=<?= (int) $post['id'] ?>">
-                    <?= htmlspecialchars($post['title']) ?>
+                    <?= Helpers::e($post['title']) ?>
                 </a>
-                <span class="meta"><?= htmlspecialchars($post['published_at']) ?></span>
+                <span class="meta"><?= Helpers::e($post['published_at']) ?></span>
             </li>
             <?php endforeach; ?>
         </ul>
@@ -128,9 +130,9 @@ $csrf      = $auth->csrfToken();
             <?php foreach ($drafts as $post): ?>
             <li>
                 <a href="/admin/post-edit.php?id=<?= (int) $post['id'] ?>">
-                    <?= htmlspecialchars($post['title']) ?>
+                    <?= Helpers::e($post['title']) ?>
                 </a>
-                <span class="meta">Updated <?= htmlspecialchars($post['updated_at']) ?></span>
+                <span class="meta">Updated <?= Helpers::e($post['updated_at']) ?></span>
             </li>
             <?php endforeach; ?>
         </ul>
@@ -144,9 +146,9 @@ $csrf      = $auth->csrfToken();
             <?php foreach ($scheduled as $post): ?>
             <li>
                 <a href="/admin/post-edit.php?id=<?= (int) $post['id'] ?>">
-                    <?= htmlspecialchars($post['title']) ?>
+                    <?= Helpers::e($post['title']) ?>
                 </a>
-                <span class="meta">Publishes <?= htmlspecialchars($post['published_at']) ?></span>
+                <span class="meta">Publishes <?= Helpers::e($post['published_at']) ?></span>
             </li>
             <?php endforeach; ?>
         </ul>
@@ -156,7 +158,7 @@ $csrf      = $auth->csrfToken();
     <section class="panel">
         <h2>Actions</h2>
         <form method="post" action="/admin/dashboard.php" style="display:inline-block;margin-right:.5rem">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+            <input type="hidden" name="csrf_token" value="<?= Helpers::e($csrf) ?>">
             <input type="hidden" name="action" value="rebuild">
             <button type="submit" class="btn btn--secondary">Rebuild entire site</button>
         </form>

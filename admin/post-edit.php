@@ -74,12 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $post->content = $_POST['content'] ?? '';
     $post->excerpt = trim($_POST['excerpt'] ?? '') ?: null;
 
-    // Auto-generate slug from title if blank.
-    if ($post->slug === '') {
-        $post->slug = Helpers::slugify($post->title);
-    } else {
-        $post->slug = Helpers::slugify($post->slug);
-    }
+    $post->slug = Helpers::slugify($post->slug !== '' ? $post->slug : $post->title);
 
     // Validation.
     if ($post->title === '') {
@@ -113,32 +108,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         // Apply status logic.
-        match ($action) {
-            'publish' => (function () use ($post, $publishTs) {
-                $ts = ($publishTs !== false) ? $publishTs : time();
-                if ($ts > time()) {
-                    // Future date — schedule instead of publishing immediately.
-                    $post->status       = 'scheduled';
-                    $post->published_at = date('Y-m-d H:i:s', $ts);
-                } else {
-                    // Past or present — publish with the given date.
-                    $post->status       = 'published';
-                    $post->published_at = date('Y-m-d H:i:s', $ts);
-                }
-            })(),
-            'unpublish' => (function () use ($post) {
-                $post->status = 'draft';
-            })(),
-            default => (function () use ($post, $publishTs) {
-                // 'draft' action — if the post is already published and a date
-                // was provided, update published_at so the user can reorder posts.
-                if ($post->status === 'published' && $publishTs !== false) {
-                    $post->published_at = date('Y-m-d H:i:s', $publishTs);
-                }
-            })(),
-        };
+        if ($action === 'publish') {
+            $ts                 = ($publishTs !== false) ? $publishTs : time();
+            $post->status       = $ts > time() ? 'scheduled' : 'published';
+            $post->published_at = date('Y-m-d H:i:s', $ts);
+        } elseif ($action === 'unpublish') {
+            $post->status = 'draft';
+        } elseif ($post->status === 'published' && $publishTs !== false) {
+            // 'draft' save on a published post — allow reordering by updating published_at.
+            $post->published_at = date('Y-m-d H:i:s', $publishTs);
+        }
 
-        // Keep status = draft for brand-new posts saved as draft.
         if ($action === 'draft' && $isNew) {
             $post->status = 'draft';
         }
@@ -165,16 +145,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $post->save();
 
         // Save category and tag associations.
-        $submittedCatIds = array_filter(array_map('intval', $_POST['category_ids'] ?? []));
-        $validCatIds     = array_column($db->select("SELECT id FROM categories"), 'id');
-        $categoryIds     = array_values(array_intersect($submittedCatIds, $validCatIds));
+        $categoryIds = array_values(array_filter(array_map('intval', $_POST['category_ids'] ?? [])));
 
         $tagIds   = [];
         $tagNames = array_filter(array_map('trim', explode(',', $_POST['tags_csv'] ?? '')));
         foreach ($tagNames as $tagName) {
-            if ($tagName === '') {
-                continue;
-            }
             $tagSlug = Helpers::slugify($tagName);
             $existing = $db->selectOne("SELECT id FROM tags WHERE slug = ?", [$tagSlug]);
             if ($existing) {
@@ -204,29 +179,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Syndicate to Mastodon on first publish (unless opted out).
-        if ($isFirstPublish) {
-            $siteUrlForToot = $db->getSetting('site_url', '');
-            $postUrl        = rtrim($siteUrlForToot, '/') . '/' . Post::datePath($post->published_at, $post->slug) . '/';
-            $excerpt        = ($post->effectiveExcerpt() !== null)
-                ? strip_tags($post->effectiveExcerpt())
+        // Syndicate to Mastodon and/or Bluesky on first publish (unless opted out).
+        if ($isFirstPublish || $isFirstBluesky) {
+            $postUrl       = rtrim($db->getSetting('site_url', ''), '/') . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+            $effectiveExcerpt = $post->effectiveExcerpt();
+            $excerpt       = $effectiveExcerpt !== null
+                ? strip_tags($effectiveExcerpt)
                 : Helpers::truncate($post->content, 280);
-            $mastodon = new Mastodon($mastodonInstance, $mastodonToken);
-            if ($tootUrl = $mastodon->tootPost($post->title, $excerpt, $postUrl)) {
-                $post->markTooted($tootUrl);
-            }
-        }
 
-        // Syndicate to Bluesky on first publish (unless opted out).
-        if ($isFirstBluesky) {
-            $siteUrlForBsky = $db->getSetting('site_url', '');
-            $postUrl        = rtrim($siteUrlForBsky, '/') . '/' . Post::datePath($post->published_at, $post->slug) . '/';
-            $excerpt        = ($post->effectiveExcerpt() !== null)
-                ? strip_tags($post->effectiveExcerpt())
-                : Helpers::truncate($post->content, 280);
-            $bluesky = new Bluesky($blueskyHandle, $blueskyAppPassword);
-            if ($bskyUrl = $bluesky->postToBluesky($post->title, $excerpt, $postUrl)) {
-                $post->markBluesky($bskyUrl);
+            if ($isFirstPublish) {
+                $mastodon = new Mastodon($mastodonInstance, $mastodonToken);
+                if ($tootUrl = $mastodon->tootPost($post->title, $excerpt, $postUrl)) {
+                    $post->markTooted($tootUrl);
+                }
+            }
+
+            if ($isFirstBluesky) {
+                $bluesky = new Bluesky($blueskyHandle, $blueskyAppPassword);
+                if ($bskyUrl = $bluesky->postToBluesky($post->title, $excerpt, $postUrl)) {
+                    $post->markBluesky($bskyUrl);
+                }
             }
         }
 
@@ -268,10 +240,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
         $auth->flash($label);
 
-        if ($isNew) {
-            header('Location: /admin/post-edit.php?id=' . $post->id);
-            exit;
-        }
         header('Location: /admin/post-edit.php?id=' . $post->id);
         exit;
     }
@@ -391,7 +359,7 @@ if ($post->published_at) {
                     <h2>Publish</h2>
 
                     <div style="margin-bottom:.75rem">
-                        <span class="badge badge--<?= $post->status ?>"><?= $post->status ?></span>
+                        <span class="badge badge--<?= Helpers::e($post->status) ?>"><?= Helpers::e($post->status) ?></span>
                     </div>
 
                     <?php if ($hasMastodon && $post->tooted_at === null): ?>

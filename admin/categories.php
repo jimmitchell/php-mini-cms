@@ -22,11 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = trim($_POST['description'] ?? '');
         $editId      = (int) ($_POST['edit_id'] ?? 0);
 
-        if ($slug === '') {
-            $slug = Helpers::slugify($name);
-        } else {
-            $slug = Helpers::slugify($slug);
-        }
+        $slug = Helpers::slugify($slug !== '' ? $slug : $name);
 
         if ($name === '') {
             $errors[] = 'Name is required.';

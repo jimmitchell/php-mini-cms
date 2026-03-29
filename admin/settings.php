@@ -68,12 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
+        // Secret fields are left blank to keep the saved value — skip them when empty.
+        $secretFields = ['mastodon_token', 'bluesky_app_password'];
         foreach ($fields as $key => $value) {
-            // Don't overwrite saved secrets when the field is left blank.
-            if ($key === 'mastodon_token' && $value === '') {
-                continue;
-            }
-            if ($key === 'bluesky_app_password' && $value === '') {
+            if (in_array($key, $secretFields, true) && $value === '') {
                 continue;
             }
             $db->upsertSetting($key, $value);
@@ -82,10 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Rebuild pages + index/feeds/sitemap so settings changes (custom CSS,
         // site title, footer text, etc.) are reflected everywhere immediately.
         $builder->rebuildPages();
-        $builder->buildIndex();
-        $builder->buildFeed();
-        $builder->buildJsonFeed();
-        $builder->buildSitemap();
+        $builder->rebuildSharedResources();
 
         $activityLog->log('settings', 'settings');
         $auth->flash('Settings saved and site rebuilt.');
