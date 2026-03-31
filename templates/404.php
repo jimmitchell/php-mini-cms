@@ -16,7 +16,10 @@ ob_start();
     <h1 class="error-page__code">404</h1>
     <p class="error-page__message">Page not found.</p>
     <p class="error-page__hint">The page you're looking for doesn't exist or may have moved.</p>
-    <a href="<?= htmlspecialchars(rtrim($siteUrl, '/') . '/') ?>" class="btn">← Back to home</a>
+    <div class="error-page__actions">
+        <a href="<?= htmlspecialchars(rtrim($siteUrl, '/') . '/') ?>" class="btn">← Go home</a>
+        <a href="<?= htmlspecialchars(rtrim($siteUrl, '/') . '/search/') ?>" class="btn">Search →</a>
+    </div>
 </div>
 <?php
 $bodyContent = ob_get_clean();
