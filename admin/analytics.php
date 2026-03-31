@@ -18,9 +18,9 @@ $tzOffsetSec = $tz->getOffset(new DateTime('now', $tz));
 $tzOffsetStr = ($tzOffsetSec >= 0 ? '+' : '') . $tzOffsetSec . ' seconds';
 
 // Date range: 7, 30, or 90 days (default 30).
-$range = (int) ($_GET['range'] ?? 30);
+$range = (int) ($_GET['range'] ?? 7);
 if (!in_array($range, [7, 30, 90], true)) {
-    $range = 30;
+    $range = 7;
 }
 $since = time() - ($range * 86400);
 
@@ -114,7 +114,7 @@ $recent404s = $db->select(
        FROM page_views
       WHERE timestamp >= :since AND is_404 = 1
       GROUP BY url
-      ORDER BY cnt DESC
+      ORDER BY last_seen DESC
       LIMIT 20",
     ['since' => $since]
 );
@@ -192,7 +192,7 @@ $excludeUrl = $siteUrl . '/?ti=exclude';
         </div>
     </section>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem">
+    <div class="analytics-two-col" style="margin-bottom:2rem">
         <section class="panel">
             <h2>Top pages</h2>
             <?php if ($topPages): ?>
@@ -232,7 +232,7 @@ $excludeUrl = $siteUrl . '/?ti=exclude';
                 <tr>
                     <th>URL</th>
                     <th style="text-align:right">Hits</th>
-                    <th>Last seen</th>
+                    <th style="text-align:right">Last seen</th>
                 </tr>
             </thead>
             <tbody>
@@ -240,7 +240,7 @@ $excludeUrl = $siteUrl . '/?ti=exclude';
                 <tr>
                     <td><?= Helpers::e($row['url']) ?></td>
                     <td style="text-align:right"><?= (int) $row['cnt'] ?></td>
-                    <td><?= Helpers::e((new DateTime('@' . (int) $row['last_seen']))->setTimezone($tz)->format('Y-m-d H:i')) ?></td>
+                    <td style="text-align:right"><?= Helpers::e((new DateTime('@' . (int) $row['last_seen']))->setTimezone($tz)->format('Y-m-d H:i')) ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

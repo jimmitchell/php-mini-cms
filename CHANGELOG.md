@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.4] — 2026-03-30
+
+### Changed
+
+- **Analytics** — 404 errors now sorted by most recent first; default date range changed from 30 to 7 days; "Top pages" and "Device types" panels stack vertically on mobile; "Last seen" column is right-aligned
+
+---
+
 ## [1.2.3] — 2026-03-29
 
 ### Changed

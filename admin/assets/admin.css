@@ -894,6 +894,13 @@ th:last-child { text-align: right; }
     color: var(--color-muted);
 }
 
+/* ── Analytics two-column grid ────────────────────────────────────────────── */
+.analytics-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
     .editor-layout { grid-template-columns: 1fr; }
@@ -1175,6 +1182,11 @@ th:last-child { text-align: right; }
     .stats-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
+    }
+
+    /* ── Analytics panels: stack vertically on mobile ── */
+    .analytics-two-col {
+        grid-template-columns: 1fr;
     }
 
     /* ── Backdrop ── */
