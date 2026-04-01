@@ -32,8 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'tinylytics_code'        => trim($_POST['tinylytics_code']        ?? ''),
         'tinylytics_kudos_emoji' => trim($_POST['tinylytics_kudos_emoji'] ?? ''),
         'ga_measurement_id'    => trim($_POST['ga_measurement_id']    ?? ''),
-        'webmention_domain'    => trim($_POST['webmention_domain']    ?? ''),
-        'custom_css'           => $_POST['custom_css'] ?? '',
+        'webmention_domain'        => trim($_POST['webmention_domain']        ?? ''),
+        'google_site_verification' => trim($_POST['google_site_verification'] ?? ''),
+        'custom_css'               => $_POST['custom_css'] ?? '',
     ];
 
     if ($fields['site_title'] === '') {
@@ -327,6 +328,17 @@ $flash     = $auth->getFlash();
             <p class="form-hint">
                 Your GA4 measurement ID (e.g. <code>G-XXXXXXXXXX</code>). When set, the Google Analytics
                 tag is injected into every public page. Leave blank to disable.
+            </p>
+
+            <label for="google_site_verification">Google site verification</label>
+            <input type="text" id="google_site_verification" name="google_site_verification"
+                   value="<?= Helpers::e($_POST['google_site_verification'] ?? $settings['google_site_verification'] ?? '') ?>"
+                   placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                   style="max-width:460px">
+            <p class="form-hint">
+                The content value from your Google Search Console verification meta tag
+                (e.g. <code>xxxxxxx...</code>). When set, a <code>&lt;meta name="google-site-verification"&gt;</code>
+                tag is added to the homepage only. Leave blank to disable.
             </p>
         </div>
 

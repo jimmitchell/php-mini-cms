@@ -83,6 +83,10 @@ if (!function_exists('_e')) {
     <?php if ($mastodonMeta !== ''): ?>
     <meta name="fediverse:creator" content="<?= _e($mastodonMeta) ?>">
     <?php endif; ?>
+    <?php $googleSiteVerification = $settings['google_site_verification'] ?? ''; ?>
+    <?php if ($googleSiteVerification !== '' && ($isHomepage ?? false)): ?>
+    <meta name="google-site-verification" content="<?= _e($googleSiteVerification) ?>">
+    <?php endif; ?>
     <!-- Font preloads — must come before the stylesheet -->
     <link rel="preload" href="/fonts/Figtree-Regular.woff2"
           as="font" type="font/woff2" crossorigin>

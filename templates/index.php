@@ -65,8 +65,9 @@ ob_start();
 <?php
 $bodyContent = ob_get_clean();
 $wideLayout  = true;
+$isHomepage  = ($currentPage === 1);
 
 echo $render('base.php', compact(
     'pageTitle', 'description', 'canonical', 'ogType', 'bodyContent',
-    'settings', 'navPages', 'siteUrl', 'render', 'wideLayout'
+    'settings', 'navPages', 'siteUrl', 'render', 'wideLayout', 'isHomepage'
 ));
