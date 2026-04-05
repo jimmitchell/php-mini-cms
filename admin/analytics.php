@@ -22,7 +22,14 @@ $range = (int) ($_GET['range'] ?? 7);
 if (!in_array($range, [7, 30, 90], true)) {
     $range = 7;
 }
-$since = time() - ($range * 86400);
+// Anchor $since to midnight of the oldest day in the user's timezone so the
+// query window and the chart labels cover exactly the same set of days.
+// Using (time() - range*86400) can reach one extra calendar day behind the
+// chart's oldest label, causing that orphaned day to be appended at the end
+// of the date map and appear as the "latest" entry in the chart.
+$oldestDay = new DateTime('today midnight', $tz);
+$oldestDay->modify('-' . ($range - 1) . ' days');
+$since = $oldestDay->getTimestamp();
 
 // ── Aggregate queries ──────────────────────────────────────────────────────
 
