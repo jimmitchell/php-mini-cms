@@ -857,7 +857,7 @@ audio { width: 100%; }
         gap: 0;
         margin-right: 0;
         background: var(--color-header-bg);
-        border-top: 1px solid var(--color-chrome-border);
+        border-top: 1px solid rgba(255,255,255,0.08);
         border-bottom: 1px solid var(--color-chrome-border);
         padding: .375rem 0;
         z-index: 100;
