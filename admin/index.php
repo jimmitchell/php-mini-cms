@@ -6,7 +6,7 @@ require __DIR__ . '/bootstrap.php';
 
 // Already authenticated → go to dashboard.
 if ($auth->isAuthenticated()) {
-    header('Location: /admin/dashboard.php');
+    header('Location: /admin/analytics.php');
     exit;
 }
 
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($auth->verifyTotp($code) || $auth->verifyBackupCode($code)) {
             $auth->recordTotpAttempt($ip, true);
             $auth->completeTotpLogin();
-            header('Location: /admin/dashboard.php');
+            header('Location: /admin/analytics.php');
             exit;
         } else {
             $auth->recordTotpAttempt($ip, false);
@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($auth->isTotpPending()) {
                 // 2FA required — fall through to render TOTP form.
             } else {
-                header('Location: /admin/dashboard.php');
+                header('Location: /admin/analytics.php');
                 exit;
             }
         } else {
@@ -238,7 +238,7 @@ $hasPasskeys  = $auth->hasPasskeys();
 
             var result = await assertResp.json();
             if (result.ok) {
-                window.location = '/admin/dashboard.php';
+                window.location = '/admin/analytics.php';
             } else {
                 showError(result.error || 'Passkey authentication failed.');
             }

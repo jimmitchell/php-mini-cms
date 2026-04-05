@@ -4,8 +4,8 @@ $siteTitle  = $db->getSetting('site_title', 'My CMS');
 $currentUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 
 $navItems = [
-    '/admin/dashboard.php'  => ['label' => 'Dashboard',  'icon' => 'fa-tachometer'],
     '/admin/analytics.php'  => ['label' => 'Analytics',  'icon' => 'fa-bar-chart'],
+    '/admin/dashboard.php'  => ['label' => 'Dashboard',  'icon' => 'fa-tachometer'],
     '/admin/posts.php'      => ['label' => 'Posts',       'icon' => 'fa-file-text-o'],
     '/admin/pages.php'      => ['label' => 'Pages',      'icon' => 'fa-files-o'],
     '/admin/categories.php' => ['label' => 'Categories', 'icon' => 'fa-tag'],
@@ -21,7 +21,7 @@ $navItems = [
 <nav class="admin-nav" id="admin-nav">
     <div class="admin-nav__brand">
         <div class="admin-nav__brand-inner">
-            <a href="/admin/dashboard.php" class="admin-nav__site-link"><?= htmlspecialchars($siteTitle) ?></a>
+            <a href="/admin/analytics.php" class="admin-nav__site-link"><?= htmlspecialchars($siteTitle) ?></a>
             <a href="/" target="_blank" class="admin-nav__view-site">
                 <i class="fa fa-external-link"></i>
                 <span class="nav-label">View site</span>
