@@ -47,6 +47,8 @@
     --color-chrome-bg:  #f3f4f6;
     --color-code-bg:    #f3f4f6;
     --color-link:       #0176d3;
+    --color-header-bg:  #1a1a1a;
+    --color-chrome-border: var(--color-border);
     --max-content:      740px;
     --max-wide:         900px;
 }
@@ -61,19 +63,23 @@
         --color-bg:         #181818;
         --color-chrome-bg:  #121212;
         --color-code-bg:    #2a2a2a;
-        --color-link:       #45c8f7;
+        --color-link:          #45c8f7;
+        --color-header-bg:     var(--color-chrome-bg);
+        --color-chrome-border: rgba(255,255,255,0.08);
     }
 }
 
 /* Applied when the user has manually toggled dark mode */
 [data-theme="dark"] {
-    --color-text:       #e5e7eb;
-    --color-muted:      #9ca3af;
-    --color-border:     #374151;
-    --color-bg:         #181818;
-    --color-chrome-bg:  #0e0e0e;
-    --color-code-bg:    #2a2a2a;
-    --color-link:       #45c8f7;
+    --color-text:          #e5e7eb;
+    --color-muted:         #9ca3af;
+    --color-border:        #374151;
+    --color-bg:            #181818;
+    --color-chrome-bg:     #0e0e0e;
+    --color-code-bg:       #2a2a2a;
+    --color-link:          #45c8f7;
+    --color-header-bg:     var(--color-chrome-bg);
+    --color-chrome-border: rgba(255,255,255,0.08);
 }
 
 html { font-size: 17px; scroll-behavior: smooth; overflow-y: scroll; }
@@ -110,9 +116,9 @@ audio { width: 100%; }
 
 /* ── Site header ──────────────────────────────────────────────────────────── */
 .site-header {
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-chrome-border);
     padding: 1.5rem;
-    background: var(--color-chrome-bg);
+    background: var(--color-header-bg);
     position: relative;
 }
 
@@ -129,11 +135,11 @@ audio { width: 100%; }
 .site-header__title {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--color-text);
+    color: #f3f4f6;
     text-decoration: none;
 }
 
-.site-header__title:hover { color: var(--color-link); }
+.site-header__title:hover { color: #ffffff; }
 
 .site-nav {
     display: flex;
@@ -143,13 +149,13 @@ audio { width: 100%; }
 }
 
 .site-nav a {
-    color: var(--color-muted);
+    color: rgba(255,255,255,0.6);
     text-decoration: none;
     font-size: .95rem;
     transition: color .15s;
 }
 
-.site-nav a:hover { color: var(--color-text); text-decoration: none; }
+.site-nav a:hover { color: #ffffff; text-decoration: none; }
 
 /* Right-hand side of header: nav + theme toggle grouped together */
 .site-header__right {
@@ -163,7 +169,7 @@ audio { width: 100%; }
     background: none;
     border: none;
     cursor: pointer;
-    color: var(--color-muted);
+    color: rgba(255,255,255,0.6);
     display: flex;
     align-items: center;
     padding: .25rem;
@@ -174,7 +180,7 @@ audio { width: 100%; }
 }
 
 .theme-toggle:hover,
-.nav-toggle:hover { color: var(--color-text); }
+.nav-toggle:hover { color: #ffffff; }
 .theme-toggle svg { width: 1rem; height: 1rem; }
 
 /* ── Mobile nav toggle (hamburger) ───────────────────────────────────────── */
@@ -218,7 +224,7 @@ audio { width: 100%; }
     background: none;
     border: none;
     cursor: pointer;
-    color: var(--color-muted);
+    color: rgba(255,255,255,0.6);
     display: flex;
     align-items: center;
     padding: .25rem;
@@ -228,7 +234,7 @@ audio { width: 100%; }
     line-height: 0;
     text-decoration: none;
 }
-.search-toggle:hover { color: var(--color-text); }
+.search-toggle:hover { color: #ffffff; }
 .search-toggle svg   { width: 1rem; height: 1rem; }
 
 /* ── Search results page ──────────────────────────────────────────────────── */
@@ -740,7 +746,7 @@ audio { width: 100%; }
 
 /* ── Site footer ──────────────────────────────────────────────────────────── */
 .site-footer {
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid var(--color-chrome-border);
     padding: 1.5rem;
     font-size: .85rem;
     color: var(--color-muted);
@@ -847,9 +853,9 @@ audio { width: 100%; }
         right: 0;
         gap: 0;
         margin-right: 0;
-        background: var(--color-chrome-bg);
-        border-top: 1px solid var(--color-border);
-        border-bottom: 1px solid var(--color-border);
+        background: var(--color-header-bg);
+        border-top: 1px solid var(--color-chrome-border);
+        border-bottom: 1px solid var(--color-chrome-border);
         padding: .375rem 0;
         z-index: 100;
         /* animation */
@@ -875,8 +881,8 @@ audio { width: 100%; }
     }
 
     .site-nav a:hover {
-        background: var(--color-border);
-        color: var(--color-text);
+        background: rgba(255,255,255,0.08);
+        color: #ffffff;
     }
 }
 
