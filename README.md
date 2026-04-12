@@ -25,6 +25,7 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Mastodon & Bluesky** — optional auto-post on first publish; the URL of the remote post is stored and displayed as an "Also on:" link at the bottom of each post; per-post skip checkbox for each platform
 - **Incoming webmentions** — display likes, reposts, and replies on posts via webmention.io; client-side fetch with avatar grid for reactions and threaded reply cards
 - **Outgoing webmentions** — CLI script (`bin/send-webmentions.php`) discovers endpoints and sends pings for all external links in published posts; safe to schedule via cron
+- **WordPress XML export** — download all posts (with categories, tags, and optional drafts) as a WXR file importable via WordPress Tools → Import
 - **MarsEdit support** — full WordPress XML-RPC API at `/admin/xmlrpc.php`; write and publish from MarsEdit with post and page management
 - **Google Analytics** — optional GA4 integration; add a measurement ID in Settings to inject the tracking script
 - **Built-in analytics** — first-party page-view tracking via `navigator.sendBeacon`; no cookies or third-party services; IP addresses stored as HMAC-SHA256 hashes; data retained 90 days; dashboard shows views/day, top pages, device breakdown, referrers, and 404 errors; visit `/?ti=exclude` to opt out your own browser

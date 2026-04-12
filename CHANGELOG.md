@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.10] — 2026-04-12
+
+### Added
+
+- **WordPress XML export** — new Admin → Export page downloads all posts (published, and optionally drafts/scheduled) as a WXR 1.2 file; includes categories, tags, and post content rendered to HTML; importable into any WordPress site via Tools → Import
+
+---
+
 ## [1.2.4] — 2026-03-30
 
 ### Changed
