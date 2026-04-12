@@ -475,7 +475,9 @@ audio { width: 100%; }
     background: var(--color-bg);
 }
 
-.code-copy--copied { color: #fff; background: #16a34a; border-color: #16a34a; opacity: 1; }
+.code-copy--copied,
+.code-copy--copied:hover,
+.code-block:hover .code-copy--copied { color: #fff; background: #16a34a; border-color: #16a34a; opacity: 1; }
 
 .code-copy svg { width: .8rem; height: .8rem; }
 
@@ -501,6 +503,8 @@ audio { width: 100%; }
 /* Copy button adjustments for dark code blocks */
 .code-block--dark .code-copy          { color: #6c7986; }
 .code-block--dark .code-copy:hover    { color: #dfdfe0; border-color: #3a3a3c; background: #2c2c2e; }
+.code-block--dark .code-copy--copied,
+.code-block--dark .code-copy--copied:hover { color: #fff; background: #16a34a; border-color: #16a34a; opacity: 1; }
 
 /* Token colours */
 .hljs-comment,

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.11] — 2026-04-12
+
+### Fixed
+
+- **Code copy button** — button now turns green immediately on click and stays green (with white checkmark) regardless of mouse position until the 2-second reset; previously the green state was only visible after mousing away from the button
+
+---
+
 ## [1.2.10] — 2026-04-12
 
 ### Added
