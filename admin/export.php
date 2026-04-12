@@ -29,6 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         "SELECT * FROM posts WHERE status IN ({$placeholders}) ORDER BY published_at DESC, created_at DESC"
     );
 
+    // Load pages (published + optionally drafts).
+    $pageStatusFilter = $exportDrafts ? ["'published'", "'draft'"] : ["'published'"];
+    $pagePlaceholders = implode(',', $pageStatusFilter);
+    $pages = $db->select(
+        "SELECT * FROM pages WHERE status IN ({$pagePlaceholders}) ORDER BY nav_order ASC, title ASC"
+    );
+
     // Attach categories and tags to each post (batch in two queries).
     $postIds = array_column($posts, 'id');
     $catMap  = [];
@@ -173,6 +180,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </item>
 
 <?php endforeach; ?>
+<?php foreach ($pages as $page):
+    $pageWpId  = 50000 + (int) $page['id'];
+    $createdAt = $page['created_at'] ?? date('Y-m-d H:i:s');
+    $pubDate   = date('D, d M Y H:i:s +0000', strtotime($createdAt));
+    $postDate  = date('Y-m-d H:i:s', strtotime($createdAt));
+    $status    = $page['status'] === 'published' ? 'publish' : 'draft';
+    $permalink = $page['status'] === 'published'
+        ? $siteUrl . '/' . $page['slug'] . '/'
+        : $siteUrl . '/?page_id=' . $pageWpId;
+    $html      = $builder->markdownToHtml($page['content']);
+?>
+    <item>
+        <title><![CDATA[<?= htmlspecialchars($page['title']) ?>]]></title>
+        <link><?= htmlspecialchars($permalink, ENT_XML1) ?></link>
+        <pubDate><?= $pubDate ?></pubDate>
+        <dc:creator><![CDATA[<?= htmlspecialchars($username) ?>]]></dc:creator>
+        <guid isPermaLink="false"><?= htmlspecialchars($siteUrl . '/?page_id=' . $pageWpId, ENT_XML1) ?></guid>
+        <description></description>
+        <content:encoded><![CDATA[<?= $html ?>]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id><?= $pageWpId ?></wp:post_id>
+        <wp:post_date><![CDATA[<?= $postDate ?>]]></wp:post_date>
+        <wp:post_date_gmt><![CDATA[<?= $postDate ?>]]></wp:post_date_gmt>
+        <wp:comment_status><![CDATA[closed]]></wp:comment_status>
+        <wp:ping_status><![CDATA[closed]]></wp:ping_status>
+        <wp:post_name><![CDATA[<?= htmlspecialchars($page['slug']) ?>]]></wp:post_name>
+        <wp:status><![CDATA[<?= $status ?>]]></wp:status>
+        <wp:post_parent>0</wp:post_parent>
+        <wp:menu_order><?= (int) $page['nav_order'] ?></wp:menu_order>
+        <wp:post_type><![CDATA[page]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+    </item>
+
+<?php endforeach; ?>
 </channel>
 </rss>
 <?php
@@ -189,6 +231,8 @@ $flashType  = $flash['type']    ?? 'success';
 
 $postCount  = (int) ($db->selectOne("SELECT COUNT(*) AS n FROM posts WHERE status = 'published'")['n'] ?? 0);
 $draftCount = (int) ($db->selectOne("SELECT COUNT(*) AS n FROM posts WHERE status IN ('draft','scheduled')")['n'] ?? 0);
+$pageCount  = (int) ($db->selectOne("SELECT COUNT(*) AS n FROM pages WHERE status = 'published'")['n'] ?? 0);
+$pageDraftCount = (int) ($db->selectOne("SELECT COUNT(*) AS n FROM pages WHERE status = 'draft'")['n'] ?? 0);
 $catCount   = (int) ($db->selectOne("SELECT COUNT(*) AS n FROM categories")['n'] ?? 0);
 $tagCount   = (int) ($db->selectOne("SELECT COUNT(*) AS n FROM tags")['n'] ?? 0);
 
@@ -216,12 +260,14 @@ $tagCount   = (int) ($db->selectOne("SELECT COUNT(*) AS n FROM tags")['n'] ?? 0)
 
     <div class="panel" style="max-width:520px">
         <h2>WordPress XML (WXR)</h2>
-        <p>Download all posts in WordPress eXtended RSS format. You can import this file into any WordPress site using <strong>Tools → Import → WordPress</strong>.</p>
+        <p>Download all posts and pages in WordPress eXtended RSS format. You can import this file into any WordPress site using <strong>Tools → Import → WordPress</strong>.</p>
 
         <table class="data-table" style="margin-bottom:1.25rem">
             <tbody>
                 <tr><td>Published posts</td><td style="text-align:right"><?= $postCount ?></td></tr>
-                <tr><td>Drafts &amp; scheduled</td><td style="text-align:right"><?= $draftCount ?></td></tr>
+                <tr><td>Post drafts &amp; scheduled</td><td style="text-align:right"><?= $draftCount ?></td></tr>
+                <tr><td>Published pages</td><td style="text-align:right"><?= $pageCount ?></td></tr>
+                <tr><td>Page drafts</td><td style="text-align:right"><?= $pageDraftCount ?></td></tr>
                 <tr><td>Categories</td><td style="text-align:right"><?= $catCount ?></td></tr>
                 <tr><td>Tags</td><td style="text-align:right"><?= $tagCount ?></td></tr>
             </tbody>
@@ -232,7 +278,7 @@ $tagCount   = (int) ($db->selectOne("SELECT COUNT(*) AS n FROM tags")['n'] ?? 0)
             <div style="margin-bottom:1rem">
                 <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
                     <input type="checkbox" name="include_drafts" value="1">
-                    Include drafts and scheduled posts
+                    Include drafts and scheduled posts &amp; page drafts
                 </label>
             </div>
             <button type="submit" class="btn">
