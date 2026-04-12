@@ -475,7 +475,7 @@ audio { width: 100%; }
     background: var(--color-bg);
 }
 
-.code-copy--copied { color: #16a34a; opacity: 1; }
+.code-copy--copied { color: #fff; background: #16a34a; border-color: #16a34a; opacity: 1; }
 
 .code-copy svg { width: .8rem; height: .8rem; }
 
