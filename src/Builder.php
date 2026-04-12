@@ -534,6 +534,15 @@ class Builder
     }
 
     /**
+     * Convert Markdown to HTML using the same converter configuration used for
+     * building posts and pages. Useful for export and preview features.
+     */
+    public function markdownToHtml(string $markdown): string
+    {
+        return $this->md->convert($markdown)->getContent();
+    }
+
+    /**
      * Generate an OG image for a published post if the title (or site title)
      * has changed since the image was last generated.
      * Silently skips if the GD extension is unavailable.
