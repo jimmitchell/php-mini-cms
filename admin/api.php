@@ -75,11 +75,11 @@ function api_error(string $message, int $status = 400): never
 
 // ── Serializers ─────────────────────────────────────────────────────────────
 
-function post_to_array(\CMS\Post $post, string $siteUrl): array
+function post_to_array(\CMS\Post $post, string $siteUrl, string $timezone = ''): array
 {
     $url = null;
     if ($post->status === 'published' && $post->published_at !== null) {
-        $url = rtrim($siteUrl, '/') . '/' . \CMS\Post::datePath($post->published_at, $post->slug) . '/';
+        $url = rtrim($siteUrl, '/') . '/' . \CMS\Post::datePath($post->published_at, $post->slug, $timezone) . '/';
     }
 
     return [
@@ -176,8 +176,9 @@ if (in_array($method, ['POST', 'PUT', 'PATCH'], true) && $_apiRawBody !== '') {
     }
 }
 
-// Site URL (used in post URL generation).
-$siteUrl = $db->getSetting('site_url', '');
+// Site URL and timezone (used in post URL generation).
+$siteUrl  = $db->getSetting('site_url', '');
+$timezone = $db->getSetting('timezone', '');
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 
@@ -185,7 +186,7 @@ $siteUrl = $db->getSetting('site_url', '');
 if ($resource === 'posts' && $method === 'GET' && $id === null) {
     $status = $_GET['status'] ?? null;
     $posts  = \CMS\Post::findAll($db, $status ?: null);
-    api_json(array_map(fn($p) => post_to_array($p, $siteUrl), $posts));
+    api_json(array_map(fn($p) => post_to_array($p, $siteUrl, $timezone), $posts));
 }
 
 // Posts — get one
@@ -194,7 +195,7 @@ if ($resource === 'posts' && $method === 'GET' && $id !== null) {
     if (!$post) {
         api_error('Post not found', 404);
     }
-    api_json(post_to_array($post, $siteUrl));
+    api_json(post_to_array($post, $siteUrl, $timezone));
 }
 
 // Posts — create
@@ -242,7 +243,7 @@ if ($resource === 'posts' && $method === 'POST' && $id === null) {
         }
     }
 
-    api_json(post_to_array($post, $siteUrl), 201);
+    api_json(post_to_array($post, $siteUrl, $timezone), 201);
 }
 
 // Posts — update
@@ -300,7 +301,7 @@ if ($resource === 'posts' && $method === 'PUT' && $id !== null) {
         }
     }
 
-    api_json(post_to_array($post, $siteUrl));
+    api_json(post_to_array($post, $siteUrl, $timezone));
 }
 
 // Posts — delete

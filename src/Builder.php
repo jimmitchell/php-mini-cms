@@ -60,7 +60,7 @@ class Builder
      */
     public function buildPost(Post $post): void
     {
-        $dir  = $this->outputDir . '/posts/' . Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug);
+        $dir  = $this->outputDir . '/posts/' . Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug, $this->settings['timezone'] ?? '');
         $path = $dir . '/index.html';
 
         if ($post->status !== 'published') {
@@ -220,7 +220,7 @@ class Builder
             if ($post->published_at === null) {
                 continue;
             }
-            $url     = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+            $url     = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug, $this->settings['timezone'] ?? '') . '/';
             $lastmod = substr($post->updated_at ?: $post->published_at, 0, 10);
             $lines[] = '  <url>';
             $lines[] = '    <loc>' . $x($url) . '</loc>';
@@ -258,7 +258,7 @@ class Builder
             $excerpt  = $post->effectiveExcerpt();
             $data[] = [
                 'title'   => $post->title,
-                'url'     => $siteUrl . '/' . Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug) . '/',
+                'url'     => $siteUrl . '/' . Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug, $this->settings['timezone'] ?? '') . '/',
                 'excerpt' => $excerpt !== null ? strip_tags($excerpt) : '',
                 'date'    => $post->published_at
                     ? Helpers::formatDate($post->published_at, 'M j, Y', $locale, $tz)
@@ -551,7 +551,7 @@ class Builder
      */
     private function buildOgImage(Post $post): string
     {
-        $datePath = Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug);
+        $datePath = Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug, $this->settings['timezone'] ?? '');
         $ogPath   = $this->outputDir . '/posts/' . $datePath . '/og.png';
         $siteUrl  = rtrim($this->settings['site_url'] ?? '', '/');
 

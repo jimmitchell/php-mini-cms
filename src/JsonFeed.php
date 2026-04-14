@@ -52,7 +52,7 @@ class JsonFeed
 
         $items = [];
         foreach ($posts as $post) {
-            $postUrl = $siteUrl . '/' . Post::datePath($post['published_at'], $post['slug']) . '/';
+            $postUrl = $siteUrl . '/' . Post::datePath($post['published_at'], $post['slug'], $this->settings['timezone'] ?? '') . '/';
             $html    = $this->converter->convert($post['content'])->getContent();
 
             $item = [
@@ -109,7 +109,7 @@ class JsonFeed
 
         $items = [];
         foreach ($posts as $post) {
-            $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+            $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug, $this->settings['timezone'] ?? '') . '/';
             $html    = $this->converter->convert($post->content)->getContent();
 
             $item = [

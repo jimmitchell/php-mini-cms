@@ -17,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $siteDescription = $db->getSetting('site_description', '');
     $siteUrl         = rtrim($db->getSetting('site_url', ''), '/');
     $authorName      = $db->getSetting('author_name', '');
+    $timezone        = $db->getSetting('timezone', '');
     $username        = $config['admin']['username'] ?? 'admin';
     $exportDrafts    = isset($_POST['include_drafts']);
 
@@ -143,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $postDate  = $pubAt ? date('Y-m-d H:i:s', strtotime($pubAt)) : date('Y-m-d H:i:s');
     $status    = $statusMap[$post['status']] ?? 'draft';
     $permalink = $post['status'] === 'published' && $pubAt
-        ? $siteUrl . '/posts/' . Post::datePath($pubAt, $post['slug']) . '/'
+        ? $siteUrl . '/posts/' . Post::datePath($pubAt, $post['slug'], $timezone) . '/'
         : $siteUrl . '/?p=' . $postId;
     $html      = $builder->markdownToHtml($post['content']);
     $excerpt   = $post['excerpt'] ?? '';

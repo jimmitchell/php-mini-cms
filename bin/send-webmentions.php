@@ -55,7 +55,7 @@ foreach ($posts as $post) {
         continue;
     }
 
-    $htmlPath = $outputDir . '/posts/' . Post::datePath($post->published_at, $post->slug) . '/index.html';
+    $htmlPath = $outputDir . '/posts/' . Post::datePath($post->published_at, $post->slug, $settings['timezone'] ?? '') . '/index.html';
     if (!file_exists($htmlPath)) {
         echo "  [skip]  {$post->slug} — built HTML not found\n";
         $skipped++;
@@ -63,7 +63,7 @@ foreach ($posts as $post) {
     }
 
     $html    = (string) file_get_contents($htmlPath);
-    $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+    $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug, $settings['timezone'] ?? '') . '/';
     $urls    = Webmention::extractUrls($html, $siteUrl);
 
     if (empty($urls)) {

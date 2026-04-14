@@ -58,13 +58,14 @@ class Feed
         $xml .= '  <generator uri="https://github.com/jimmitchell/clodd-cms" version="' . (defined('CMS_VERSION') ? CMS_VERSION : '1.0.0') . '">Clodd CMS</generator>' . "\n";
 
         foreach ($posts as $post) {
-            $postUrl = $siteUrl . '/' . Post::datePath($post['published_at'], $post['slug']) . '/';
+            $tz      = $this->settings['timezone'] ?? '';
+            $postUrl = $siteUrl . '/' . Post::datePath($post['published_at'], $post['slug'], $tz) . '/';
             $html    = $this->converter->convert($post['content'])->getContent();
 
             $tinylyticsCode = $this->settings['tinylytics_code'] ?? '';
             if ($tinylyticsCode !== '') {
                 $pixelUrl = 'https://tinylytics.app/pixel/' . rawurlencode($tinylyticsCode)
-                    . '.gif?path=' . rawurlencode('/' . Post::datePath($post['published_at'], $post['slug']) . '/');
+                    . '.gif?path=' . rawurlencode('/' . Post::datePath($post['published_at'], $post['slug'], $tz) . '/');
                 $html .= '<img src="' . htmlspecialchars($pixelUrl, ENT_QUOTES | ENT_XML1, 'UTF-8') . '"'
                     . ' alt="" style="width:1px;height:1px;border:0;" />';
             }
@@ -119,7 +120,7 @@ class Feed
         $xml .= '  <generator uri="https://github.com/jimmitchell/clodd-cms" version="' . (defined('CMS_VERSION') ? CMS_VERSION : '1.0.0') . '">Clodd CMS</generator>' . "\n";
 
         foreach ($posts as $post) {
-            $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+            $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug, $this->settings['timezone'] ?? '') . '/';
             $html    = $this->converter->convert($post->content)->getContent();
 
             $xml .= '  <entry>' . "\n";

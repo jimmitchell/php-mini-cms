@@ -181,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Syndicate to Mastodon and/or Bluesky on first publish (unless opted out).
         if ($isFirstPublish || $isFirstBluesky) {
-            $postUrl       = rtrim($db->getSetting('site_url', ''), '/') . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+            $postUrl       = rtrim($db->getSetting('site_url', ''), '/') . '/' . Post::datePath($post->published_at, $post->slug, $cfgTz) . '/';
             $effectiveExcerpt = $post->effectiveExcerpt();
             $excerpt       = $effectiveExcerpt !== null
                 ? strip_tags($effectiveExcerpt)
@@ -304,7 +304,7 @@ if ($post->published_at) {
     <header class="page-header">
         <h1><?= $isNew ? 'New Post' : 'Edit Post' ?></h1>
         <?php if (!$isNew && $post->status === 'published'): ?>
-        <a href="/<?= Helpers::e(Post::datePath($post->published_at, $post->slug)) ?>/" target="_blank" class="btn btn--secondary">View post</a>
+        <a href="/<?= Helpers::e(Post::datePath($post->published_at, $post->slug, $cfgTz)) ?>/" target="_blank" class="btn btn--secondary">View post</a>
         <?php endif; ?>
     </header>
 
@@ -333,7 +333,15 @@ if ($post->published_at) {
 
                 <label for="slug">Slug</label>
                 <div style="display:flex;gap:.5rem;align-items:center">
-                    <span style="color:var(--color-muted);font-size:.85rem;white-space:nowrap">/<?= date('Y/m/d', strtotime($post->published_at ?? 'now')) ?>/</span>
+                    <span style="color:var(--color-muted);font-size:.85rem;white-space:nowrap">/<?php
+                        if ($post->published_at && $cfgTz !== '') {
+                            $dt = new \DateTime($post->published_at, new \DateTimeZone('UTC'));
+                            $dt->setTimezone(new \DateTimeZone($cfgTz));
+                            echo $dt->format('Y/m/d');
+                        } else {
+                            echo date('Y/m/d', strtotime($post->published_at ?? 'now'));
+                        }
+                    ?>/</span>
                     <input type="text" id="slug" name="slug"
                            value="<?= Helpers::e($post->slug) ?>"
                            placeholder="auto-generated"

@@ -56,7 +56,7 @@ ob_start();
         <?php else: ?>
 
         <?php foreach ($posts as $post): ?>
-        <?php $postUrl = rtrim($siteUrl, '/') . '/' . CMS\Post::datePath($post->published_at, $post->slug) . '/'; ?>
+        <?php $postUrl = rtrim($siteUrl, '/') . '/' . CMS\Post::datePath($post->published_at, $post->slug, $settings['timezone'] ?? '') . '/'; ?>
         <article class="post-card h-entry">
             <h2 class="post-card__title">
                 <a href="<?= htmlspecialchars($postUrl) ?>" class="u-url p-name"><?= htmlspecialchars($post->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>

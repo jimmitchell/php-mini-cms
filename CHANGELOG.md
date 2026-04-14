@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.12] — 2026-04-14
+
+### Fixed
+
+- **Post date slug** — posts published in the late evening (in negative-UTC-offset timezones) no longer get a slug one day ahead; `datePath()` now converts the stored UTC timestamp to the configured site timezone before extracting the `YYYY/MM/DD` path segment
+
+---
+
 ## [1.2.11] — 2026-04-12
 
 ### Fixed

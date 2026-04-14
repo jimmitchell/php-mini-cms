@@ -363,8 +363,13 @@ class Post
      * Returns the date + slug path segment used in public URLs and file paths.
      * e.g. "2026/03/01/my-post-slug"  (no leading or trailing slash)
      */
-    public static function datePath(string $published_at, string $slug): string
+    public static function datePath(string $published_at, string $slug, string $tz = ''): string
     {
+        if ($tz !== '') {
+            $dt = new \DateTime($published_at, new \DateTimeZone('UTC'));
+            $dt->setTimezone(new \DateTimeZone($tz));
+            return $dt->format('Y/m/d') . '/' . $slug;
+        }
         $ts = strtotime($published_at);
         if ($ts === false) {
             throw new \InvalidArgumentException("Invalid published_at date: {$published_at}");

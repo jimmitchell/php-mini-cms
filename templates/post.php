@@ -12,7 +12,7 @@ $effectiveExcerpt = $post->effectiveExcerpt();
 $description = $effectiveExcerpt !== null
     ? strip_tags($effectiveExcerpt)
     : Helpers::truncate($html, 160);
-$canonical   = rtrim($siteUrl, '/') . '/' . CMS\Post::datePath($post->published_at, $post->slug) . '/';
+$canonical   = rtrim($siteUrl, '/') . '/' . CMS\Post::datePath($post->published_at, $post->slug, $settings['timezone'] ?? '') . '/';
 $ogType      = 'article';
 
 // JSON-LD structured data (BlogPosting).
@@ -83,7 +83,7 @@ ob_start();
     <?php
     $showKudos = ($settings['tinylytics_code'] ?? '') !== ''
               && ($settings['tinylytics_kudos_emoji'] ?? '') !== '';
-    $kudosPath = '/' . CMS\Post::datePath($post->published_at, $post->slug) . '/';
+    $kudosPath = '/' . CMS\Post::datePath($post->published_at, $post->slug, $settings['timezone'] ?? '') . '/';
     ?>
     <?php if ($showKudos || $post->mastodon_url || $post->bluesky_url): ?>
     <footer class="post__syndication">
@@ -113,13 +113,13 @@ ob_start();
     <div class="post-nav__prev">
         <?php if ($prevPost): ?>
         <span class="post-nav__label">Older</span>
-        <a class="post-nav__link" rel="prev" href="/<?= CMS\Post::datePath($prevPost->published_at, $prevPost->slug) ?>/"><?= htmlspecialchars($prevPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
+        <a class="post-nav__link" rel="prev" href="/<?= CMS\Post::datePath($prevPost->published_at, $prevPost->slug, $settings['timezone'] ?? '') ?>/"><?= htmlspecialchars($prevPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
         <?php endif; ?>
     </div>
     <div class="post-nav__next">
         <?php if ($nextPost): ?>
         <span class="post-nav__label">Newer</span>
-        <a class="post-nav__link" rel="next" href="/<?= CMS\Post::datePath($nextPost->published_at, $nextPost->slug) ?>/"><?= htmlspecialchars($nextPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
+        <a class="post-nav__link" rel="next" href="/<?= CMS\Post::datePath($nextPost->published_at, $nextPost->slug, $settings['timezone'] ?? '') ?>/"><?= htmlspecialchars($nextPost->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
         <?php endif; ?>
     </div>
 </nav>

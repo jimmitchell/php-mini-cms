@@ -140,10 +140,10 @@ function xmlrpc_auth(array $params, int $userIdx, int $passIdx): void
 /**
  * Build the struct array that MarsEdit expects for a single post.
  */
-function postToStruct(Post $post, string $siteUrl): array
+function postToStruct(Post $post, string $siteUrl, string $timezone = ''): array
 {
     $pubAt  = $post->published_at ?? $post->created_at;
-    $url    = rtrim($siteUrl, '/') . '/' . Post::datePath($pubAt, $post->slug) . '/';
+    $url    = rtrim($siteUrl, '/') . '/' . Post::datePath($pubAt, $post->slug, $timezone) . '/';
 
     return [
         'postid'      => (string) $post->id,
@@ -235,14 +235,14 @@ function applyStruct(Post $post, array $struct, bool $publish, string $timezone)
  */
 function syndicatePost(Post $post): void
 {
-    global $db, $siteUrl, $hasMastodon, $mastodonInstance, $mastodonToken,
+    global $db, $siteUrl, $timezone, $hasMastodon, $mastodonInstance, $mastodonToken,
            $hasBluesky, $blueskyHandle, $blueskyAppPassword;
 
     if ($post->status !== 'published') {
         return;
     }
 
-    $postUrl = rtrim($siteUrl, '/') . '/' . Post::datePath($post->published_at, $post->slug) . '/';
+    $postUrl = rtrim($siteUrl, '/') . '/' . Post::datePath($post->published_at, $post->slug, $timezone) . '/';
     $excerpt = ($post->effectiveExcerpt() !== null)
         ? strip_tags($post->effectiveExcerpt())
         : Helpers::truncate($post->content, 280);
@@ -546,10 +546,10 @@ function cmsStatusFromWp(string $s): string
 /**
  * Build the WordPress-style struct for a single post.
  */
-function wpPostToStruct(Post $post, string $siteUrl): array
+function wpPostToStruct(Post $post, string $siteUrl, string $timezone = ''): array
 {
     $pubAt = $post->published_at ?? $post->created_at;
-    $url   = rtrim($siteUrl, '/') . '/' . Post::datePath($pubAt, $post->slug) . '/';
+    $url   = rtrim($siteUrl, '/') . '/' . Post::datePath($pubAt, $post->slug, $timezone) . '/';
 
     // WordPress requires post_status='publish' only for past-dated posts.
     // If a post is 'published' in our DB but its date is still in the future,
@@ -784,7 +784,7 @@ switch ($method) {
         $limit     = $numberRaw > 0 ? $numberRaw : PHP_INT_MAX;
         $all       = Post::findAll($db, 'published');
         $posts     = array_slice($all, 0, $limit);
-        $structs   = array_map(fn($p) => postToStruct($p, $siteUrl), $posts);
+        $structs   = array_map(fn($p) => postToStruct($p, $siteUrl, $timezone), $posts);
         xmlrpc_debug("  number=$numberRaw → " . count($posts) . " posts returned");
         echo XmlRpc::encodeResponse($structs);
         break;
@@ -796,7 +796,7 @@ switch ($method) {
         if ($post === null) {
             xmlrpc_fault(404, 'Post not found.');
         }
-        echo XmlRpc::encodeResponse(postToStruct($post, $siteUrl));
+        echo XmlRpc::encodeResponse(postToStruct($post, $siteUrl, $timezone));
         break;
 
     // ── metaWeblog.newPost(blogid, username, password, struct, publish) ───────
@@ -1201,7 +1201,7 @@ switch ($method) {
             $all    = Post::findAll($db, $status);
             $sliced = array_slice($all, $offset, $limit);
             xmlrpc_debug("  → " . count($sliced) . " posts (of " . count($all) . " total, db_status_filter=" . ($status ?? 'all') . ")");
-            $structs = array_map(fn($p) => wpPostToStruct($p, $siteUrl), $sliced);
+            $structs = array_map(fn($p) => wpPostToStruct($p, $siteUrl, $timezone), $sliced);
             echo XmlRpc::encodeResponse($structs);
         }
         break;
@@ -1228,7 +1228,7 @@ switch ($method) {
             xmlrpc_fault(404, 'Post not found.');
         }
         xmlrpc_debug("  → post '{$post->title}' status={$post->status} pub=" . ($post->published_at ?? 'null'));
-        echo XmlRpc::encodeResponse(wpPostToStruct($post, $siteUrl));
+        echo XmlRpc::encodeResponse(wpPostToStruct($post, $siteUrl, $timezone));
         break;
 
     // ── wp.newPost(blogid, username, password, content) ───────────────────────
