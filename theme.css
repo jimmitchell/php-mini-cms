@@ -49,7 +49,7 @@
     --color-link:       #0176d3;
     --color-header-bg:  #1a1a1a;
     --color-chrome-border: var(--color-border);
-    --max-content:      760px;
+    --max-content:      780px;
     --max-wide:         900px;
 }
 
@@ -133,7 +133,7 @@ audio { width: 100%; }
 }
 
 .site-header__title {
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: #f3f4f6;
     text-decoration: none;
@@ -359,7 +359,7 @@ audio { width: 100%; }
 .prose {
     font-family: 'Crimson Pro', Georgia, 'Times New Roman', serif;
     font-size: 1.2rem;
-    line-height: 1.5;
+    line-height: 1.56;
 }
 
 .prose > * + * { margin-top: 1.25em; }
@@ -897,8 +897,8 @@ audio { width: 100%; }
     html { font-size: 16px; }
     .post__title { font-size: 1.6rem; }
     .post-card__title { font-size: 1.4rem; }
-    .site-header { padding: 1rem 1.25rem; }
-    .site-header__title { font-size: .95rem; }
+    /* .site-header { padding: 1rem 1.25rem; } */
+    /* .site-header__title { font-size: .95rem; } */
     .site-header__inner { gap: .5rem; }
     .site-main { margin: 1.75rem auto; }
 }
