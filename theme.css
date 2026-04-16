@@ -722,7 +722,7 @@ audio { width: 100%; }
 }
 
 .post-nav__link {
-    font-size: .95rem;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--color-text);
     text-decoration: none;

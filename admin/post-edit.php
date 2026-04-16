@@ -64,6 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Snapshot pre-edit state used later to decide which outputs need rebuilding.
+    $snapTitle       = $post?->title;
+    $snapSlug        = $post?->slug;
+    $snapPublishedAt = $post?->published_at;
+    $snapExcerpt     = $post?->excerpt;
+    $wasPublished    = $post?->status === 'published';
+
     // Populate from form.
     if ($post === null) {
         $post = new Post($db);
@@ -159,9 +166,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $oldCategoryIds = array_column($post->categories, 'id');
-        $oldTagIds      = array_column($post->tags, 'id');
+        $oldCategoryIds = array_map('intval', array_column($post->categories, 'id'));
+        $oldTagIds      = array_map('intval', array_column($post->tags,       'id'));
         $post->saveTerms($categoryIds, $tagIds);
+
+        $addedCategoryIds   = array_values(array_diff($categoryIds,    $oldCategoryIds));
+        $removedCategoryIds = array_values(array_diff($oldCategoryIds, $categoryIds));
+        $addedTagIds        = array_values(array_diff($tagIds,    $oldTagIds));
+        $removedTagIds      = array_values(array_diff($oldTagIds, $tagIds));
 
         // Update syndication URLs if the user edited them.
         if ($post->tooted_at !== null && isset($_POST['mastodon_url'])) {
@@ -202,21 +214,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Rebuild this post + immediate neighbors (prev/next links) + shared resources.
-        // buildPost() handles old term archives internally; only rebuild newly added terms.
+        // Rebuild this post + selectively rebuild neighbors and shared resources.
         if (($action === 'publish' && $post->status === 'published')
             || $action === 'unpublish'
             || ($action === 'draft' && $post->status === 'published')) {
+
             $builder->buildPost($post);
-            $prev = Post::findPrev($db, $post);
-            if ($prev) $builder->buildPost($prev);
-            $next = Post::findNext($db, $post);
-            if ($next) $builder->buildPost($next);
-            $builder->rebuildSharedResources();
-            foreach (array_diff($categoryIds, $oldCategoryIds) as $catId) {
+
+            // Neighbors only need rebuilding when fields they display change:
+            // they show this post's title and URL in their prev/next navigation.
+            $neighborsAffected = !$wasPublished
+                || $action === 'unpublish'
+                || $post->title        !== $snapTitle
+                || $post->slug         !== $snapSlug
+                || $post->published_at !== $snapPublishedAt;
+            if ($neighborsAffected) {
+                $prev = Post::findPrev($db, $post);
+                if ($prev) $builder->buildPost($prev);
+                $next = Post::findNext($db, $post);
+                if ($next) $builder->buildPost($next);
+            }
+
+            // Index and sitemap only change when fields they display change.
+            // Feeds always need rebuilding — they include full post content.
+            $sharedMetaChanged = !$wasPublished
+                || $action === 'unpublish'
+                || $post->title        !== $snapTitle
+                || $post->slug         !== $snapSlug
+                || $post->published_at !== $snapPublishedAt
+                || $post->excerpt      !== $snapExcerpt
+                || !empty($addedCategoryIds)
+                || !empty($removedCategoryIds);
+            if ($sharedMetaChanged) {
+                $builder->rebuildSharedResources();
+            } else {
+                $builder->buildFeed();
+                $builder->buildJsonFeed();
+            }
+
+            // Rebuild archives for terms that were added or removed.
+            foreach (array_merge($addedCategoryIds, $removedCategoryIds) as $catId) {
                 $builder->buildCategoryArchive($catId);
             }
-            foreach (array_diff($tagIds, $oldTagIds) as $tagId) {
+            foreach (array_merge($addedTagIds, $removedTagIds) as $tagId) {
                 $builder->buildTagArchive($tagId);
             }
         }

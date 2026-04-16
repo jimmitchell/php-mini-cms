@@ -395,7 +395,12 @@ class Post
               LIMIT 1",
             ['pub' => $post->published_at]
         );
-        return $row ? self::fromRow($db, $row) : null;
+        if (!$row) {
+            return null;
+        }
+        $prev = self::fromRow($db, $row);
+        self::hydrateManyTerms($db, [$prev]);
+        return $prev;
     }
 
     /**
@@ -414,7 +419,12 @@ class Post
               LIMIT 1",
             ['pub' => $post->published_at]
         );
-        return $row ? self::fromRow($db, $row) : null;
+        if (!$row) {
+            return null;
+        }
+        $next = self::fromRow($db, $row);
+        self::hydrateManyTerms($db, [$next]);
+        return $next;
     }
 
     // ── Scheduled post promotion ──────────────────────────────────────────────

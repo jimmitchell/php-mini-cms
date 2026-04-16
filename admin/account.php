@@ -37,25 +37,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($errors)) {
             $hash       = password_hash($newPw, PASSWORD_BCRYPT, ['cost' => 12]);
             $configPath = dirname(__DIR__) . '/config.php';
-            $src        = file_get_contents($configPath);
-            $updated    = preg_replace_callback(
-                "/'password_hash'\s*=>\s*'[^']*'/",
-                fn($m) => "'password_hash' => '{$hash}'",
-                $src
-            );
-
-            if ($updated === null || $updated === $src) {
-                $errors[] = 'Could not write config.php — check file permissions.';
+            $fp         = fopen($configPath, 'r');
+            if ($fp === false || !flock($fp, LOCK_EX)) {
+                if ($fp !== false) { fclose($fp); }
+                $errors[] = 'Could not lock config.php — check file permissions.';
             } else {
-                $tmp = tempnam(dirname($configPath), '.cfg_');
-                if ($tmp === false || file_put_contents($tmp, $updated) === false || !rename($tmp, $configPath)) {
-                    if ($tmp !== false && file_exists($tmp)) { unlink($tmp); }
+                $src     = stream_get_contents($fp);
+                $updated = preg_replace(
+                    "/'password_hash'\s*=>\s*'[^']*'/",
+                    "'password_hash' => '" . str_replace(['\\', '$'], ['\\\\', '\\$'], $hash) . "'",
+                    $src
+                );
+
+                if ($updated === null || $updated === $src) {
+                    flock($fp, LOCK_UN);
+                    fclose($fp);
                     $errors[] = 'Could not write config.php — check file permissions.';
                 } else {
-                    $activityLog->log('password', 'account');
-                    $auth->flash('Password changed successfully.');
-                    header('Location: /admin/account.php');
-                    exit;
+                    $tmp = tempnam(dirname($configPath), '.cfg_');
+                    $ok  = $tmp !== false
+                        && file_put_contents($tmp, $updated) !== false
+                        && rename($tmp, $configPath);
+                    flock($fp, LOCK_UN);
+                    fclose($fp);
+                    if (!$ok) {
+                        if ($tmp !== false && file_exists($tmp)) { unlink($tmp); }
+                        $errors[] = 'Could not write config.php — check file permissions.';
+                    } else {
+                        $activityLog->log('password', 'account');
+                        $auth->flash('Password changed successfully.');
+                        header('Location: /admin/account.php');
+                        exit;
+                    }
                 }
             }
         }
