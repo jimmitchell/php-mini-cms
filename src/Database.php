@@ -13,8 +13,11 @@ class Database
 {
     private PDO $pdo;
 
+    /** @var array<string,string> In-process cache for settings rows. */
+    private static array $settingsCache = [];
+
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 13;
+    private const SCHEMA_VERSION = 14;
 
     public function __construct(string $dbPath)
     {
@@ -380,6 +383,26 @@ class Database
         SQL);
     }
 
+    private function applySchemaV14(): void
+    {
+        // Indexes for common query patterns missing from the original schema.
+        // posts.slug and category/tag slugs are already indexed via their UNIQUE constraints.
+        $this->run(
+            "CREATE INDEX IF NOT EXISTS idx_posts_published_at ON posts(published_at)"
+        );
+        $this->run(
+            "CREATE INDEX IF NOT EXISTS idx_posts_status ON posts(status)"
+        );
+        // Junction tables have composite PKs (post_id, *_id); add explicit
+        // single-column indexes so WHERE post_id = ? scans are index-only.
+        $this->run(
+            "CREATE INDEX IF NOT EXISTS idx_post_categories_post_id ON post_categories(post_id)"
+        );
+        $this->run(
+            "CREATE INDEX IF NOT EXISTS idx_post_tags_post_id ON post_tags(post_id)"
+        );
+    }
+
     /** Insert or update a single settings row. */
     public function upsertSetting(string $key, string $value): void
     {
@@ -389,18 +412,24 @@ class Database
              ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
             ['key' => $key, 'value' => $value]
         );
+        self::$settingsCache[$key] = $value;
     }
 
     /** Retrieve a single setting value (or $default if not found). */
     public function getSetting(string $key, string $default = ''): string
     {
-        $row = $this->selectOne("SELECT value FROM settings WHERE key = :key", ['key' => $key]);
-        return $row ? $row['value'] : $default;
+        if (!array_key_exists($key, self::$settingsCache)) {
+            $row = $this->selectOne("SELECT value FROM settings WHERE key = :key", ['key' => $key]);
+            self::$settingsCache[$key] = $row ? $row['value'] : $default;
+        }
+        return self::$settingsCache[$key];
     }
 
     /** Retrieve all settings as key => value array. */
     public function getAllSettings(): array
     {
-        return array_column($this->select("SELECT key, value FROM settings"), 'value', 'key');
+        $rows = array_column($this->select("SELECT key, value FROM settings"), 'value', 'key');
+        self::$settingsCache = array_merge(self::$settingsCache, $rows);
+        return $rows;
     }
 }
