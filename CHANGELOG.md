@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.16] — 2026-04-16
+
+### Security
+
+- **API CORS restricted** — `Access-Control-Allow-Origin: *` replaced with an origin-matched header derived from the configured `site_url`; falls back to `*` only when `site_url` is unset (initial setup); `Vary: Origin` added alongside; native app clients (iOS, Xcode simulator) are unaffected as they do not send `Origin` headers
+- **CSP `img-src` broadened** — changed from `https://avatars.webmention.io` to `https:` across all Nginx configs so external images embedded in post content (Markdown or raw HTML) are not silently blocked by the policy
+- **Nginx `/fonts/` location hardened** — added explicit CSP (`default-src 'none'; font-src 'self'`) and security headers to the `/fonts/` location in `docker/nginx.conf`, syncing it with `nginx.conf.example`
+
+---
+
 ## [1.2.12] — 2026-04-14
 
 ### Fixed

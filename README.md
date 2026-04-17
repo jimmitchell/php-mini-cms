@@ -419,7 +419,7 @@ The CMS exposes a lightweight REST API at `/admin/api/`. Authentication is HTTP 
 
 Write endpoints (`POST`/`PUT`) accept `application/json`. Creating or updating a published post triggers the same static rebuild as the admin UI (post HTML, index, feed).
 
-CORS is open (`Access-Control-Allow-Origin: *`) to support native app clients and local development; the Nginx TLS and CSP configuration provides the real security boundary in production.
+CORS is restricted to the origin matching the configured `site_url`; falls back to `*` only when `site_url` is unset. Native app clients (iOS, Xcode) are unaffected — they do not send `Origin` headers.
 
 ---
 
