@@ -340,7 +340,7 @@ audio { width: 100%; }
 /* ── Prose styles ─────────────────────────────────────────────────────────── */
 .prose {
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 1.1rem;
+    font-size: 1rem;
     line-height: 1.56;
 }
 
@@ -418,9 +418,10 @@ audio { width: 100%; }
 .prose pre {
     background: var(--color-code-bg);
     border-radius: 6px;
-    padding: 1.5em;
+    padding: 1em 1.2em;
     overflow-x: auto;
     line-height: 1.2;
+    font-size: 1.2rem;
 }
 
 /* Wrapper injected by JS — provides the positioning context for the copy
