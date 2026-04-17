@@ -47,9 +47,30 @@ $builder = new \CMS\Builder($config, $db);
 \CMS\Post::promoteScheduled($db);
 
 // ── CORS ────────────────────────────────────────────────────────────────────
-// Allow the Xcode simulator (and any other origin) to reach the API over HTTP.
-// In production the Nginx CSP / TLS config provides the real security boundary.
-header('Access-Control-Allow-Origin: *');
+// Restrict to the site's own origin. Native clients (iOS, Xcode simulator)
+// do not send an Origin header and are unaffected by CORS policy.
+// If site_url is not yet configured, fall back to wildcard so the API
+// remains usable during initial setup.
+$_corsSiteUrl = $db->getSetting('site_url', '');
+$_allowedOrigin = '';
+if ($_corsSiteUrl !== '') {
+    $_parsed = parse_url($_corsSiteUrl);
+    if ($_parsed !== false && isset($_parsed['scheme'], $_parsed['host'])) {
+        $_allowedOrigin = $_parsed['scheme'] . '://' . $_parsed['host'];
+        if (isset($_parsed['port'])) {
+            $_allowedOrigin .= ':' . $_parsed['port'];
+        }
+    }
+}
+$_requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if ($_allowedOrigin !== '' && $_requestOrigin === $_allowedOrigin) {
+    header('Access-Control-Allow-Origin: ' . $_allowedOrigin);
+    header('Vary: Origin');
+} elseif ($_allowedOrigin === '') {
+    // site_url not configured yet — allow all origins during setup.
+    header('Access-Control-Allow-Origin: *');
+}
+// If origin is configured but doesn't match, send no ACAO header (browser will block).
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Authorization, Content-Type');
 
