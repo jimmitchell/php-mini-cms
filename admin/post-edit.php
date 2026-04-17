@@ -25,6 +25,9 @@ $blueskyHandle      = $db->getSetting('bluesky_handle');
 $blueskyAppPassword = $db->getSetting('bluesky_app_password');
 $hasBluesky         = $blueskyHandle !== '' && $blueskyAppPassword !== '';
 
+// Timezone — loaded once, used in POST handler and template.
+$cfgTz = $db->getSetting('timezone', '');
+
 // Load existing post if ?id= given.
 if (isset($_GET['id'])) {
     $post = Post::findById($db, (int) $_GET['id']);
@@ -104,9 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $publishDateInput = trim($_POST['publish_date'] ?? '');
         $publishTs        = false;
         if ($publishDateInput !== '') {
-            $cfgTzSave = $db->getSetting('timezone', '');
-            if ($cfgTzSave !== '') {
-                $dtParsed  = \DateTime::createFromFormat('Y-m-d\TH:i', $publishDateInput, new \DateTimeZone($cfgTzSave));
+            if ($cfgTz !== '') {
+                $dtParsed  = \DateTime::createFromFormat('Y-m-d\TH:i', $publishDateInput, new \DateTimeZone($cfgTz));
                 $publishTs = $dtParsed !== false ? $dtParsed->getTimestamp() : false;
             }
             if ($publishTs === false) {
@@ -312,7 +314,6 @@ $tagsCsv        = implode(', ', array_column($post->tags, 'name'));
 
 $siteUrl   = $db->getSetting('site_url', '');
 $siteTitle = $db->getSetting('site_title', 'My CMS');
-$cfgTz     = $db->getSetting('timezone', '');
 $csrf      = $auth->csrfToken();
 
 // Convert stored UTC publish date to local time for the datetime-local input.

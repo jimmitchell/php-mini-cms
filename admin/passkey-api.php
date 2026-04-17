@@ -133,6 +133,9 @@ if ($action === 'passkey_auth' && $method === 'POST') {
         passkey_error($e->getMessage(), 400);
     }
 
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $db->insert('login_attempts', ['ip' => $ip, 'success' => $ok ? 1 : 0]);
+
     if ($ok) {
         $activityLog->log('passkey_login', 'security', null, 'Authenticated via passkey');
         passkey_json(['ok' => true]);
