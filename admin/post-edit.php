@@ -178,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $removedTagIds      = array_values(array_diff($oldTagIds, $tagIds));
 
         // Update syndication URLs if the user edited them.
-        if ($post->tooted_at !== null && isset($_POST['mastodon_url'])) {
+        if (isset($_POST['mastodon_url'])) {
             $newMastodonUrl = trim($_POST['mastodon_url']) ?: null;
             if ($newMastodonUrl !== $post->mastodon_url) {
                 $post->mastodon_url = $newMastodonUrl;
@@ -422,6 +422,14 @@ if ($post->published_at) {
                     <?php elseif ($hasMastodon && $post->tooted_at !== null): ?>
                     <div style="margin-bottom:.75rem">
                         <p class="form-hint" style="margin-bottom:.25rem">&#10003; Already shared to Mastodon</p>
+                        <label for="mastodon_url" style="font-size:.8rem;font-weight:400;color:var(--color-muted)">Toot URL</label>
+                        <input type="url" id="mastodon_url" name="mastodon_url"
+                               value="<?= Helpers::e($post->mastodon_url ?? '') ?>"
+                               placeholder="https://mastodon.social/@user/123456"
+                               style="font-size:.8rem;margin-top:.15rem">
+                    </div>
+                    <?php elseif ($hasMastodon && $post->status === 'published'): ?>
+                    <div style="margin-bottom:.75rem">
                         <label for="mastodon_url" style="font-size:.8rem;font-weight:400;color:var(--color-muted)">Toot URL</label>
                         <input type="url" id="mastodon_url" name="mastodon_url"
                                value="<?= Helpers::e($post->mastodon_url ?? '') ?>"
