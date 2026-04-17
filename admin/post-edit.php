@@ -185,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->update('posts', ['mastodon_url' => $newMastodonUrl], 'id = :id', ['id' => $post->id]);
             }
         }
-        if ($post->bluesky_at !== null && isset($_POST['bluesky_url'])) {
+        if (isset($_POST['bluesky_url'])) {
             $newBlueskyUrl = trim($_POST['bluesky_url']) ?: null;
             if ($newBlueskyUrl !== $post->bluesky_url) {
                 $post->bluesky_url = $newBlueskyUrl;
@@ -419,17 +419,18 @@ if ($post->published_at) {
                                <?= $mastodonDisabled ? 'disabled title="Post is already published — syndication only happens on first publish"' : '' ?>>
                         Post to Mastodon on publish
                     </label>
-                    <?php elseif ($hasMastodon && $post->tooted_at !== null): ?>
+                    <?php if ($mastodonDisabled): ?>
                     <div style="margin-bottom:.75rem">
-                        <p class="form-hint" style="margin-bottom:.25rem">&#10003; Already shared to Mastodon</p>
                         <label for="mastodon_url" style="font-size:.8rem;font-weight:400;color:var(--color-muted)">Toot URL</label>
                         <input type="url" id="mastodon_url" name="mastodon_url"
                                value="<?= Helpers::e($post->mastodon_url ?? '') ?>"
                                placeholder="https://mastodon.social/@user/123456"
                                style="font-size:.8rem;margin-top:.15rem">
                     </div>
-                    <?php elseif ($hasMastodon && $post->status === 'published'): ?>
+                    <?php endif; ?>
+                    <?php elseif ($hasMastodon && $post->tooted_at !== null): ?>
                     <div style="margin-bottom:.75rem">
+                        <p class="form-hint" style="margin-bottom:.25rem">&#10003; Already shared to Mastodon</p>
                         <label for="mastodon_url" style="font-size:.8rem;font-weight:400;color:var(--color-muted)">Toot URL</label>
                         <input type="url" id="mastodon_url" name="mastodon_url"
                                value="<?= Helpers::e($post->mastodon_url ?? '') ?>"
@@ -446,6 +447,15 @@ if ($post->published_at) {
                                <?= $blueskyDisabled ? 'disabled title="Post is already published — syndication only happens on first publish"' : '' ?>>
                         Post to Bluesky on publish
                     </label>
+                    <?php if ($blueskyDisabled): ?>
+                    <div style="margin-bottom:.75rem">
+                        <label for="bluesky_url" style="font-size:.8rem;font-weight:400;color:var(--color-muted)">Bluesky post URL</label>
+                        <input type="url" id="bluesky_url" name="bluesky_url"
+                               value="<?= Helpers::e($post->bluesky_url ?? '') ?>"
+                               placeholder="https://bsky.app/profile/user/post/abc123"
+                               style="font-size:.8rem;margin-top:.15rem">
+                    </div>
+                    <?php endif; ?>
                     <?php elseif ($hasBluesky && $post->bluesky_at !== null): ?>
                     <div style="margin-bottom:.75rem">
                         <p class="form-hint" style="margin-bottom:.25rem">&#10003; Already shared to Bluesky</p>
