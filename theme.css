@@ -1,37 +1,19 @@
 /* ── Clodd CMS — Public Theme ─────────────────────────────────────────────── */
 
-/* ── Figtree — self-hosted (Google Fonts, OFL license) ──────────────────────── */
+/* ── Inter — self-hosted variable font (rsms.me/inter, OFL license) ─────────── */
 
 @font-face {
-    font-family: 'Figtree';
-    src: url('/fonts/Figtree-Regular.woff2') format('woff2');
-    font-weight: 300 900;
+    font-family: 'Inter';
+    src: url('/fonts/Inter-Variable.woff2') format('woff2');
+    font-weight: 100 900;
     font-style:  normal;
     font-display: swap;
 }
 
 @font-face {
-    font-family: 'Figtree';
-    src: url('/fonts/Figtree-Italic.woff2') format('woff2');
-    font-weight: 300 900;
-    font-style:  italic;
-    font-display: swap;
-}
-
-/* ── Crimson Pro — self-hosted (Google Fonts, OFL license) ──────────────────── */
-
-@font-face {
-    font-family: 'Crimson Pro';
-    src: url('/fonts/CrimsonPro-Regular.woff2') format('woff2');
-    font-weight: 400 900;
-    font-style:  normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Crimson Pro';
-    src: url('/fonts/CrimsonPro-Italic.woff2') format('woff2');
-    font-weight: 400 900;
+    font-family: 'Inter';
+    src: url('/fonts/Inter-Variable-Italic.woff2') format('woff2');
+    font-weight: 100 900;
     font-style:  italic;
     font-display: swap;
 }
@@ -86,7 +68,7 @@ html { font-size: 17px; scroll-behavior: smooth; overflow-y: scroll; }
 
 
 body {
-    font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     line-height: 1.7;
     color: var(--color-text);
     background: var(--color-bg);
@@ -357,8 +339,8 @@ audio { width: 100%; }
 
 /* ── Prose styles ─────────────────────────────────────────────────────────── */
 .prose {
-    font-family: 'Crimson Pro', Georgia, 'Times New Roman', serif;
-    font-size: 1.25rem;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 1.1rem;
     line-height: 1.56;
 }
 
@@ -370,7 +352,7 @@ audio { width: 100%; }
 .prose h4,
 .prose h5,
 .prose h6 {
-    font-family: 'Figtree', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     line-height: 1.25;
     margin-top: 2em;
     margin-bottom: .5em;
@@ -411,7 +393,7 @@ audio { width: 100%; }
     width: 100%;
     border-collapse: collapse;
     margin-top: 1em;
-    font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: .95rem;
 }
 
@@ -635,7 +617,7 @@ audio { width: 100%; }
 .footnotes {
     font-size: .85rem;
     color: var(--color-muted);
-    font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .footnotes ol { padding-left: 1.5em; }

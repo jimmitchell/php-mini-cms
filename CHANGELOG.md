@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.18] — 2026-04-17
+
+### Changed
+
+- **Typography — Inter** — replaced Figtree (sans-serif) and Crimson Pro (serif) with [Inter](https://rsms.me/inter/) as the sole typeface; Inter is self-hosted as a variable font (`Inter-Variable.woff2` / `Inter-Variable-Italic.woff2`, OFL license) covering weight 100–900; prose content switches from serif to sans-serif at `1.1rem`
+- **OG image font** — `src/OgImage.php` updated to use `Inter-Regular.ttf` / `Inter-Bold.ttf` for server-side PNG generation; existing OG images regenerate automatically on next build
+
+---
+
 ## [1.2.17] — 2026-04-16
 
 ### Security

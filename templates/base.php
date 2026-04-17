@@ -88,13 +88,9 @@ if (!function_exists('_e')) {
     <meta name="google-site-verification" content="<?= _e($googleSiteVerification) ?>">
     <?php endif; ?>
     <!-- Font preloads — must come before the stylesheet -->
-    <link rel="preload" href="/fonts/Figtree-Regular.woff2"
+    <link rel="preload" href="/fonts/Inter-Variable.woff2"
           as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/Figtree-Italic.woff2"
-          as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/CrimsonPro-Regular.woff2"
-          as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/fonts/CrimsonPro-Italic.woff2"
+    <link rel="preload" href="/fonts/Inter-Variable-Italic.woff2"
           as="font" type="font/woff2" crossorigin>
     <!-- Feeds -->
     <link rel="alternate" type="application/atom+xml"

@@ -36,13 +36,13 @@ class OgImage
         }
 
         if (
-            file_exists($fontDir . '/Figtree-Regular.ttf') &&
-            file_exists($fontDir . '/Figtree-Bold.ttf')
+            file_exists($fontDir . '/Inter-Regular.ttf') &&
+            file_exists($fontDir . '/Inter-Bold.ttf')
         ) {
-            $this->fontRegular = $fontDir . '/Figtree-Regular.ttf';
-            $this->fontBold    = $fontDir . '/Figtree-Bold.ttf';
+            $this->fontRegular = $fontDir . '/Inter-Regular.ttf';
+            $this->fontBold    = $fontDir . '/Inter-Bold.ttf';
         } else {
-            throw new RuntimeException('No usable OG font files found in ' . $fontDir);
+            throw new RuntimeException('Inter-Regular.ttf and Inter-Bold.ttf not found in ' . $fontDir);
         }
     }
 
