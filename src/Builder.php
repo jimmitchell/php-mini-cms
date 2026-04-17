@@ -337,6 +337,20 @@ class Builder
     }
 
     /**
+     * Rebuild all published posts using the latest settings from the DB.
+     * Called after settings are saved so changes to custom_css, site_title,
+     * footer text, etc. are immediately reflected in every post.
+     */
+    public function rebuildPosts(): void
+    {
+        $this->refreshContext();
+        $this->db->exec("UPDATE posts SET content_hash = NULL");
+        foreach (Post::findAll($this->db, 'published') as $post) {
+            $this->buildPost($post);
+        }
+    }
+
+    /**
      * Rebuild all pages using the latest settings from the DB.
      * Called after settings are saved so changes to custom_css, site_title,
      * footer text, etc. are immediately reflected in every page.
