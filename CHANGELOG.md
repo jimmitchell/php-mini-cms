@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.20] — 2026-04-18
+
+### Added
+
+- **Keyboard shortcuts in post editor** — `Ctrl/Cmd+S` saves (draft or update depending on post status); `Ctrl/Cmd+Shift+P` publishes; shortcuts work both when the Markdown editor has focus (registered via CodeMirror keymap) and when any other field is active (registered via `document` keydown)
+- **Real-time slug uniqueness check** — the slug field in the post and page editors now shows an inline ✓ / ✗ indicator after a 350 ms debounce; resolved via a new session-authenticated `admin/slug-check.php` endpoint; correctly treats the current record's own slug as available when editing
+
+---
+
 ## [1.2.19] — 2026-04-18
 
 ### Added

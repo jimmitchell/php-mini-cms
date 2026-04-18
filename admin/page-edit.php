@@ -135,7 +135,7 @@ $csrf      = $auth->csrfToken();
     <link rel="stylesheet" href="/admin/assets/easymde.min.css">
     <link rel="stylesheet" href="/admin/assets/font-awesome.min.css">
 </head>
-<body class="admin-page">
+<body class="admin-page" data-slug-type="page"<?= $page?->id ? ' data-slug-id="' . $page->id . '"' : '' ?>>
 
 <?php require __DIR__ . '/partials/nav.php'; ?>
 

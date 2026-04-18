@@ -29,6 +29,55 @@ function slugify(text) {
     });
 })();
 
+// ── Slug uniqueness check ─────────────────────────────────────────────────────
+
+(function initSlugCheck() {
+    const slugInput = document.getElementById('slug');
+    if (!slugInput) return;
+
+    const type = document.body.dataset.slugType; // 'post' or 'page'
+    const id   = document.body.dataset.slugId;   // current record id, or empty for new
+    if (!type) return;
+
+    // Insert a status span inline inside the flex container, after the input.
+    const status = document.createElement('span');
+    status.id = 'slug-check-status';
+    status.style.cssText = 'font-size:.8rem;white-space:nowrap';
+    slugInput.insertAdjacentElement('afterend', status);
+
+    let timer = null;
+
+    function check(slug) {
+        slug = slug.trim();
+        status.textContent = '';
+        if (!slug || slug === 'untitled') return;
+
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+            const params = new URLSearchParams({ type, slug });
+            if (id) params.set('id', id);
+            try {
+                const res  = await fetch('/admin/slug-check.php?' + params);
+                const data = await res.json();
+                if (data.available) {
+                    status.style.color = 'var(--color-success, #2a9d5c)';
+                    status.textContent = '✓ available';
+                } else {
+                    status.style.color = 'var(--color-danger, #c0392b)';
+                    status.textContent = '✗ already in use';
+                }
+            } catch {
+                status.textContent = '';
+            }
+        }, 350);
+    }
+
+    slugInput.addEventListener('input', () => check(slugInput.value));
+
+    // Check initial value (edit mode) after a short delay.
+    if (slugInput.value) setTimeout(() => check(slugInput.value), 600);
+})();
+
 // ── Form action helper ────────────────────────────────────────────────────────
 
 function setAction(action) {
@@ -474,6 +523,51 @@ function setAction(action) {
     widget.addEventListener('click', (e) => {
         if (!e.target.closest('.tag-pill')) textInput.focus();
     });
+})();
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+// Ctrl/Cmd+S → save draft (or update if published)
+// Ctrl/Cmd+Shift+P → publish
+
+(function initKeyboardShortcuts() {
+    const form = document.getElementById('post-form');
+    if (!form) return;
+
+    function triggerSave() {
+        setAction('draft');
+        const updateBtn = document.getElementById('update-btn');
+        if (updateBtn) updateBtn.disabled = false;
+        form.submit();
+    }
+
+    function triggerPublish() {
+        setAction('publish');
+        form.submit();
+    }
+
+    document.addEventListener('keydown', (e) => {
+        const mod = e.ctrlKey || e.metaKey;
+        if (!mod) return;
+
+        if (!e.shiftKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            triggerSave();
+        } else if (e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            triggerPublish();
+        }
+    });
+
+    // Also register with CodeMirror so shortcuts work when the editor has focus.
+    const editor = window._editor;
+    if (editor) {
+        editor.codemirror.addKeyMap({
+            'Ctrl-S':       function() { triggerSave();    return false; },
+            'Cmd-S':        function() { triggerSave();    return false; },
+            'Ctrl-Shift-P': function() { triggerPublish(); return false; },
+            'Cmd-Shift-P':  function() { triggerPublish(); return false; },
+        });
+    }
 })();
 
 // ── Sidebar toggle + tooltip ──────────────────────────────────────────────────
