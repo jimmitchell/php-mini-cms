@@ -644,7 +644,6 @@ audio { width: 100%; }
     align-items: center;
     gap: .4rem;
     margin-top: 2rem;
-    padding-top: 1.25rem;
     font-size: .825rem;
     color: var(--color-muted);
 }
