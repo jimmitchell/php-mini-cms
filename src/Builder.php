@@ -396,7 +396,7 @@ class Builder
      */
     public function buildCategoryArchive(int $categoryId): void
     {
-        $cat = $this->db->selectOne("SELECT * FROM categories WHERE id = ?", [$categoryId]);
+        $cat = $this->db->selectOne("SELECT * FROM categories WHERE id = :id", [':id' => $categoryId]);
         if ($cat === null) {
             return;
         }
@@ -411,7 +411,7 @@ class Builder
      */
     public function buildTagArchive(int $tagId): void
     {
-        $tag = $this->db->selectOne("SELECT * FROM tags WHERE id = ?", [$tagId]);
+        $tag = $this->db->selectOne("SELECT * FROM tags WHERE id = :id", [':id' => $tagId]);
         if ($tag === null) {
             return;
         }

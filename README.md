@@ -13,7 +13,7 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Posts & pages** — separate content types; pages can appear in site navigation
 - **Date-based post URLs** — posts live at `/YYYY/MM/DD/{slug}/` for clean, chronological permalinks
 - **Scheduling** — set a future publish date; posts promote automatically on next admin load
-- **Categories & tags** — full taxonomy system; posts can belong to multiple categories and tags; archive pages generated at `/category/{slug}/` and `/tag/{slug}/`
+- **Categories & tags** — full taxonomy system; posts can belong to multiple categories and tags; archive pages generated at `/category/{slug}/` and `/tag/{slug}/`; tag input is a pill-style picker with autocomplete against existing tags
 - **Media library** — drag-and-drop uploads with MIME validation; images, video, and audio supported (50 MB limit)
 - **Image galleries** — select multiple images in the post editor and insert a `[gallery]` shortcode; renders as a responsive masonry grid (3 columns desktop, 1 column mobile) with a looping lightbox
 - **Atom feed** — generated automatically at `/feed.xml`

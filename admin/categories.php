@@ -34,8 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Slug uniqueness check (allow saving over itself on edit).
         if (empty($errors)) {
             $existing = $db->selectOne(
-                "SELECT id FROM categories WHERE slug = ? AND id != ?",
-                [$slug, $editId]
+                "SELECT id FROM categories WHERE slug = :slug AND id != :id",
+                [':slug' => $slug, ':id' => $editId]
             );
             if ($existing) {
                 $errors[] = 'That slug is already used by another category.';
@@ -54,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->update(
                     'categories',
                     ['name' => $name, 'slug' => $slug, 'description' => $description],
-                    'id = ?',
-                    [$editId]
+                    'id = :id',
+                    [':id' => $editId]
                 );
                 $auth->flash('Category updated.');
             }
@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $deleteId = (int) ($_POST['delete_id'] ?? 0);
         if ($deleteId > 0) {
             // Junction rows deleted automatically via ON DELETE CASCADE.
-            $db->delete('categories', 'id = ?', [$deleteId]);
+            $db->delete('categories', 'id = :id', [':id' => $deleteId]);
             // Rebuild archives since this category's page is now gone.
             $builder->buildAllTaxonomyArchives();
             $auth->flash('Category deleted.', 'info');
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ── GET: load editing state from query string ─────────────────────────────────
 
 if ($editing === null && isset($_GET['edit'])) {
-    $editing = $db->selectOne("SELECT * FROM categories WHERE id = ?", [(int) $_GET['edit']]);
+    $editing = $db->selectOne("SELECT * FROM categories WHERE id = :id", [':id' => (int) $_GET['edit']]);
 }
 
 // ── Load data ─────────────────────────────────────────────────────────────────

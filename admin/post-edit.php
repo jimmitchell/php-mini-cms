@@ -160,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tagNames = array_filter(array_map('trim', explode(',', $_POST['tags_csv'] ?? '')));
         foreach ($tagNames as $tagName) {
             $tagSlug = Helpers::slugify($tagName);
-            $existing = $db->selectOne("SELECT id FROM tags WHERE slug = ?", [$tagSlug]);
+            $existing = $db->selectOne("SELECT id FROM tags WHERE slug = :slug", [':slug' => $tagSlug]);
             if ($existing) {
                 $tagIds[] = (int) $existing['id'];
             } else {
@@ -585,6 +585,9 @@ if ($post->published_at) {
     </form>
 </main>
 
+<script>
+window._existingTags = <?= json_encode(array_values(array_map(fn($t) => ['name' => $t['name']], $allTags)), JSON_HEX_TAG | JSON_HEX_AMP) ?>;
+</script>
 <script src="/admin/assets/easymde.min.js"></script>
 <script src="/admin/assets/admin.js"></script>
 

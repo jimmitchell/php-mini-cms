@@ -771,6 +771,7 @@ th:last-child { text-align: right; }
 
 /* ── Tag pill widget ──────────────────────────────────────────────────────── */
 .tag-pill-widget {
+    position: relative;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -782,6 +783,38 @@ th:last-child { text-align: right; }
     background: var(--color-surface);
     cursor: text;
     transition: border-color .15s;
+}
+
+.tag-autocomplete {
+    position: absolute;
+    top: calc(100% + 1px);
+    left: -1px;
+    right: -1px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-primary);
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: 0 4px 12px rgba(0,0,0,.12);
+    z-index: 200;
+    max-height: 200px;
+    overflow-y: auto;
+    list-style: none;
+    padding: .25rem 0;
+    margin: 0;
+}
+
+.tag-autocomplete[hidden] { display: none; }
+
+.tag-autocomplete__item {
+    padding: .35rem .65rem;
+    font-size: .875rem;
+    cursor: pointer;
+    color: var(--color-text);
+}
+
+.tag-autocomplete__item:hover,
+.tag-autocomplete__item--active {
+    background: rgba(37,99,235,.1);
+    color: var(--color-primary);
 }
 
 .tag-pill-widget:focus-within {

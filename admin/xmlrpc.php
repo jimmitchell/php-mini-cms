@@ -384,7 +384,7 @@ function xmlrpc_upsert_category(string $name): int
 {
     global $db;
     $slug     = \CMS\Helpers::slugify($name);
-    $existing = $db->selectOne("SELECT id FROM categories WHERE slug = ?", [$slug]);
+    $existing = $db->selectOne("SELECT id FROM categories WHERE slug = :slug", [':slug' => $slug]);
     if ($existing) {
         return (int) $existing['id'];
     }
@@ -399,7 +399,7 @@ function xmlrpc_upsert_tag(string $name): int
 {
     global $db;
     $slug     = \CMS\Helpers::slugify($name);
-    $existing = $db->selectOne("SELECT id FROM tags WHERE slug = ?", [$slug]);
+    $existing = $db->selectOne("SELECT id FROM tags WHERE slug = :slug", [':slug' => $slug]);
     if ($existing) {
         return (int) $existing['id'];
     }
@@ -1156,7 +1156,7 @@ switch ($method) {
         if ($slug === '') {
             $slug = Helpers::slugify($name);
         }
-        $existing = $db->selectOne("SELECT id FROM categories WHERE slug = ?", [$slug]);
+        $existing = $db->selectOne("SELECT id FROM categories WHERE slug = :slug", [':slug' => $slug]);
         if ($existing) {
             echo XmlRpc::encodeResponse((int) $existing['id']);
         } else {

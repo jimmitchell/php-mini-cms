@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.19] — 2026-04-18
+
+### Added
+
+- **Tag autocomplete** — the tag input in the post editor is now a pill-style picker; typing filters existing tags in a dropdown (keyboard navigable with ↑↓/Enter/Escape); new tags not in the list are still created on Enter or comma; existing tags are injected server-side as `window._existingTags` and never fetched asynchronously
+
+### Changed
+
+- **Named query placeholders** — all `?` positional placeholders in `src/` and `admin/` standardised to `:name` style (`src/Post.php`, `src/Builder.php`, `admin/post-edit.php`, `admin/tags.php`, `admin/categories.php`, `admin/xmlrpc.php`); dynamic `IN (…)` batch queries retain `?` as PDO has no named equivalent for variadic lists
+
+---
+
 ## [1.2.18] — 2026-04-17
 
 ### Changed

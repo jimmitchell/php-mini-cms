@@ -167,25 +167,25 @@ class Post
         }
 
         // Replace category associations.
-        $this->db->exec("DELETE FROM post_categories WHERE post_id = ?", [$this->id]);
+        $this->db->exec("DELETE FROM post_categories WHERE post_id = :post_id", [':post_id' => $this->id]);
         foreach (array_unique($categoryIds) as $cid) {
             $cid = (int) $cid;
             if ($cid > 0) {
                 $this->db->exec(
-                    "INSERT OR IGNORE INTO post_categories (post_id, category_id) VALUES (?, ?)",
-                    [$this->id, $cid]
+                    "INSERT OR IGNORE INTO post_categories (post_id, category_id) VALUES (:post_id, :category_id)",
+                    [':post_id' => $this->id, ':category_id' => $cid]
                 );
             }
         }
 
         // Replace tag associations.
-        $this->db->exec("DELETE FROM post_tags WHERE post_id = ?", [$this->id]);
+        $this->db->exec("DELETE FROM post_tags WHERE post_id = :post_id", [':post_id' => $this->id]);
         foreach (array_unique($tagIds) as $tid) {
             $tid = (int) $tid;
             if ($tid > 0) {
                 $this->db->exec(
-                    "INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (?, ?)",
-                    [$this->id, $tid]
+                    "INSERT OR IGNORE INTO post_tags (post_id, tag_id) VALUES (:post_id, :tag_id)",
+                    [':post_id' => $this->id, ':tag_id' => $tid]
                 );
             }
         }
@@ -195,17 +195,17 @@ class Post
             "SELECT c.id, c.name, c.slug, c.description
                FROM categories c
                JOIN post_categories pc ON pc.category_id = c.id
-              WHERE pc.post_id = ?
+              WHERE pc.post_id = :post_id
               ORDER BY c.name",
-            [$this->id]
+            [':post_id' => $this->id]
         );
         $this->tags = $this->db->select(
             "SELECT t.id, t.name, t.slug
                FROM tags t
                JOIN post_tags pt ON pt.tag_id = t.id
-              WHERE pt.post_id = ?
+              WHERE pt.post_id = :post_id
               ORDER BY t.name",
-            [$this->id]
+            [':post_id' => $this->id]
         );
     }
 

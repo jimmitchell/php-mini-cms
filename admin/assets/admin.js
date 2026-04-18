@@ -283,22 +283,37 @@ function setAction(action) {
 })();
 
 // ── Tag pill widget ───────────────────────────────────────────────────────────
-// Progressively enhances the tags_csv text input into a pill-based tag editor.
+// Progressively enhances the tags_csv text input into a pill-based tag editor
+// with autocomplete against existing tags (window._existingTags).
 
 (function initTagPills() {
     const csvInput = document.querySelector('input[name="tags_csv"]');
     if (!csvInput) return;
 
+    const existingTags = (window._existingTags || []).map(t => t.name || t);
+
     // Build the widget container.
     const widget = document.createElement('div');
     widget.className = 'tag-pill-widget';
+    widget.setAttribute('role', 'combobox');
+    widget.setAttribute('aria-haspopup', 'listbox');
+    widget.setAttribute('aria-expanded', 'false');
 
     // Visible text input inside the widget.
     const textInput = document.createElement('input');
     textInput.type = 'text';
     textInput.className = 'tag-pill-widget__input';
     textInput.placeholder = csvInput.placeholder || 'Add a tag…';
+    textInput.setAttribute('autocomplete', 'off');
+    textInput.setAttribute('aria-autocomplete', 'list');
     widget.appendChild(textInput);
+
+    // Autocomplete dropdown.
+    const dropdown = document.createElement('ul');
+    dropdown.className = 'tag-autocomplete';
+    dropdown.setAttribute('role', 'listbox');
+    dropdown.hidden = true;
+    widget.appendChild(dropdown);
 
     // Hide the original input but keep it in the form.
     csvInput.type = 'hidden';
@@ -308,8 +323,60 @@ function setAction(action) {
         ? csvInput.value.split(',').map(t => t.trim()).filter(Boolean)
         : [];
 
+    let activeIndex = -1;
+
     function sync() {
         csvInput.value = tags.join(', ');
+    }
+
+    function closeDropdown() {
+        dropdown.replaceChildren();
+        dropdown.hidden = true;
+        activeIndex = -1;
+        widget.setAttribute('aria-expanded', 'false');
+    }
+
+    function renderDropdown(query) {
+        const q = query.trim().toLowerCase();
+        dropdown.replaceChildren();
+        activeIndex = -1;
+
+        if (!q) { closeDropdown(); return; }
+
+        const matches = existingTags.filter(t =>
+            t.toLowerCase().includes(q) && !tags.includes(t)
+        );
+
+        if (!matches.length) { closeDropdown(); return; }
+
+        matches.forEach((t) => {
+            const li = document.createElement('li');
+            li.className = 'tag-autocomplete__item';
+            li.setAttribute('role', 'option');
+            li.textContent = t;
+            li.addEventListener('mousedown', (e) => {
+                // mousedown fires before blur — prevent blur from closing first.
+                e.preventDefault();
+                addTag(t);
+                textInput.value = '';
+                closeDropdown();
+                textInput.focus();
+            });
+            dropdown.appendChild(li);
+        });
+
+        dropdown.hidden = false;
+        widget.setAttribute('aria-expanded', 'true');
+    }
+
+    function setActive(idx) {
+        const items = dropdown.querySelectorAll('.tag-autocomplete__item');
+        items.forEach(el => el.classList.remove('tag-autocomplete__item--active'));
+        activeIndex = Math.max(-1, Math.min(idx, items.length - 1));
+        if (activeIndex >= 0) {
+            items[activeIndex].classList.add('tag-autocomplete__item--active');
+            items[activeIndex].scrollIntoView({ block: 'nearest' });
+        }
     }
 
     function renderPill(tag) {
@@ -349,29 +416,64 @@ function setAction(action) {
         ? csvInput.value.split(',').map(t => t.trim()).filter(Boolean)
         : [];
 
+    textInput.addEventListener('input', () => {
+        renderDropdown(textInput.value);
+    });
+
     textInput.addEventListener('keydown', (e) => {
+        if (!dropdown.hidden) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setActive(activeIndex + 1);
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setActive(activeIndex - 1);
+                return;
+            }
+            if (e.key === 'Escape') {
+                closeDropdown();
+                return;
+            }
+            if ((e.key === 'Enter' || e.key === ',') && activeIndex >= 0) {
+                e.preventDefault();
+                const items = dropdown.querySelectorAll('.tag-autocomplete__item');
+                addTag(items[activeIndex].textContent);
+                textInput.value = '';
+                closeDropdown();
+                return;
+            }
+        }
+
         if (e.key === 'Enter' || e.key === ',') {
             e.preventDefault();
             addTag(textInput.value);
             textInput.value = '';
+            closeDropdown();
         } else if (e.key === 'Backspace' && textInput.value === '' && tags.length) {
             // Remove last pill on backspace when input is empty.
-            const last = tags[tags.length - 1];
             tags.pop();
-            widget.querySelector(`.tag-pill:last-of-type`)?.remove();
+            widget.querySelector('.tag-pill:last-of-type')?.remove();
             sync();
         }
     });
 
     textInput.addEventListener('blur', () => {
-        if (textInput.value.trim()) {
-            addTag(textInput.value);
-            textInput.value = '';
-        }
+        // Delay so mousedown on a suggestion can fire first.
+        setTimeout(() => {
+            closeDropdown();
+            if (textInput.value.trim()) {
+                addTag(textInput.value);
+                textInput.value = '';
+            }
+        }, 150);
     });
 
     // Clicking anywhere in the widget focuses the text input.
-    widget.addEventListener('click', () => textInput.focus());
+    widget.addEventListener('click', (e) => {
+        if (!e.target.closest('.tag-pill')) textInput.focus();
+    });
 })();
 
 // ── Sidebar toggle + tooltip ──────────────────────────────────────────────────

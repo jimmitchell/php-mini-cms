@@ -33,8 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Slug uniqueness check (allow saving over itself on edit).
         if (empty($errors)) {
             $existing = $db->selectOne(
-                "SELECT id FROM tags WHERE slug = ? AND id != ?",
-                [$slug, $editId]
+                "SELECT id FROM tags WHERE slug = :slug AND id != :id",
+                [':slug' => $slug, ':id' => $editId]
             );
             if ($existing) {
                 $errors[] = 'That slug is already used by another tag.';
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->insert('tags', ['name' => $name, 'slug' => $slug]);
                 $auth->flash('Tag added.');
             } else {
-                $db->update('tags', ['name' => $name, 'slug' => $slug], 'id = ?', [$editId]);
+                $db->update('tags', ['name' => $name, 'slug' => $slug], 'id = :id', [':id' => $editId]);
                 $auth->flash('Tag updated.');
             }
             header('Location: /admin/tags.php');
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($tagSlug === '' || $tagSlug === 'untitled') {
                 continue;
             }
-            $exists = $db->selectOne("SELECT id FROM tags WHERE slug = ?", [$tagSlug]);
+            $exists = $db->selectOne("SELECT id FROM tags WHERE slug = :slug", [':slug' => $tagSlug]);
             if (!$exists) {
                 $db->insert('tags', ['name' => $tagName, 'slug' => $tagSlug]);
                 $added++;
@@ -81,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete') {
         $deleteId = (int) ($_POST['delete_id'] ?? 0);
         if ($deleteId > 0) {
-            $db->delete('tags', 'id = ?', [$deleteId]);
+            $db->delete('tags', 'id = :id', [':id' => $deleteId]);
             $builder->buildAllTaxonomyArchives();
             $auth->flash('Tag deleted.', 'info');
         }
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ── GET: load editing state from query string ─────────────────────────────────
 
 if ($editing === null && isset($_GET['edit'])) {
-    $editing = $db->selectOne("SELECT * FROM tags WHERE id = ?", [(int) $_GET['edit']]);
+    $editing = $db->selectOne("SELECT * FROM tags WHERE id = :id", [':id' => (int) $_GET['edit']]);
 }
 
 // ── Load data ─────────────────────────────────────────────────────────────────
