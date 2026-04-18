@@ -521,7 +521,7 @@ audio { width: 100%; }
 /* Images / media inside prose */
 .prose img,
 .prose video,
-.prose audio { margin-top: 1.5em; border-radius: 6px; }
+.prose audio { margin-top: 1.5em; border-radius: 6px; margin-bottom: 1.5em; }
 
 .prose img { box-shadow: 0 4px 20px rgba(0,0,0,0.09); }
 
