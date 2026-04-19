@@ -27,7 +27,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 }
 
 $statusFilter = $_GET['status'] ?? 'all';
+$search       = trim($_GET['q'] ?? '');
 $pages        = Page::findAll($db, $statusFilter === 'all' ? null : $statusFilter);
+
+if ($search !== '') {
+    $pages = array_values(array_filter($pages, fn($p) => stripos($p->title, $search) !== false));
+}
 
 $counts = $db->selectOne(
     "SELECT
@@ -68,17 +73,29 @@ $csrf      = $auth->csrfToken();
                 'draft'     => 'Draft (' . ($counts['draft'] ?? 0) . ')',
             ];
             foreach ($tabs as $key => $label): ?>
-            <a href="/admin/pages.php?status=<?= Helpers::e($key) ?>"
+            <a href="/admin/pages.php?status=<?= Helpers::e($key) ?><?= $search !== '' ? '&q=' . urlencode($search) : '' ?>"
                class="<?= $statusFilter === $key ? 'active' : '' ?>">
                 <?= Helpers::e($label) ?>
             </a>
             <?php endforeach; ?>
         </div>
+        <form method="get" action="/admin/pages.php" class="search-form" role="search">
+            <?php if ($statusFilter !== 'all'): ?>
+            <input type="hidden" name="status" value="<?= Helpers::e($statusFilter) ?>">
+            <?php endif; ?>
+            <input type="search" name="q" value="<?= Helpers::e($search) ?>"
+                   placeholder="Search pages…" class="search-input" aria-label="Search pages">
+            <?php if ($search !== ''): ?>
+            <a href="/admin/pages.php?status=<?= Helpers::e($statusFilter) ?>" class="search-clear" aria-label="Clear search">✕</a>
+            <?php endif; ?>
+        </form>
     </div>
 
     <div class="panel" style="padding:0">
         <?php if (empty($pages)): ?>
-            <p style="padding:1.5rem; color:var(--color-muted)">No pages found.</p>
+            <p style="padding:1.5rem; color:var(--color-muted)">
+                <?= $search !== '' ? 'No pages match &ldquo;' . Helpers::e($search) . '&rdquo;.' : 'No pages found.' ?>
+            </p>
         <?php else: ?>
         <table class="data-table data-table--pages">
             <thead>

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.21] — 2026-04-19
+
+### Added
+
+- **Autosave drafts** — the post editor now saves title, slug, content, and excerpt to `localStorage` with a 2 s debounce after any change; a fading "Draft saved locally" indicator appears in the Publish panel; on re-open a banner offers to restore or discard the stored draft (with age in minutes); the draft is cleared automatically on form submit
+- **Page search** — `admin/pages.php` now has a title search form matching the existing posts search; `?q=` is preserved across status-tab links and the empty-state message distinguishes "no results" from "no pages"
+- **Timezone label on publish date picker** — the "Publish date" label in the post editor now shows the configured site timezone (e.g. `America/New_York`) so the user knows what "now" means; hidden when no timezone is set
+
+### Changed
+
+- **Pagination partial** — the pagination block in `admin/posts.php` extracted to `admin/partials/pagination.php`; the partial is generic (`$_paginTotal`, `$_paginLabel`) so `admin/pages.php` can include it when needed
+
+---
+
 ## [1.2.20] — 2026-04-18
 
 ### Added

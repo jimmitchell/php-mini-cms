@@ -570,6 +570,134 @@ function setAction(action) {
     }
 })();
 
+// ── Autosave drafts ───────────────────────────────────────────────────────────
+// Persists title, slug, content, and excerpt to localStorage every 2 s of
+// inactivity.  On page load, detects a stored draft and offers to restore it.
+
+(function initAutosave() {
+    const form = document.getElementById('post-form');
+    if (!form) return;
+
+    const postId      = document.body.dataset.slugId || 'new';
+    const STORAGE_KEY = 'cms_draft_' + postId;
+    const DEBOUNCE_MS = 2000;
+
+    let saveTimer = null;
+    let statusEl  = null;
+
+    function getFormValues() {
+        const editor = window._editor;
+        return {
+            title:   (document.getElementById('title')?.value   ?? '').trim(),
+            slug:    (document.getElementById('slug')?.value    ?? '').trim(),
+            content: editor ? editor.value() : (document.getElementById('content')?.value ?? ''),
+            excerpt: (document.getElementById('excerpt')?.value ?? '').trim(),
+        };
+    }
+
+    function getStoredDraft() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); }
+        catch { return null; }
+    }
+
+    function saveDraft() {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...getFormValues(), savedAt: Date.now() })); }
+        catch {}
+        showStatus('Draft saved locally');
+    }
+
+    function clearDraft() {
+        try { localStorage.removeItem(STORAGE_KEY); } catch {}
+    }
+
+    function showStatus(msg) {
+        if (!statusEl) return;
+        statusEl.textContent = msg;
+        statusEl.style.opacity = '1';
+        clearTimeout(statusEl._fadeTimer);
+        statusEl._fadeTimer = setTimeout(() => { statusEl.style.opacity = '0'; }, 2500);
+    }
+
+    function scheduleSave() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveDraft, DEBOUNCE_MS);
+    }
+
+    // Status indicator injected at the bottom of the first sidebar panel.
+    const firstPanel = form.querySelector('.panel');
+    if (firstPanel) {
+        statusEl = document.createElement('p');
+        statusEl.className = 'form-hint';
+        statusEl.id = 'autosave-status';
+        statusEl.style.cssText = 'transition:opacity .5s;opacity:0;margin-top:.25rem';
+        firstPanel.appendChild(statusEl);
+    }
+
+    // Watch for changes.
+    ['title', 'slug', 'excerpt'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', scheduleSave);
+    });
+    window._editor?.codemirror.on('change', scheduleSave);
+
+    // Clear draft when the form is submitted so stale drafts don't resurface.
+    form.addEventListener('submit', clearDraft);
+
+    // ── Recovery banner ──────────────────────────────────────────────────────
+    const draft = getStoredDraft();
+    if (!draft) return;
+
+    const current     = getFormValues();
+    const isDifferent = draft.title   !== current.title
+        || draft.content !== current.content
+        || draft.excerpt !== current.excerpt
+        || draft.slug    !== current.slug;
+
+    if (!isDifferent) { clearDraft(); return; }
+
+    const age     = draft.savedAt ? Math.round((Date.now() - draft.savedAt) / 60000) : null;
+    const ageText = age === null ? '' : age < 1 ? ' (just now)' : ` (${age} min ago)`;
+
+    const banner = document.createElement('div');
+    banner.className = 'alert alert--info';
+    banner.style.cssText = 'display:flex;align-items:center;gap:.75rem;flex-wrap:wrap';
+
+    const msg = document.createElement('span');
+    msg.textContent = 'Unsaved local draft found' + ageText + '.';
+    banner.appendChild(msg);
+
+    const restoreBtn = document.createElement('button');
+    restoreBtn.type = 'button';
+    restoreBtn.className = 'btn btn--sm';
+    restoreBtn.textContent = 'Restore';
+    restoreBtn.addEventListener('click', () => {
+        const titleEl   = document.getElementById('title');
+        const slugEl    = document.getElementById('slug');
+        const excerptEl = document.getElementById('excerpt');
+        const ed        = window._editor;
+        if (titleEl)   titleEl.value   = draft.title;
+        if (slugEl)    slugEl.value    = draft.slug;
+        if (excerptEl) excerptEl.value = draft.excerpt;
+        if (ed)        ed.value(draft.content);
+        else { const ta = document.getElementById('content'); if (ta) ta.value = draft.content; }
+        const updateBtn = document.getElementById('update-btn');
+        if (updateBtn) updateBtn.disabled = false;
+        clearDraft();
+        banner.remove();
+    });
+
+    const discardBtn = document.createElement('button');
+    discardBtn.type = 'button';
+    discardBtn.className = 'btn btn--secondary btn--sm';
+    discardBtn.textContent = 'Discard';
+    discardBtn.addEventListener('click', () => { clearDraft(); banner.remove(); });
+
+    banner.appendChild(restoreBtn);
+    banner.appendChild(discardBtn);
+
+    const mainEl = document.querySelector('.admin-main');
+    if (mainEl) mainEl.insertBefore(banner, form);
+})();
+
 // ── Sidebar toggle + tooltip ──────────────────────────────────────────────────
 
 (function initSidebarToggle() {

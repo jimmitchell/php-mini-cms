@@ -467,7 +467,7 @@ if ($post->published_at) {
                     </div>
                     <?php endif; ?>
 
-                    <label for="publish_date" style="margin-top:0">Publish date</label>
+                    <label for="publish_date" style="margin-top:0">Publish date<?php if ($cfgTz !== ''): ?> <span style="font-weight:400;color:var(--color-muted)">(<?= Helpers::e($cfgTz) ?>)</span><?php endif; ?></label>
                     <input type="datetime-local" id="publish_date" name="publish_date"
                            value="<?= Helpers::e($pubInputVal) ?>"
                            aria-describedby="publish-date-hint">

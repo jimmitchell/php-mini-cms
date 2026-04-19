@@ -190,27 +190,8 @@ $flashType = $flash['type']    ?? 'success';
         <?php endif; ?>
     </div>
 
-    <?php if ($totalPages > 1): ?>
-    <div class="pagination">
-        <?php if ($page > 1): ?>
-            <a href="<?= Helpers::e($_paginationBase) ?>page=<?= $page - 1 ?>" class="btn btn--sm btn--secondary">&larr; Prev</a>
-        <?php else: ?>
-            <span class="btn btn--sm btn--secondary btn--disabled">&larr; Prev</span>
-        <?php endif; ?>
-
-        <span class="pagination__info">
-            Page <?= $page ?> of <?= $totalPages ?>
-            &nbsp;&middot;&nbsp;
-            <?= number_format($totalPosts) ?> post<?= $totalPosts !== 1 ? 's' : '' ?>
-        </span>
-
-        <?php if ($page < $totalPages): ?>
-            <a href="<?= Helpers::e($_paginationBase) ?>page=<?= $page + 1 ?>" class="btn btn--sm btn--secondary">Next &rarr;</a>
-        <?php else: ?>
-            <span class="btn btn--sm btn--secondary btn--disabled">Next &rarr;</span>
-        <?php endif; ?>
-    </div>
-    <?php endif; ?>
+    <?php $_paginTotal = $totalPosts; $_paginLabel = 'post'; ?>
+    <?php require __DIR__ . '/partials/pagination.php'; ?>
 </main>
 <script src="/admin/assets/admin.js"></script>
 </body>
