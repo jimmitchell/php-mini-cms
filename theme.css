@@ -950,6 +950,7 @@ audio { width: 100%; }
     margin-top: 0;
     cursor: zoom-in;
     transition: opacity .15s;
+    margin-bottom: 0;
 }
 
 .gallery__item:hover img { opacity: .88; }
