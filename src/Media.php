@@ -254,7 +254,7 @@ class Media
      */
     private function generateWebp(string $sourcePath): void
     {
-        if (!extension_loaded('gd')) {
+        if (!extension_loaded('gd') || !function_exists('imagewebp')) {
             return;
         }
 
@@ -278,7 +278,6 @@ class Media
 
         $destPath = (string) preg_replace('/\.[^.]+$/', '.webp', $sourcePath);
         @imagewebp($image, $destPath, 82);
-        imagedestroy($image);
     }
 
     private function phpUploadError(int $code): string

@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'webmention_domain'        => trim($_POST['webmention_domain']        ?? ''),
         'google_site_verification' => trim($_POST['google_site_verification'] ?? ''),
         'custom_css'               => $_POST['custom_css'] ?? '',
+        'favicon_url'              => trim($_POST['favicon_url'] ?? ''),
     ];
 
     if ($fields['site_title'] === '') {
@@ -178,6 +179,21 @@ $flash     = $auth->getFlash();
                 Examples: <code>en_US</code>, <code>en_GB</code>, <code>fr_FR</code>,
                 <code>de_DE</code>, <code>ja_JP</code>.
                 Leave blank to use the server default (English).
+            </p>
+
+            <label for="favicon_url">Favicon URL</label>
+            <?php $_faviconCurrent = $_POST['favicon_url'] ?? $settings['favicon_url'] ?? ''; ?>
+            <input type="text" id="favicon_url" name="favicon_url"
+                   value="<?= Helpers::e($_faviconCurrent) ?>"
+                   placeholder="/media/my-icon_abc123.png"
+                   style="max-width:400px">
+            <?php if ($_faviconCurrent !== ''): ?>
+            <img src="<?= Helpers::e($_faviconCurrent) ?>" alt="Favicon preview"
+                 style="display:block;width:32px;height:32px;margin-top:.5rem;object-fit:contain;border:1px solid var(--color-border);border-radius:4px">
+            <?php endif; ?>
+            <p class="form-hint">
+                Upload a PNG to the <a href="/admin/media.php" target="_blank">Media Library</a>,
+                copy its URL, and paste it here. Leave blank to use the default SVG favicon.
             </p>
         </div>
 

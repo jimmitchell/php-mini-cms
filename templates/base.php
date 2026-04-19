@@ -64,7 +64,23 @@ if (!function_exists('_e')) {
 <?php endif; ?>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <?php
+    $_faviconUrl  = $settings['favicon_url'] ?? '';
+    $_faviconHref = '/favicon.svg';
+    $_faviconMime = 'image/svg+xml';
+    if ($_faviconUrl !== '') {
+        $_faviconHref = $_faviconUrl;
+        $_faviconMime = match(strtolower(pathinfo(parse_url($_faviconUrl, PHP_URL_PATH), PATHINFO_EXTENSION))) {
+            'png'        => 'image/png',
+            'jpg','jpeg' => 'image/jpeg',
+            'gif'        => 'image/gif',
+            'webp'       => 'image/webp',
+            'ico'        => 'image/x-icon',
+            default      => 'image/png',
+        };
+    }
+    ?>
+    <link rel="icon" href="<?= _e($_faviconHref) ?>" type="<?= _e($_faviconMime) ?>">
     <link rel="sitemap" type="application/xml" href="/sitemap.xml">
     <title><?= _e($pageTitle) ?></title>
     <?php if ($description !== ''): ?>

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.22] — 2026-04-19
+
+### Added
+
+- **Custom favicon** — Settings → Site identity now has a "Favicon URL" field; upload a PNG (or any image) to the Media Library, paste its URL, and the site favicon updates on next rebuild; MIME type is inferred from the file extension; falls back to the default `/favicon.svg` when left blank
+
+### Fixed
+
+- **PNG upload crash** — `Media::generateWebp()` now checks `function_exists('imagewebp')` before attempting WebP conversion; previously, environments where GD is loaded but built without WebP support threw an uncaught fatal error that corrupted the JSON upload response
+- **Deprecated `imagedestroy()` call** removed from `Media::generateWebp()`; GD images are freed automatically in PHP 8
+
+---
+
 ## [1.2.21] — 2026-04-19
 
 ### Added
