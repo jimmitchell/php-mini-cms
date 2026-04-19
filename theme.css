@@ -529,7 +529,8 @@ audio { width: 100%; }
 .prose figcaption {
     font-size: .75rem;
     color: var(--color-muted);
-    margin-top: .4em;
+    margin-top: -1em;
+    margin-bottom: 1.5em;
     text-align: center;
 }
 
