@@ -344,7 +344,7 @@ audio { width: 100%; }
     /* line-height: 1.6; */
 }
 
-.prose > * + * { margin-top: 1.25em; }
+.prose > * + * { margin-top: 1.3em; margin-bottom: 1.3em; }
 
 .prose h1,
 .prose h2,
