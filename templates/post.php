@@ -85,11 +85,12 @@ ob_start();
               && ($settings['tinylytics_kudos_emoji'] ?? '') !== '';
     $kudosPath = '/' . CMS\Post::datePath($post->published_at, $post->slug, $settings['timezone'] ?? '') . '/';
     ?>
-    <?php if ($showKudos || $post->mastodon_url || $post->bluesky_url): ?>
+    <?php
+    $replyEmail = $settings['reply_email'] ?? '';
+    $showEmail  = $replyEmail !== '';
+    ?>
+    <?php if ($showKudos || $post->mastodon_url || $post->bluesky_url || $showEmail): ?>
     <footer class="post__syndication">
-        <?php if ($showKudos): ?>
-        <button class="tinylytics_kudos" data-path="<?= htmlspecialchars($kudosPath, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"></button>
-        <?php endif; ?>
         <?php if ($post->mastodon_url): ?>
         <a href="<?= htmlspecialchars($post->mastodon_url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
            class="u-syndication" target="_blank" rel="noopener noreferrer">Mastodon</a>
@@ -97,6 +98,13 @@ ob_start();
         <?php if ($post->bluesky_url): ?>
         <a href="<?= htmlspecialchars($post->bluesky_url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
            class="u-syndication" target="_blank" rel="noopener noreferrer">Bluesky</a>
+        <?php endif; ?>
+        <?php if ($showEmail): ?>
+        <a href="mailto:<?= htmlspecialchars($replyEmail, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>?subject=<?= rawurlencode('Re: ' . $post->title) ?>"
+           class="u-syndication">Email</a>
+        <?php endif; ?>
+        <?php if ($showKudos): ?>
+        <button class="tinylytics_kudos" data-path="<?= htmlspecialchars($kudosPath, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"></button>
         <?php endif; ?>
     </footer>
     <?php endif; ?>

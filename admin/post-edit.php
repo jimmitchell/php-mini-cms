@@ -493,6 +493,12 @@ if ($post->published_at) {
                             Unpublish
                         </button>
                         <?php endif; ?>
+                        <?php if (!$isNew): ?>
+                        <a href="/admin/post-preview.php?id=<?= $post->id ?>" target="_blank" rel="noopener"
+                           class="btn btn--secondary" style="text-align:center">
+                            Preview
+                        </a>
+                        <?php endif; ?>
                     </div>
                 </div>
 

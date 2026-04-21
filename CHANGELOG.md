@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+---
+
+## [1.2.23] — 2026-04-20
+
+### Added
+
+- **Draft preview** — a **Preview** button in the post editor sidebar opens any saved draft (or published post) rendered through the full public theme in a new tab; no publishing, no static file written to disk; the preview endpoint (`admin/post-preview.php`) is auth-gated and tagged `X-Robots-Tag: noindex, nofollow`
+- **Email reply pill** — a new **Email Reply** panel in Settings accepts an optional reply-to address; when set, an **Email** pill appears at the bottom of each post with a `mailto:` link pre-filled with `Re: [post title]` as the subject
+- **Post footer pill order** — reordered to Mastodon → Bluesky → Email → Kudo button
+
+---
+
 ## [1.2.22] — 2026-04-19
 
 ### Added

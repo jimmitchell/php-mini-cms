@@ -548,6 +548,38 @@ class Builder
     }
 
     /**
+     * Render a draft post through the full theme template without writing to disk.
+     * Safe to call on any post status — does not modify the post record.
+     * OG image generation and prev/next navigation are skipped.
+     */
+    public function renderPostPreview(Post $post): string
+    {
+        // Drafts with no publish date need a placeholder so the template
+        // can call Post::datePath() and date() without warnings.
+        $originalPublishedAt = $post->published_at;
+        if ($post->published_at === null) {
+            $post->published_at = date('Y-m-d H:i:s');
+        }
+
+        $html       = $this->md->convert($post->content)->getContent();
+        $html       = $this->processShortcodes($html);
+        $hasGallery = str_contains($html, 'data-gallery');
+
+        $rendered = $this->render('post.php', [
+            'post'       => $post,
+            'html'       => $html,
+            'hasGallery' => $hasGallery,
+            'prevPost'   => null,
+            'nextPost'   => null,
+            'ogImageUrl' => '',
+        ]);
+
+        $post->published_at = $originalPublishedAt;
+
+        return $rendered;
+    }
+
+    /**
      * Convert Markdown to HTML using the same converter configuration used for
      * building posts and pages. Useful for export and preview features.
      */

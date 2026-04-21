@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'bluesky_url'          => rtrim(trim($_POST['bluesky_url']          ?? ''), '/'),
         'bluesky_handle'       => trim($_POST['bluesky_handle']       ?? ''),
         'bluesky_app_password' => trim($_POST['bluesky_app_password'] ?? ''),
+        'reply_email'          => trim($_POST['reply_email']          ?? ''),
         'github_url'           => rtrim(trim($_POST['github_url']           ?? ''), '/'),
         'tinylytics_code'        => trim($_POST['tinylytics_code']        ?? ''),
         'tinylytics_kudos_emoji' => trim($_POST['tinylytics_kudos_emoji'] ?? ''),
@@ -55,6 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (substr_count($stripped, '@') !== 1 || str_starts_with($stripped, '@') || str_ends_with($stripped, '@')) {
             $errors[] = 'Mastodon handle must be in the form @username@instance.social.';
         }
+    }
+
+    if ($fields['reply_email'] !== '' && !filter_var($fields['reply_email'], FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Reply email must be a valid email address.';
     }
 
     if ($fields['mastodon_instance'] !== '') {
@@ -280,6 +285,21 @@ $flash     = $auth->getFlash();
                 Create one in Bluesky under Settings → Privacy and Security → App Passwords.
                 Never use your main password. When both Handle and App password are set,
                 new posts will be automatically shared on first publish.
+            </p>
+        </div>
+
+        <div class="panel">
+            <h2>Email Reply</h2>
+
+            <label for="reply_email">Reply-to email address</label>
+            <input type="email" id="reply_email" name="reply_email"
+                   value="<?= Helpers::e($_POST['reply_email'] ?? $settings['reply_email'] ?? '') ?>"
+                   placeholder="you@example.com"
+                   style="max-width:320px">
+            <p class="form-hint">
+                When set, an <strong>Email</strong> pill appears at the bottom of each post,
+                allowing readers to reply via email. The subject will be pre-filled with
+                <em>Re: [post title]</em>.
             </p>
         </div>
 

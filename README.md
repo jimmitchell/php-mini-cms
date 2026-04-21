@@ -12,6 +12,7 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Markdown editor** — EasyMDE with GitHub-flavored Markdown, footnotes, and server-side syntax highlighting (xcode-dark palette)
 - **Posts & pages** — separate content types; pages can appear in site navigation
 - **Date-based post URLs** — posts live at `/YYYY/MM/DD/{slug}/` for clean, chronological permalinks
+- **Draft preview** — preview any saved draft (or published post) in the full public theme by clicking **Preview** in the post editor sidebar; opens in a new tab without publishing or triggering a site rebuild
 - **Scheduling** — set a future publish date; posts promote automatically on next admin load
 - **Categories & tags** — full taxonomy system; posts can belong to multiple categories and tags; archive pages generated at `/category/{slug}/` and `/tag/{slug}/`; tag input is a pill-style picker with autocomplete against existing tags
 - **Media library** — drag-and-drop uploads with MIME validation; images, video, and audio supported (50 MB limit)
@@ -136,6 +137,7 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 | Content | Posts per page, feed post count |
 | Mastodon | Handle, instance URL, access token |
 | Bluesky | Profile URL, handle, app password |
+| Email reply | Reply-to email address for post footer pill |
 | IndieWeb | webmention.io domain |
 | Analytics | Tinylytics site ID, Tinylytics Kudos emoji, Google Analytics measurement ID |
 | Custom CSS | Freeform CSS injected into every public page |
@@ -149,7 +151,7 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 | Login | `/admin/` | Two-step login: password then TOTP code (if 2FA is enabled) |
 | Dashboard | `/admin/dashboard.php` | Stats, scheduled posts due soon, full site rebuild |
 | Posts | `/admin/posts.php` | List with status filter tabs, title search, inline delete |
-| Post editor | `/admin/post-edit.php` | Title, slug (with real-time uniqueness check), Markdown editor, status, schedule date, categories, tags, image gallery insert; keyboard shortcuts: **Ctrl/Cmd+S** save, **Ctrl/Cmd+Shift+P** publish |
+| Post editor | `/admin/post-edit.php` | Title, slug (with real-time uniqueness check), Markdown editor, status, schedule date, categories, tags, image gallery insert; keyboard shortcuts: **Ctrl/Cmd+S** save, **Ctrl/Cmd+Shift+P** publish; **Preview** button opens a read-only themed preview in a new tab without publishing |
 | Pages | `/admin/pages.php` | List with inline delete |
 | Page editor | `/admin/page-edit.php` | Same as post editor + nav order field; slug field also has real-time uniqueness check |
 | Categories | `/admin/categories.php` | Create, edit, and delete post categories |
@@ -159,6 +161,7 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 | Account | `/admin/account.php` | Change admin password; set up, manage, or disable TOTP 2FA |
 | Logs | `/admin/login-log.php` | Login attempt history and admin activity log |
 | Analytics | `/admin/analytics.php` | Views/day, top pages, devices, referrers, 404 errors; 7/30/90-day range |
+| Post preview | `/admin/post-preview.php?id={id}` | Renders any saved post through the full public theme without publishing; auth-gated, search-engine blocked |
 | XML-RPC API | `/admin/xmlrpc.php` | WordPress-compatible API for MarsEdit and similar clients |
 | REST API | `/admin/api/{resource}` | HTTP Basic Auth REST API for posts, pages, media, categories, tags, and settings |
 
@@ -340,7 +343,11 @@ Both platforms are independent — you can enable one, both, or neither.
 
 Set your GitHub profile URL in **Settings → GitHub** (e.g. `https://github.com/username`). When set, a GitHub icon link appears in the site footer between the Bluesky icon and the RSS icon, with `rel="me noopener"` for IndieAuth compatibility.
 
-When a post is syndicated, the URL of the Mastodon toot or Bluesky post is stored and displayed at the bottom of the public post page as a small "Also on: Mastodon / Bluesky" footer.
+When a post is syndicated, the URL of the Mastodon toot or Bluesky post is stored and displayed at the bottom of the public post page. Pills appear in this order: **Mastodon**, **Bluesky**, **Email**, then the Tinylytics Kudo button.
+
+### Email Reply
+
+Set a reply-to address in **Settings → Email Reply**. When set, an **Email** pill appears at the bottom of every post. Clicking it opens the reader's mail client with the `To:` address pre-filled and the subject set to `Re: [post title]`. Leave the field blank to hide the pill entirely.
 
 ---
 
