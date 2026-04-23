@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] — 2026-04-23
+
+### Added
+
+- **Newsletter signups** — new public `/subscribe.php` endpoint and a signup form partial rendered at the bottom of each post via `templates/partials/newsletter-form.php`; stores addresses in a new `newsletter_subscribers` table (schema v15) with honeypot, per-IP hourly rate limit, and HMAC-hashed IPs (reusing the analytics salt); admin page at `/admin/subscribers.php` lists subscribers with filter tabs (all / active / unsubscribed), unsubscribe/resubscribe/delete actions, and a CSV export that prefixes `'` to any cell starting with `=`, `+`, `-`, `@`, `\t`, or `\r` to prevent spreadsheet formula injection
+- **Newsletter toggle** — Settings → Newsletter checkbox (`newsletter_enabled`) controls whether the form is emitted during site rebuild; when off, the form is omitted from regenerated posts and `/subscribe.php` returns 404; existing subscriber records are always preserved so the list can be paused and resumed without loss
+- **Nginx hardening for `/subscribe.php`** — POST-only, dedicated rate-limit zone (`subscribe`, 1 r/m with burst 5), 4 KB request-body cap, `X-Content-Type-Options: nosniff`, and `Cache-Control: no-store`; mirrored in both `docker/nginx.conf` and `nginx.conf.example`
+
+### Rollback
+
+- **Pre-feature commit:** `dfa3b2647955a992810b5d376a80f58dfc14fa84` — checkout this commit to abandon the newsletter feature and return the tree to the state before it was added
+
+---
+
 ## [1.2.23] — 2026-04-20
 
 ### Added

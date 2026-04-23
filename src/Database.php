@@ -17,7 +17,7 @@ class Database
     private static array $settingsCache = [];
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 14;
+    private const SCHEMA_VERSION = 15;
 
     public function __construct(string $dbPath)
     {
@@ -400,6 +400,26 @@ class Database
         );
         $this->run(
             "CREATE INDEX IF NOT EXISTS idx_post_tags_post_id ON post_tags(post_id)"
+        );
+    }
+
+    private function applySchemaV15(): void
+    {
+        // Newsletter subscribers — collected by the public /subscribe.php endpoint.
+        // COLLATE NOCASE on email treats "Foo@bar.com" and "foo@bar.com" as duplicates.
+        $this->pdo->exec(<<<SQL
+            CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                email      TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+                status     TEXT    NOT NULL DEFAULT 'active',
+                source     TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                ip_hash    TEXT
+            )
+        SQL);
+        $this->pdo->exec(
+            "CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_created_at
+             ON newsletter_subscribers(created_at)"
         );
     }
 

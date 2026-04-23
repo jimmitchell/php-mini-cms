@@ -110,6 +110,13 @@ ob_start();
     <?php endif; ?>
 </article>
 
+<?php if (($settings['newsletter_enabled'] ?? '1') === '1'): ?>
+<?php
+$source = $post->slug;
+require __DIR__ . '/partials/newsletter-form.php';
+?>
+<?php endif; ?>
+
 <?php if (($settings['webmention_domain'] ?? '') !== ''): ?>
 <section class="webmentions" id="webmentions" data-url="<?= htmlspecialchars($canonical, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
     <h2 class="webmentions__title">Webmentions</h2>

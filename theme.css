@@ -762,6 +762,77 @@ audio { width: 100%; }
     .post-nav__next .post-nav__label { text-align: left; }
 }
 
+/* ── Newsletter signup ────────────────────────────────────────────────────── */
+.newsletter {
+    max-width: var(--max-content);
+    margin: 2.5rem auto 2rem;
+    padding: .75rem 1.5rem 1.25rem 1.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-chrome-bg);
+}
+.newsletter__banner {
+    margin: 0 0 1rem;
+    padding: .6rem .85rem;
+    border-radius: 4px;
+    font-size: .9rem;
+}
+.newsletter__banner--success {
+    background: color-mix(in srgb, var(--color-link) 10%, transparent);
+    color: var(--color-text);
+    border: 1px solid color-mix(in srgb, var(--color-link) 40%, transparent);
+}
+.newsletter__banner--error {
+    background: color-mix(in srgb, #dc2626 10%, transparent);
+    color: var(--color-text);
+    border: 1px solid color-mix(in srgb, #dc2626 40%, transparent);
+}
+.newsletter-form__label {
+    display: block;
+    font-size: .95rem;
+    font-weight: 600;
+    margin-bottom: .5rem;
+    color: var(--color-text);
+}
+.newsletter-form__row {
+    display: flex;
+    gap: .5rem;
+}
+.newsletter-form__input {
+    flex: 1;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font: inherit;
+    font-size: 1rem;
+    padding: .5rem .75rem;
+    outline: none;
+    transition: border-color .15s;
+    min-width: 0;
+}
+.newsletter-form__input:focus { border-color: var(--color-link); }
+.newsletter-form__button {
+    background: var(--color-link);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: .5rem 1rem;
+    cursor: pointer;
+    font: inherit;
+}
+.newsletter-form__honeypot {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+@media (max-width: 500px) {
+    .newsletter-form__row { flex-direction: column; }
+    .newsletter-form__button { width: 100%; }
+}
+
 /* ── Site footer ──────────────────────────────────────────────────────────── */
 .site-footer {
     border-top: 1px solid var(--color-chrome-border);
