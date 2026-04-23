@@ -71,7 +71,7 @@ A lightweight, static-output CMS written in PHP, inspired by Kirby. Content is a
 ├── data/                   ← BLOCKED: Nginx denies all access
 │   └── cms.db              ← SQLite database
 │
-├── fonts/                  ← Public: Figtree + Crimson Pro WOFF2 files
+├── fonts/                  ← Public: Figtree + Atkinson Hyperlegible Next WOFF2 files
 │   └── og/                 ← OG image fonts (Figtree-Regular/Bold.ttf)
 │
 ├── src/                    ← BLOCKED: Nginx denies all access
@@ -488,7 +488,7 @@ The Nginx config uses two rewrites for the date-URL block:
 - [x] Single post template with Open Graph meta
 - [x] Static page template
 - [x] Index/listing template with pagination
-- [x] Responsive CSS (single column; Figtree UI + Crimson Pro prose typefaces)
+- [x] Responsive CSS (single column; Figtree UI + Atkinson Hyperlegible Next prose typefaces)
 
 ### Phase 7 — Admin Polish & Settings ✓
 - [x] Settings screen + DB-backed site config
@@ -546,7 +546,7 @@ Features added after the initial build phases:
 | 404 Not Found page template | `templates/404.php` |
 | Probabilistic DB cleanup | `admin/bootstrap.php` |
 | Self-hosted Font Awesome (admin) | `admin/assets/font-awesome.min.css`, `admin/assets/fonts/` |
-| Figtree + Crimson Pro public typefaces | `fonts/`, `templates/base.php`, `theme.css` |
+| Figtree + Atkinson Hyperlegible Next public typefaces | `fonts/`, `templates/base.php`, `theme.css` |
 | CSP + security headers | `nginx.conf.example`, `docker/nginx.conf` |
 | Pages at `/pages/{slug}/` via Nginx | `src/Builder.php`, `nginx.conf.example` |
 | `theme.min.css` auto-generation | `src/Builder.php`, `admin/bootstrap.php` |

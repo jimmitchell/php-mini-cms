@@ -464,7 +464,7 @@ Log entries older than 90 days are pruned automatically on a ~1% probabilistic c
 /feed.json                  → JSON Feed 1.1
 /media/{filename}           → content/media/ alias
 /theme.css                  → public stylesheet
-/fonts/                     → Inter web font files
+/fonts/                     → Figtree + Atkinson Hyperlegible Next web font files
 ```
 
 Stale pagination pages and unpublished post/page files are removed automatically on rebuild.
@@ -486,7 +486,7 @@ The public theme is a single file, `theme.css`, with no build step. It uses CSS 
 
 Dark mode activates automatically when the system preference is `dark`. The toggle button in the header overrides this and persists the choice in `localStorage`. An inline script in `<head>` applies the stored preference before the stylesheet loads, preventing any flash of the wrong color scheme.
 
-The UI typeface is [Figtree](https://fonts.google.com/specimen/Figtree) and the prose body typeface is [Crimson Pro](https://fonts.google.com/specimen/Crimson+Pro) (both self-hosted variable WOFF2, OFL license). To add custom styles without editing `theme.css`, use **Settings → Custom CSS**.
+The UI typeface is [Figtree](https://fonts.google.com/specimen/Figtree) and the prose body typeface is [Atkinson Hyperlegible Next](https://fonts.google.com/specimen/Atkinson+Hyperlegible+Next) (both self-hosted variable WOFF2, OFL license). To add custom styles without editing `theme.css`, use **Settings → Custom CSS**.
 
 ---
 
@@ -508,7 +508,7 @@ clodd-cms/
 │   └── media/              # Uploaded files (not committed)
 ├── data/                   # SQLite database (not committed)
 ├── docker/                 # Docker-specific Nginx config, PHP ini, entrypoint
-├── fonts/                  # Figtree + Crimson Pro WOFF2 files + OG image fonts (fonts/og/)
+├── fonts/                  # Figtree + Atkinson Hyperlegible Next WOFF2 files + OG image fonts (fonts/og/)
 ├── src/                    # PHP source classes (namespace CMS\)
 │   ├── ActivityLog.php     # Admin activity logger
 │   ├── Auth.php            # Login, session, CSRF, rate limiting, TOTP 2FA

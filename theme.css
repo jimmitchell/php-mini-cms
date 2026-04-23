@@ -1,19 +1,37 @@
 /* ── Clodd CMS — Public Theme ─────────────────────────────────────────────── */
 
-/* ── Inter — self-hosted variable font (rsms.me/inter, OFL license) ─────────── */
+/* ── Figtree — self-hosted variable font (Google Fonts, OFL license) ─────────── */
 
 @font-face {
-    font-family: 'Inter';
-    src: url('/fonts/Inter-Variable.woff2') format('woff2');
-    font-weight: 100 900;
+    font-family: 'Figtree';
+    src: url('/fonts/Figtree-Variable.woff2') format('woff2');
+    font-weight: 300 900;
     font-style:  normal;
     font-display: swap;
 }
 
 @font-face {
-    font-family: 'Inter';
-    src: url('/fonts/Inter-Variable-Italic.woff2') format('woff2');
-    font-weight: 100 900;
+    font-family: 'Figtree';
+    src: url('/fonts/Figtree-Variable-Italic.woff2') format('woff2');
+    font-weight: 300 900;
+    font-style:  italic;
+    font-display: swap;
+}
+
+/* ── Atkinson Hyperlegible Next — self-hosted variable font (Google Fonts, OFL license) ── */
+
+@font-face {
+    font-family: 'Atkinson Hyperlegible Next';
+    src: url('/fonts/AtkinsonHyperlegibleNext-Variable.woff2') format('woff2');
+    font-weight: 200 800;
+    font-style:  normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Atkinson Hyperlegible Next';
+    src: url('/fonts/AtkinsonHyperlegibleNext-Variable-Italic.woff2') format('woff2');
+    font-weight: 200 800;
     font-style:  italic;
     font-display: swap;
 }
@@ -64,11 +82,11 @@
     --color-chrome-border: rgba(255,255,255,0.08);
 }
 
-html { font-size: 17px; scroll-behavior: smooth; overflow-y: scroll; }
+html { font-size: 18px; scroll-behavior: smooth; overflow-y: scroll; }
 
 
 body {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     line-height: 1.7;
     color: var(--color-text);
     background: var(--color-bg);
@@ -339,7 +357,7 @@ audio { width: 100%; }
 
 /* ── Prose styles ─────────────────────────────────────────────────────────── */
 .prose {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Atkinson Hyperlegible Next', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 1rem;
     /* line-height: 1.6; */
 }
@@ -352,7 +370,7 @@ audio { width: 100%; }
 .prose h4,
 .prose h5,
 .prose h6 {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Figtree', system-ui, -apple-system, sans-serif;
     line-height: 1.25;
     margin-top: 2em;
     margin-bottom: .5em;
@@ -393,7 +411,6 @@ audio { width: 100%; }
     width: 100%;
     border-collapse: collapse;
     margin-top: 1em;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: .95rem;
     margin-bottom: 1.5em;
 }
@@ -620,7 +637,7 @@ audio { width: 100%; }
 .footnotes {
     font-size: .85rem;
     color: var(--color-muted);
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Atkinson Hyperlegible Next', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .footnotes ol { padding-left: 1.5em; }
