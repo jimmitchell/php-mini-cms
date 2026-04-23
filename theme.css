@@ -789,7 +789,7 @@ audio { width: 100%; }
 }
 .newsletter-form__label {
     display: block;
-    font-size: .95rem;
+    font-size: .9rem;
     font-weight: 600;
     margin-bottom: .5rem;
     color: var(--color-text);
@@ -805,7 +805,7 @@ audio { width: 100%; }
     background: var(--color-bg);
     color: var(--color-text);
     font: inherit;
-    font-size: 1rem;
+    font-size: .9rem;
     padding: .5rem .75rem;
     outline: none;
     transition: border-color .15s;
@@ -820,6 +820,7 @@ audio { width: 100%; }
     padding: .5rem 1rem;
     cursor: pointer;
     font: inherit;
+    font-size: .9rem;
 }
 .newsletter-form__honeypot {
     position: absolute;
