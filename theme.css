@@ -552,7 +552,7 @@ audio { width: 100%; }
 .prose video,
 .prose audio { margin-top: 1.5em; border-radius: 6px; margin-bottom: 1.5em; }
 
-.prose img { box-shadow: 0 4px 20px rgba(0,0,0,0.09); }
+.prose img { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
 
 .prose figure { margin-top: 1.5em; }
 .prose figcaption {
@@ -561,6 +561,25 @@ audio { width: 100%; }
     margin-top: -1em;
     margin-bottom: 1.5em;
     text-align: center;
+}
+
+.prose img:not(.gallery img) {
+    max-width: 100%;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 6px;
+    border: 1px solid var(--color-border);
+}
+@media (min-width: 860px) {
+    .prose img:not(.gallery img) {
+        max-width: calc(100% + 6rem);
+        width: calc(100% + 6rem);
+        margin-left: -3rem;
+        margin-right: -3rem;
+        padding: 6px;
+        border: 1px solid var(--color-border);
+    }
 }
 
 /* ── Post list / index ────────────────────────────────────────────────────── */
