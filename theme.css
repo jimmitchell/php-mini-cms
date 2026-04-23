@@ -392,10 +392,20 @@ audio { width: 100%; }
 .prose li + li { margin-top: .4em; }
 
 .prose blockquote {
-    border-left: 3px solid var(--color-link);
-    padding-left: 1em;
-    color: var(--color-muted);
     font-style: italic;
+    position: relative;
+    padding: 1px 1em 1em 1em;
+    background: linear-gradient(135deg, var(--color-border) 0%, var(--color-bg) 100%);
+    border-left: 4px solid var(--color-link);
+    margin: 1.5em 0;
+    border-radius: 0 6px 6px 0;
+}
+
+.prose blockquote * {
+  position: relative;
+  z-index: 2;
+  color: var(--color-text);
+  opacity: 0.7;
 }
 
 .prose hr {
@@ -406,6 +416,7 @@ audio { width: 100%; }
 
 .prose strong { font-weight: 600; }
 .prose em     { font-style: italic; }
+.prose u { text-decoration: none; border-bottom: 1px solid var(--color-muted) }
 
 .prose table {
     width: 100%;
