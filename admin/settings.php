@@ -37,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'google_site_verification' => trim($_POST['google_site_verification'] ?? ''),
         'custom_css'               => $_POST['custom_css'] ?? '',
         'favicon_url'              => trim($_POST['favicon_url'] ?? ''),
-        'newsletter_enabled'       => isset($_POST['newsletter_enabled']) ? '1' : '0',
     ];
 
     if ($fields['site_title'] === '') {
@@ -377,25 +376,6 @@ $flash     = $auth->getFlash();
                 The content value from your Google Search Console verification meta tag
                 (e.g. <code>xxxxxxx...</code>). When set, a <code>&lt;meta name="google-site-verification"&gt;</code>
                 tag is added to the homepage only. Leave blank to disable.
-            </p>
-        </div>
-
-        <div class="panel">
-            <h2>Newsletter</h2>
-
-            <?php $_newsletterEnabled = ($_POST['newsletter_enabled'] ?? $settings['newsletter_enabled'] ?? '1') === '1'; ?>
-            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
-                <input type="checkbox" id="newsletter_enabled" name="newsletter_enabled" value="1"
-                       <?= $_newsletterEnabled ? 'checked' : '' ?>>
-                Show the newsletter signup form on posts
-            </label>
-            <p class="form-hint">
-                When enabled, a signup form is rendered at the bottom of each post and
-                <code>/subscribe.php</code> accepts submissions. When disabled, the form
-                is omitted from newly-built pages and the endpoint returns 404.
-                Subscriber records are always preserved — toggle this off to pause
-                collection without losing your list.
-                Saving this setting rebuilds all posts/pages.
             </p>
         </div>
 

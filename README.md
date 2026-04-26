@@ -30,7 +30,6 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **MarsEdit support** — full WordPress XML-RPC API at `/admin/xmlrpc.php`; write and publish from MarsEdit with post and page management
 - **Google Analytics** — optional GA4 integration; add a measurement ID in Settings to inject the tracking script
 - **Built-in analytics** — first-party page-view tracking via `navigator.sendBeacon`; no cookies or third-party services; IP addresses stored as HMAC-SHA256 hashes; data retained 90 days; dashboard shows views/day, top pages, device breakdown, referrers, and 404 errors; visit `/?ti=exclude` to opt out your own browser
-- **Newsletter signups** — optional opt-in form rendered at the bottom of each post; stores email addresses in the SQLite DB (not sent anywhere); honeypot + per-IP rate limit (5/hour in PHP, 1/min at Nginx) and HMAC-hashed IPs; admin panel at `/admin/subscribers.php` with unsubscribe/delete actions and formula-safe CSV export; toggle in Settings → Newsletter to enable/disable (rebuilds posts on save so the form appears or disappears site-wide)
 - **Custom CSS** — paste override styles directly in Settings; injected as a `<style>` block on every public page after the main stylesheet
 - **Dark / light mode** — system-preference aware with manual toggle; no flash on load
 - **Search** — client-side full-text search of posts at `/search/`; no server-side PHP required

@@ -405,22 +405,8 @@ class Database
 
     private function applySchemaV15(): void
     {
-        // Newsletter subscribers — collected by the public /subscribe.php endpoint.
-        // COLLATE NOCASE on email treats "Foo@bar.com" and "foo@bar.com" as duplicates.
-        $this->pdo->exec(<<<SQL
-            CREATE TABLE IF NOT EXISTS newsletter_subscribers (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                email      TEXT    NOT NULL UNIQUE COLLATE NOCASE,
-                status     TEXT    NOT NULL DEFAULT 'active',
-                source     TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                ip_hash    TEXT
-            )
-        SQL);
-        $this->pdo->exec(
-            "CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_created_at
-             ON newsletter_subscribers(created_at)"
-        );
+        // Retired: newsletter_subscribers table. Feature was removed before any
+        // prod deploy. Slot kept so SCHEMA_VERSION stays monotonic.
     }
 
     /** Insert or update a single settings row. */

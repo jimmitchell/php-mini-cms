@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] — 2026-04-26
+
+### Removed
+
+- **Newsletter signups** — entire feature removed before any prod deploy: `subscribe.php`, `templates/partials/newsletter-form.php`, `admin/subscribers.php`, the Settings → Newsletter panel, the `.newsletter*` CSS, and the Nginx `subscribe` rate-limit zone + `/subscribe.php` location (in `docker/nginx.conf`, `nginx.conf.example`, and `jimmitchell.org.nginx.conf`). The schema v15 slot is retained as a no-op tombstone so `SCHEMA_VERSION` stays monotonic; existing dev DBs keep the orphan `newsletter_subscribers` table (delete `data/cms.db` to drop it cleanly). Direction change: if newsletter signup is wanted later, an embedded SaaS form (e.g. EmailOctopus) avoids the operational cost of running a transactional mail sender.
+
+---
+
 ## [1.3.0] — 2026-04-23
 
 ### Added

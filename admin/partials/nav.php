@@ -11,7 +11,6 @@ $navItems = [
     '/admin/categories.php' => ['label' => 'Categories', 'icon' => 'fa-tag'],
     '/admin/tags.php'       => ['label' => 'Tags',       'icon' => 'fa-tags'],
     '/admin/media.php'      => ['label' => 'Media',      'icon' => 'fa-picture-o'],
-    '/admin/subscribers.php' => ['label' => 'Subscribers', 'icon' => 'fa-envelope-o'],
     '/admin/export.php'      => ['label' => 'Export',    'icon' => 'fa-download'],
     '/admin/settings.php'   => ['label' => 'Settings',  'icon' => 'fa-cog'],
     '/admin/account.php'    => ['label' => 'Account',   'icon' => 'fa-user'],
