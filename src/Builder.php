@@ -1011,6 +1011,20 @@ class Builder
         // Remove /* ... */ comments.
         $css = preg_replace('/\/\*[\s\S]*?\*\//', '', $css);
 
+        // Protect calc()/clamp()/min()/max() — they contain arithmetic
+        // operators (+ - * /) whose surrounding whitespace is significant
+        // and would otherwise be stripped by the structural-char regex below.
+        $tokens = [];
+        $css = preg_replace_callback(
+            '/\b(?:calc|clamp|min|max)\((?:[^()]+|\([^()]*\))*\)/i',
+            function ($m) use (&$tokens) {
+                $key          = "\0CSSFN" . count($tokens) . "\0";
+                $tokens[$key] = preg_replace('/\s+/', ' ', $m[0]);
+                return $key;
+            },
+            $css
+        );
+
         // Collapse all whitespace (spaces, tabs, newlines) to a single space.
         $css = preg_replace('/\s+/', ' ', $css);
 
@@ -1020,7 +1034,7 @@ class Builder
         // Drop the redundant semicolon before a closing brace.
         $css = str_replace(';}', '}', $css);
 
-        return trim($css);
+        return trim(strtr($css, $tokens));
     }
 
     private function removeFile(string $path): void

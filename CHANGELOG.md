@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.2] — 2026-04-26
+
+### Fixed
+
+- **CSS minifier preserves `calc()` operator spacing** — `Builder::minifyCss()` was stripping the spaces around `+` (and would have corrupted `~`) inside `calc()`, `clamp()`, `min()`, and `max()` because `+~` are also selector combinators in the structural-character regex. These functions are now tokenised to `\0CSSFN<n>\0` placeholders before whitespace collapse and restored at the end via `strtr`, so expressions like `calc(100% + 4rem)` survive minification intact
+
+### Changed
+
+- **Theme polish** in `theme.css`: content column widened to 830px (`--max-content`); pill-shaped tag/syndication/kudos chips (15px radius, slightly wider padding, tighter row gap); square corners on prose images, code blocks, blockquotes, post cards, embedded videos, and webmention replies; new wide-bleed treatment for in-prose images at ≥880px (extends `2rem` past the column on each side via `calc(100% + 4rem)`); blockquote inner text gets a subtle background-coloured `text-shadow` and `font-style: normal`; taxonomy archive header collapsed (smaller title, no bottom margin); footer inner width derived from `--max-content`; mobile `.site-main` top margin bumped to 2.5rem
+
+---
+
 ## [1.3.1] — 2026-04-26
 
 ### Removed
