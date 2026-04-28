@@ -391,8 +391,6 @@ audio { width: 100%; }
     margin-top: 1em;
 }
 
-.prose li + li { margin-top: .4em; }
-
 .prose blockquote {
     font-style: italic;
     position: relative;
