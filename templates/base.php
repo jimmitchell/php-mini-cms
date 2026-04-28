@@ -51,6 +51,12 @@ if (!function_exists('_e')) {
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<?php $tinylyticsCode = $settings['tinylytics_code'] ?? ''; ?>
+<?php if ($tinylyticsCode !== ''): ?>
+<?php $tinylyticsKudosEmoji = $settings['tinylytics_kudos_emoji'] ?? ''; ?>
+<?php $tinylyticsParams = $tinylyticsKudosEmoji !== '' ? '?kudos=' . rawurlencode($tinylyticsKudosEmoji) : ''; ?>
+<script src="https://tinylytics.app/embed/<?= _e($tinylyticsCode) ?>.js<?= $tinylyticsParams ?>" defer></script>
+<?php endif; ?>
 <?php $gaMeasurementId = $settings['ga_measurement_id'] ?? ''; ?>
 <?php if ($gaMeasurementId !== ''): ?>
 <!-- Google tag (gtag.js) -->
@@ -415,12 +421,6 @@ if (!function_exists('_e')) {
 
 }());
 </script>
-<?php $tinylyticsCode = $settings['tinylytics_code'] ?? ''; ?>
-<?php if ($tinylyticsCode !== ''): ?>
-<?php $tinylyticsKudosEmoji = $settings['tinylytics_kudos_emoji'] ?? ''; ?>
-<?php $tinylyticsParams = $tinylyticsKudosEmoji !== '' ? '?kudos=' . rawurlencode($tinylyticsKudosEmoji) : ''; ?>
-<script src="https://tinylytics.app/embed/<?= _e($tinylyticsCode) ?>.js<?= $tinylyticsParams ?>" defer></script>
-<?php endif; ?>
 <?php if (!empty($hasGallery)): ?>
 <script>
 (function () {
