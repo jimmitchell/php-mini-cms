@@ -11,6 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] — 2026-04-27
+
+### Added
+
+- **Micropub endpoint** — new public `/micropub.php` accepts new posts from any [W3C Micropub](https://www.w3.org/TR/micropub/) client (iA Writer, Quill, MarsEdit-via-Micropub, Drafts, etc.). Supports `application/x-www-form-urlencoded`, `application/json`, and `multipart/form-data` (with inline `photo` uploads routed through the existing `Media::upload()` validator). Maps Micropub `category[]` values to existing CMS categories by slug match, falling back to creating tags. Honors `published`, `post-status`, and `mp-slug`. Reuses the same publish flow as the admin UI — static page is built, neighbors and shared resources are rebuilt, and Mastodon/Bluesky syndication runs on first publish.
+- **Micropub admin page** — new `/admin/micropub.php` (with sidebar nav link) generates, replaces, or revokes the bearer token; token operations trigger a full static rebuild so the discovery `<link rel="micropub">` propagates immediately. Includes iA Writer setup instructions and an explicit warning that the **site root URL** (not the endpoint URL) is what the client must be configured with.
+- **Micropub discovery tag** — `templates/base.php` emits `<link rel="micropub" href="…">` in the `<head>` of every public page when a token is configured, so Micropub clients can auto-discover the endpoint from the site root.
+- **Nginx `location = /micropub.php`** block in both `docker/nginx.conf` and `nginx.conf.example`: limited to `GET POST`, with `HTTP_AUTHORIZATION` explicitly forwarded to PHP-FPM (the default `fastcgi_params` does not pass it).
+
+### Auth
+
+- Single long-lived bearer token stored in `settings.micropub_token` (32 random bytes, base64url). Compared with `hash_equals()`. Failed-auth attempts share the existing `login_attempts` table so they're subject to the same per-IP rate limit and lockout window as the admin login.
+
+---
+
 ## [1.3.2] — 2026-04-26
 
 ### Fixed
