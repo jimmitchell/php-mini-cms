@@ -139,6 +139,8 @@ nginx -t && systemctl reload nginx
 
 > **Analytics beacon:** `track.php` requires its own `location = /track.php` PHP-FPM block with `limit_req` rate limiting and `limit_except POST` to reject non-POST requests. The example config (`nginx.conf.example`) already includes this block — do not remove it or let the `/admin/` catch-all handle it.
 
+> **Micropub endpoint:** `micropub.php` requires its own `location = /micropub.php` PHP-FPM block that explicitly forwards `HTTP_AUTHORIZATION` (`fastcgi_param HTTP_AUTHORIZATION $http_authorization;`). Without it, PHP-FPM does not see the bearer token and every request returns 401. The example config already includes this block.
+
 ---
 
 ## 7 — TLS certificate (Let's Encrypt)

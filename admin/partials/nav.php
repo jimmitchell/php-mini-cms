@@ -13,6 +13,7 @@ $navItems = [
     '/admin/media.php'      => ['label' => 'Media',      'icon' => 'fa-picture-o'],
     '/admin/export.php'      => ['label' => 'Export',    'icon' => 'fa-download'],
     '/admin/settings.php'   => ['label' => 'Settings',  'icon' => 'fa-cog'],
+    '/admin/micropub.php'   => ['label' => 'Micropub',  'icon' => 'fa-cloud-upload'],
     '/admin/account.php'    => ['label' => 'Account',   'icon' => 'fa-user'],
     '/admin/login-log.php'  => ['label' => 'Logs',      'icon' => 'fa-list'],
 ];

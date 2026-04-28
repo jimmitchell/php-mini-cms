@@ -28,6 +28,7 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Outgoing webmentions** — CLI script (`bin/send-webmentions.php`) discovers endpoints and sends pings for all external links in published posts; safe to schedule via cron
 - **WordPress XML export** — download all posts (with categories, tags, and optional drafts) as a WXR file importable via WordPress Tools → Import
 - **MarsEdit support** — full WordPress XML-RPC API at `/admin/xmlrpc.php`; write and publish from MarsEdit with post and page management
+- **Micropub / iA Writer support** — W3C Micropub endpoint at `/micropub.php`; bearer-token auth, JSON / form / multipart payloads, inline photo uploads, automatic endpoint discovery via `<link rel="micropub">`. Works with iA Writer, Quill, Drafts, and other Micropub clients
 - **Google Analytics** — optional GA4 integration; add a measurement ID in Settings to inject the tracking script
 - **Built-in analytics** — first-party page-view tracking via `navigator.sendBeacon`; no cookies or third-party services; IP addresses stored as HMAC-SHA256 hashes; data retained 90 days; dashboard shows views/day, top pages, device breakdown, referrers, and 404 errors; visit `/?ti=exclude` to opt out your own browser
 - **Custom CSS** — paste override styles directly in Settings; injected as a `<style>` block on every public page after the main stylesheet
@@ -164,6 +165,7 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 | Post preview | `/admin/post-preview.php?id={id}` | Renders any saved post through the full public theme without publishing; auth-gated, search-engine blocked |
 | XML-RPC API | `/admin/xmlrpc.php` | WordPress-compatible API for MarsEdit and similar clients |
 | REST API | `/admin/api/{resource}` | HTTP Basic Auth REST API for posts, pages, media, categories, tags, and settings |
+| Micropub | `/admin/micropub.php` | Generate / revoke the bearer token for the public Micropub endpoint (`/micropub.php`) |
 
 ### Security
 
@@ -396,6 +398,49 @@ The CMS exposes a WordPress-compatible XML-RPC API at `/admin/xmlrpc.php`. In Ma
 3. **Username / Password:** your admin credentials
 
 MarsEdit will show both a **Posts** and a **Pages** section. All post and page CRUD operations, media uploads, and the media library work from MarsEdit. The endpoint also supports the MetaWeblog API (for clients that prefer it) at the same URL.
+
+---
+
+## Micropub / iA Writer
+
+The CMS exposes a [W3C Micropub](https://www.w3.org/TR/micropub/) endpoint at `/micropub.php` for publishing from iA Writer and other Micropub clients (Quill, Drafts, etc.). Auth is a single long-lived bearer token issued from the admin panel.
+
+### Setup
+
+1. **Generate a token** — open **Admin → Micropub** and click **Generate token**. Copy the token immediately (it is not shown again). The page also triggers a static rebuild so the discovery `<link rel="micropub">` propagates into every published page.
+2. **Set Site URL** — in **Settings**, make sure `Site URL` is set to the public absolute URL of the site. Micropub clients use this URL for endpoint discovery; entering the endpoint URL directly will hang iA Writer.
+3. **Add the account in iA Writer** — Preferences → Accounts → Add Account → **Micropub**. URL is the **site root URL** (not the endpoint). When prompted, choose **Enter Token Manually** and paste the token.
+
+### Request shapes
+
+The endpoint accepts all three Micropub content types:
+
+| Content-Type | Format |
+|--------------|--------|
+| `application/x-www-form-urlencoded` | `h=entry`, `name=…`, `content=…`, `category[]=…`, `mp-slug=…`, `published=…`, `post-status=draft\|published` |
+| `application/json` | `{type: ["h-entry"], properties: {name: […], content: […], category: […], …}}` |
+| `multipart/form-data` | Same as form-encoded plus one or many `photo` file parts (uploaded via the existing media validator and prepended to the post body as Markdown image lines) |
+
+`?q=config` returns the standard config object including the media-endpoint URL.
+
+### Category mapping
+
+Micropub clients send all taxonomy as flat `category` values. For each value, the endpoint:
+
+1. Slugifies the value.
+2. If a row exists in `categories` with that slug → attaches as a category.
+3. Otherwise → attaches as a tag (creating the tag row if needed).
+
+Pre-create your categories in **Admin → Categories** to have matching client-supplied tags promoted automatically.
+
+### Response
+
+| Status | Meaning |
+|--------|---------|
+| `201 Created` + `Location: <post URL>` | Post saved (drafts return the admin edit URL) |
+| `400 Bad Request` | Malformed payload, missing `content`/`photo`, or unsupported `h` type |
+| `401 Unauthorized` | Missing or invalid bearer token (also `WWW-Authenticate: Bearer realm="Micropub"`) |
+| `429 Too Many Requests` | Per-IP lockout from too many failed auth attempts (shares `login_attempts` with the admin login) |
 
 ---
 

@@ -136,6 +136,10 @@ if (!function_exists('_e')) {
     <link rel="webmention" href="https://webmention.io/<?= _e($webmentionDomain) ?>/webmention">
     <link rel="pingback" href="https://webmention.io/xmlrpc">
     <?php endif; ?>
+    <!-- Micropub -->
+    <?php if (($settings['micropub_token'] ?? '') !== ''): ?>
+    <link rel="micropub" href="<?= _e($siteUrl . '/micropub.php') ?>">
+    <?php endif; ?>
     <!-- Anti-FOUC: apply saved/system theme before CSS renders to avoid flash -->
     <script>(function(){var t=localStorage.getItem('theme');var sys=window.matchMedia('(prefers-color-scheme:dark)').matches;if(t==='dark'||(t!=='light'&&sys)){document.documentElement.setAttribute('data-theme','dark');}else{document.documentElement.setAttribute('data-theme','light');}})();</script>
     <?php if (!empty($criticalCss)): ?>
