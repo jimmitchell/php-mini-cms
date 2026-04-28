@@ -409,7 +409,7 @@ audio { width: 100%; }
   color: var(--color-text);
   opacity: 0.8;
   text-shadow: 0 1px 0 var(--color-bg);
-  font-style: normal;
+  font-style: italic;
 }
 
 .prose hr {
@@ -585,11 +585,12 @@ audio { width: 100%; }
 
 .prose figure { margin-top: 1.5em; }
 .prose figcaption {
-    font-size: .75rem;
+    font-size: .825rem;
     color: var(--color-muted);
-    margin-top: -1em;
-    margin-bottom: 1.5em;
+    margin-top: -2em;
+    margin-bottom: 2em;
     text-align: center;
+    font-style: italic;
 }
 
 /* ── Post list / index ────────────────────────────────────────────────────── */
@@ -702,7 +703,7 @@ audio { width: 100%; }
     align-items: center;
     gap: .275rem;
     margin-top: 2rem;
-    font-size: .825rem;
+    font-size: .75rem;
     color: var(--color-muted);
 }
 
