@@ -829,7 +829,7 @@ audio { width: 100%; }
 .site-footer__feed svg,
 .site-footer__mastodon svg,
 .site-footer__bluesky svg,
-.site-footer__github svg { width: 1rem; height: 1rem; }
+.site-footer__github svg { width: .9rem; height: .9rem; }
 
 .site-footer__feed:hover     { color: #f26522; }
 .site-footer__mastodon:hover { color: #6364ff; }
