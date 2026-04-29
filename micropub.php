@@ -104,6 +104,27 @@ function mp_authenticate(\CMS\Database $db, array $config): void
     }
 }
 
+// ── Post resolution by URL ──────────────────────────────────────────────────
+
+/**
+ * Resolve a public post URL to a Post.
+ *
+ * Accepts URLs like https://example.com/2026/04/28/my-slug/ — the slug is the
+ * final non-empty path segment. Slugs are unique across posts, so the date
+ * portion is informational only.
+ */
+function mp_resolve_post_by_url(\CMS\Database $db, string $url): ?\CMS\Post
+{
+    $url = trim($url);
+    if ($url === '') return null;
+    $path = parse_url($url, PHP_URL_PATH);
+    if (!is_string($path)) return null;
+    $segments = array_values(array_filter(explode('/', $path), fn($s) => $s !== ''));
+    if (empty($segments)) return null;
+    $slug = end($segments);
+    return \CMS\Post::findBySlug($db, (string) $slug);
+}
+
 // ── GET: configuration queries ──────────────────────────────────────────────
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -131,61 +152,325 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     mp_error('invalid_request', 'Method not allowed', 405);
 }
 
-// ── POST: create a new post ─────────────────────────────────────────────────
+// ── POST: dispatch on action (create | update | delete) ────────────────────
 
 mp_authenticate($db, $config);
 
 $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
 $properties  = [];
 $photoFiles  = [];
+$jsonBody    = null;
+$action      = '';
+$updateOps   = ['replace' => [], 'add' => [], 'delete' => []];
+$targetUrl   = '';
 
 if (stripos($contentType, 'application/json') !== false) {
-    $body = json_decode($_mpRawBody, true);
-    if (!is_array($body)) {
+    $jsonBody = json_decode($_mpRawBody, true);
+    if (!is_array($jsonBody)) {
         mp_error('invalid_request', 'Malformed JSON body');
     }
 
-    $type = $body['type'][0] ?? null;
-    if ($type !== 'h-entry') {
-        mp_error('invalid_request', 'Only h-entry is supported');
-    }
+    if (isset($jsonBody['action']) && is_string($jsonBody['action'])) {
+        $action    = strtolower($jsonBody['action']);
+        $targetUrl = isset($jsonBody['url']) && is_string($jsonBody['url']) ? $jsonBody['url'] : '';
 
-    $rawProps = $body['properties'] ?? [];
-    if (!is_array($rawProps)) {
-        mp_error('invalid_request', 'properties must be an object');
-    }
-
-    foreach ($rawProps as $key => $value) {
-        $properties[$key] = is_array($value) ? array_values($value) : [$value];
-    }
-} else {
-    if (($_POST['h'] ?? '') !== 'entry') {
-        mp_error('invalid_request', 'Only h=entry is supported');
-    }
-
-    foreach ($_POST as $key => $value) {
-        if ($key === 'h' || $key === 'access_token') continue;
-        $properties[$key] = is_array($value) ? array_values($value) : [(string) $value];
-    }
-
-    if (!empty($_FILES['photo'])) {
-        $f = $_FILES['photo'];
-        if (is_array($f['name'])) {
-            $count = count($f['name']);
-            for ($i = 0; $i < $count; $i++) {
-                if ($f['error'][$i] === UPLOAD_ERR_OK) {
-                    $photoFiles[] = [
-                        'name'     => $f['name'][$i],
-                        'tmp_name' => $f['tmp_name'][$i],
-                        'size'     => (int) $f['size'][$i],
-                        'error'    => (int) $f['error'][$i],
-                    ];
+        if ($action === 'update') {
+            foreach (['replace', 'add', 'delete'] as $op) {
+                if (!isset($jsonBody[$op])) continue;
+                $val = $jsonBody[$op];
+                // `delete` may be either {prop: [vals]} or [prop, prop] (whole-property removal).
+                if ($op === 'delete' && is_array($val) && array_is_list($val)) {
+                    foreach ($val as $prop) {
+                        if (is_string($prop)) $updateOps['delete'][$prop] = [];
+                    }
+                    continue;
+                }
+                if (!is_array($val)) {
+                    mp_error('invalid_request', "{$op} must be an object");
+                }
+                foreach ($val as $prop => $vals) {
+                    $updateOps[$op][$prop] = is_array($vals) ? array_values($vals) : [$vals];
                 }
             }
-        } elseif ($f['error'] === UPLOAD_ERR_OK) {
-            $photoFiles[] = $f;
+        }
+    } else {
+        $action = 'create';
+        $type   = $jsonBody['type'][0] ?? null;
+        if ($type !== 'h-entry') {
+            mp_error('invalid_request', 'Only h-entry is supported');
+        }
+        $rawProps = $jsonBody['properties'] ?? [];
+        if (!is_array($rawProps)) {
+            mp_error('invalid_request', 'properties must be an object');
+        }
+        foreach ($rawProps as $key => $value) {
+            $properties[$key] = is_array($value) ? array_values($value) : [$value];
         }
     }
+} else {
+    // Form-encoded / multipart. Spec allows action=delete (and action=undelete,
+    // unsupported here). action=update requires JSON because it has nested ops.
+    if (isset($_POST['action']) && is_string($_POST['action']) && $_POST['action'] !== '') {
+        $action    = strtolower($_POST['action']);
+        $targetUrl = isset($_POST['url']) && is_string($_POST['url']) ? $_POST['url'] : '';
+        if ($action === 'update') {
+            mp_error('invalid_request', 'update requires application/json');
+        }
+    } else {
+        $action = 'create';
+        if (($_POST['h'] ?? '') !== 'entry') {
+            mp_error('invalid_request', 'Only h=entry is supported');
+        }
+
+        foreach ($_POST as $key => $value) {
+            if ($key === 'h' || $key === 'access_token') continue;
+            $properties[$key] = is_array($value) ? array_values($value) : [(string) $value];
+        }
+
+        if (!empty($_FILES['photo'])) {
+            $f = $_FILES['photo'];
+            if (is_array($f['name'])) {
+                $count = count($f['name']);
+                for ($i = 0; $i < $count; $i++) {
+                    if ($f['error'][$i] === UPLOAD_ERR_OK) {
+                        $photoFiles[] = [
+                            'name'     => $f['name'][$i],
+                            'tmp_name' => $f['tmp_name'][$i],
+                            'size'     => (int) $f['size'][$i],
+                            'error'    => (int) $f['error'][$i],
+                        ];
+                    }
+                }
+            } elseif ($f['error'] === UPLOAD_ERR_OK) {
+                $photoFiles[] = $f;
+            }
+        }
+    }
+}
+
+// ── action: delete ──────────────────────────────────────────────────────────
+
+if ($action === 'delete') {
+    if ($targetUrl === '') {
+        mp_error('invalid_request', 'url is required');
+    }
+    $post = mp_resolve_post_by_url($db, $targetUrl);
+    if (!$post) {
+        mp_error('invalid_request', 'post not found for url', 404);
+    }
+
+    $wasPublished = $post->status === 'published';
+    $prev = $wasPublished ? \CMS\Post::findPrev($db, $post) : null;
+    $next = $wasPublished ? \CMS\Post::findNext($db, $post) : null;
+    $title = $post->title;
+    $id    = $post->id;
+
+    $post->delete();
+    // buildPost() with status !== 'published' removes the output file and rebuilds taxonomy archives.
+    $post->status = 'draft';
+    $builder->buildPost($post);
+    if ($wasPublished) {
+        if ($prev) $builder->buildPost($prev);
+        if ($next) $builder->buildPost($next);
+        $builder->rebuildSharedResources();
+    }
+
+    $activityLog->log('delete', 'post', $id, $title . ' (via micropub)');
+
+    http_response_code(204);
+    exit;
+}
+
+// ── action: update ──────────────────────────────────────────────────────────
+
+if ($action === 'update') {
+    if ($targetUrl === '') {
+        mp_error('invalid_request', 'url is required');
+    }
+    $post = mp_resolve_post_by_url($db, $targetUrl);
+    if (!$post) {
+        mp_error('invalid_request', 'post not found for url', 404);
+    }
+
+    // Snapshot fields used to decide neighbor/shared-resource rebuilds.
+    $snapTitle       = $post->title;
+    $snapSlug        = $post->slug;
+    $snapPublishedAt = $post->published_at;
+    $snapExcerpt     = $post->excerpt;
+    $wasPublished    = $post->status === 'published';
+
+    $oldDir = ($wasPublished && $post->published_at !== null)
+        ? rtrim($config['paths']['output'], '/\\') . '/posts/' . \CMS\Post::datePath($post->published_at, $post->slug, $db->getSetting('timezone', ''))
+        : null;
+
+    // ── Apply replace ops ────────────────────────────────────────────────────
+    //
+    // Supported properties: name, content, mp-slug, category, post-status.
+    // `published` is intentionally frozen on update.
+
+    $rejectFrozen = function (array $ops, string $opName): void {
+        foreach (array_keys($ops) as $prop) {
+            if ($prop === 'published') {
+                mp_error('invalid_request', "cannot {$opName} published on existing post");
+            }
+        }
+    };
+    $rejectFrozen($updateOps['replace'], 'replace');
+    $rejectFrozen($updateOps['add'],     'add');
+    $rejectFrozen($updateOps['delete'],  'delete');
+
+    $touchedTerms = false;
+    $newCategoryIds = array_map('intval', array_column($post->categories, 'id'));
+    $newTagIds      = array_map('intval', array_column($post->tags, 'id'));
+
+    $applyCategories = function (array $cats) use ($db, &$newCategoryIds, &$newTagIds): void {
+        $newCategoryIds = [];
+        $newTagIds      = [];
+        foreach ($cats as $cat) {
+            $cat = (string) $cat;
+            $catSlug = \CMS\Helpers::slugify($cat);
+            if ($catSlug === '' || $catSlug === 'untitled') continue;
+            $existingCat = $db->selectOne('SELECT id FROM categories WHERE slug = :slug', [':slug' => $catSlug]);
+            if ($existingCat) {
+                $newCategoryIds[] = (int) $existingCat['id'];
+                continue;
+            }
+            $existingTag = $db->selectOne('SELECT id FROM tags WHERE slug = :slug', [':slug' => $catSlug]);
+            if ($existingTag) {
+                $newTagIds[] = (int) $existingTag['id'];
+            } else {
+                $newTagIds[] = (int) $db->insert('tags', ['name' => $cat, 'slug' => $catSlug]);
+            }
+        }
+    };
+
+    foreach ($updateOps['replace'] as $prop => $vals) {
+        switch ($prop) {
+            case 'name':
+                $title = is_string($vals[0] ?? null) ? trim($vals[0]) : '';
+                if ($title === '') mp_error('invalid_request', 'name cannot be empty');
+                $post->title = $title;
+                break;
+
+            case 'content':
+                $first = $vals[0] ?? null;
+                if (is_array($first)) {
+                    $picked = $first['markdown'] ?? $first['html'] ?? $first['value'] ?? '';
+                    $post->content = is_string($picked) ? $picked : '';
+                } else {
+                    $post->content = (string) $first;
+                }
+                break;
+
+            case 'mp-slug':
+                $newSlug = \CMS\Helpers::slugify((string) ($vals[0] ?? ''));
+                if ($newSlug === '' || $newSlug === 'untitled') {
+                    mp_error('invalid_request', 'mp-slug invalid');
+                }
+                if ($newSlug !== $post->slug) {
+                    $clash = \CMS\Post::findBySlug($db, $newSlug);
+                    if ($clash && $clash->id !== $post->id) {
+                        mp_error('invalid_request', 'slug already in use');
+                    }
+                    $post->slug = $newSlug;
+                }
+                break;
+
+            case 'category':
+                $applyCategories($vals);
+                $touchedTerms = true;
+                break;
+
+            case 'post-status':
+                $newStatus = (string) ($vals[0] ?? '');
+                if ($newStatus === 'draft') {
+                    $post->status = 'draft';
+                } elseif ($newStatus === 'published') {
+                    $post->status = 'published';
+                    if ($post->published_at === null) {
+                        // Going draft → published for the first time: stamp now.
+                        $post->published_at = date('Y-m-d H:i:s');
+                    }
+                } else {
+                    mp_error('invalid_request', 'post-status must be draft or published');
+                }
+                break;
+
+            default:
+                // Silently ignore unsupported properties (per spec, servers MAY).
+                break;
+        }
+    }
+
+    // `add` for category appends; for everything else, treat as replace-like.
+    foreach ($updateOps['add'] as $prop => $vals) {
+        if ($prop === 'category') {
+            $current = array_map(fn($c) => (string) $c['name'], $post->categories);
+            $merged  = array_values(array_unique(array_merge($current, array_map('strval', $vals))));
+            $applyCategories($merged);
+            $touchedTerms = true;
+        }
+    }
+
+    // `delete` per-property: only category clearing is meaningful here.
+    foreach ($updateOps['delete'] as $prop => $vals) {
+        if ($prop === 'category') {
+            // delete: [category] (empty $vals) → clear all
+            // delete: {category: [a, b]}      → remove specific values
+            if (empty($vals)) {
+                $applyCategories([]);
+            } else {
+                $remove  = array_map('strval', $vals);
+                $current = array_map(fn($c) => (string) $c['name'], $post->categories);
+                $kept    = array_values(array_diff($current, $remove));
+                $applyCategories($kept);
+            }
+            $touchedTerms = true;
+        }
+    }
+
+    if (!$post->save()) {
+        mp_error('server_error', 'failed to save update', 500);
+    }
+    if ($touchedTerms) {
+        $post->saveTerms($newCategoryIds, $newTagIds);
+    }
+
+    // Remove stale output file if the slug changed (old date-path no longer matches).
+    if ($oldDir !== null && $post->slug !== $snapSlug) {
+        $oldFile = $oldDir . '/index.html';
+        if (is_file($oldFile)) @unlink($oldFile);
+        if (is_dir($oldDir))   @rmdir($oldDir);
+    }
+
+    if ($post->status === 'published' || $wasPublished) {
+        $builder->buildPost($post);
+        $neighborsAffected = !$wasPublished
+            || $post->status !== 'published'
+            || $post->title  !== $snapTitle
+            || $post->slug   !== $snapSlug;
+        if ($neighborsAffected) {
+            if ($p = \CMS\Post::findPrev($db, $post)) $builder->buildPost($p);
+            if ($n = \CMS\Post::findNext($db, $post)) $builder->buildPost($n);
+        }
+        $builder->rebuildSharedResources();
+    }
+
+    $activityLog->log('update', 'post', $post->id, $post->title . ' (via micropub)');
+
+    $siteUrl = rtrim($db->getSetting('site_url', ''), '/');
+    $cfgTz   = $db->getSetting('timezone', '');
+    $location = ($post->status === 'published' && $post->published_at !== null && $siteUrl !== '')
+        ? $siteUrl . '/' . \CMS\Post::datePath($post->published_at, $post->slug, $cfgTz) . '/'
+        : '';
+
+    http_response_code(200);
+    if ($location !== '') header('Location: ' . $location);
+    exit;
+}
+
+if ($action !== 'create') {
+    mp_error('invalid_request', "unsupported action: {$action}");
 }
 
 // ── Property accessors ──────────────────────────────────────────────────────

@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] — 2026-04-28
+
+### Added
+
+- **Micropub update + delete actions** — `micropub.php` now dispatches on the spec's `action` field in addition to create. `action=delete` (form-encoded or JSON) accepts a post URL, removes the post, deletes its rendered output, and rebuilds neighbors and shared resources. `action=update` (JSON only) supports `replace`, `add`, and `delete` operations on `name`, `content`, `mp-slug`, `category`, and `post-status`; `published` is intentionally frozen on existing posts. Slug changes also clean up the stale rendered file under the old date-path. Both actions reuse the bearer-token auth and rate-limit flow already used for create.
+- **Post URL → Post resolution** — new `mp_resolve_post_by_url()` parses an incoming post URL and looks the post up by its final path segment via `Post::findBySlug()`. Slugs are unique across posts so the date portion of the URL is informational only.
+
+### Changed
+
+- **Theme** — content column narrowed from 830px to 750px (`--max-content`). Site footer social icons shrunk from 1rem to 0.9rem. Removed extra spacing between adjacent prose list items.
+
+---
+
 ## [1.4.0] — 2026-04-27
 
 ### Added

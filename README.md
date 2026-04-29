@@ -423,6 +423,17 @@ The endpoint accepts all three Micropub content types:
 
 `?q=config` returns the standard config object including the media-endpoint URL.
 
+### Update and delete
+
+The endpoint also accepts the spec's `action` field for managing existing posts. The `url` field must be a public post URL — the slug (final non-empty path segment) is what's matched.
+
+| Action | Content-Type | Body |
+|--------|--------------|------|
+| `delete` | form-encoded **or** JSON | `action=delete`, `url=<post URL>` |
+| `update` | **JSON only** | `{"action": "update", "url": "<post URL>", "replace": {…}, "add": {…}, "delete": {…}}` |
+
+`update` supports `replace`, `add`, and `delete` operations against `name`, `content`, `mp-slug`, `category`, and `post-status` (`draft`/`published`). `published` is frozen on existing posts. Renaming via `mp-slug` also removes the stale rendered file under the old date-path. Successful delete returns `204 No Content`; successful update returns `200 OK` with a `Location:` header pointing at the (possibly new) post URL.
+
 ### Category mapping
 
 Micropub clients send all taxonomy as flat `category` values. For each value, the endpoint:

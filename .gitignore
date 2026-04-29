@@ -38,6 +38,7 @@ composer.phar
 .DS_Store
 Thumbs.db
 .sfdx
+.claude
 
 # Claude files
 CLAUDE.md
