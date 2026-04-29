@@ -208,6 +208,38 @@ if (stripos($contentType, 'application/json') !== false) {
         }
     }
 } else {
+    // Media-endpoint upload: multipart request with a `file` field, no h-entry,
+    // no action. Stores the file and returns 201 Created + Location.
+    if (
+        empty($_POST['action'])
+        && empty($_POST['h'])
+        && !empty($_FILES['file'])
+        && (!is_array($_FILES['file']['name']) || $_FILES['file']['name'] !== [])
+    ) {
+        $f = $_FILES['file'];
+        if (is_array($f['name'])) {
+            // Take the first file if a client sends file[].
+            $f = [
+                'name'     => $f['name'][0]     ?? '',
+                'tmp_name' => $f['tmp_name'][0] ?? '',
+                'size'     => (int) ($f['size'][0]  ?? 0),
+                'error'    => (int) ($f['error'][0] ?? UPLOAD_ERR_NO_FILE),
+            ];
+        }
+        if (($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            mp_error('invalid_request', 'file upload error');
+        }
+        try {
+            $mediaService = new \CMS\Media($db, $config['paths']['content'] . '/media');
+            $result       = $mediaService->upload($f);
+        } catch (\RuntimeException $e) {
+            mp_error('invalid_request', $e->getMessage(), 422);
+        }
+        http_response_code(201);
+        header('Location: ' . $result['url']);
+        exit;
+    }
+
     // Form-encoded / multipart. Spec allows action=delete (and action=undelete,
     // unsupported here). action=update requires JSON because it has nested ops.
     if (isset($_POST['action']) && is_string($_POST['action']) && $_POST['action'] !== '') {
