@@ -99,9 +99,8 @@ ob_start();
 </div>
 <?php
 $bodyContent = ob_get_clean();
-$wideLayout  = true;
 
 echo $render('base.php', compact(
     'pageTitle', 'description', 'canonical', 'ogType', 'ogImageUrl', 'bodyContent',
-    'settings', 'navPages', 'siteUrl', 'render', 'wideLayout', 'extraFeedLinks'
+    'settings', 'navPages', 'siteUrl', 'render', 'extraFeedLinks'
 ));

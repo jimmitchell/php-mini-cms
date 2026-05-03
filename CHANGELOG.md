@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.3] — 2026-05-03
+
+### Changed
+
+- **Theme** — taxonomy archives (tag and category pages) now also render post tiles in the same single-column, post-width layout as the home and search pages. No template still uses the wide two-column post-list grid.
+
+---
+
 ## [1.5.2] — 2026-05-03
 
 ### Changed
