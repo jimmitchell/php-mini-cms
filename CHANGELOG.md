@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.2] — 2026-05-03
+
+### Changed
+
+- **Theme** — home and search pages now render post tiles in a single column matching the post content width, instead of a wider two-column grid. Taxonomy archives keep the two-column wide layout. Container widths fine-tuned: `--max-content` 750px → 740px, `--max-wide` 900px → 820px.
+
+---
+
+## [1.5.1] — 2026-04-28
+
+### Added
+
+- **Micropub media endpoint** — multipart POSTs with a `file` field (and no h-entry / no action) are now treated as media-endpoint uploads. The file is stored via `Media::upload` and the response is `201 Created` with a `Location` header pointing at the stored URL, letting Micropub clients upload images independently of post creation and reference the returned URL in a subsequent JSON h-entry.
+
+---
+
 ## [1.5.0] — 2026-04-28
 
 ### Added

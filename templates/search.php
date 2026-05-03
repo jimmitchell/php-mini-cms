@@ -84,9 +84,8 @@ ob_start();
 </script>
 <?php
 $bodyContent = ob_get_clean();
-$wideLayout  = true;
 
 echo $render('base.php', compact(
     'pageTitle', 'description', 'canonical', 'ogType', 'bodyContent',
-    'settings', 'navPages', 'siteUrl', 'render', 'wideLayout'
+    'settings', 'navPages', 'siteUrl', 'render'
 ));

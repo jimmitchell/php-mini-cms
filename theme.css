@@ -49,8 +49,8 @@
     --color-link:       #0176d3;
     --color-header-bg:  #1a1a1a;
     --color-chrome-border: var(--color-border);
-    --max-content:      750px;
-    --max-wide:         900px;
+    --max-content:      740px;
+    --max-wide:         820px;
 }
 
 /* ── Dark mode tokens ──────────────────────────────────────────────────────── */
@@ -597,6 +597,10 @@ audio { width: 100%; }
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
     align-items: stretch;
+}
+
+.site-main:not(.site-main--wide) .post-list {
+    grid-template-columns: 1fr;
 }
 
 .post-card {
