@@ -1083,10 +1083,27 @@ class Builder
     private function refreshContext(): void
     {
         $this->settings = $this->db->getAllSettings();
-        $this->navPages = array_values(array_filter(
+
+        $navAll = array_values(array_filter(
             Page::findAll($this->db, 'published'),
             fn($p) => $p->nav_order > 0
         ));
+
+        $byParent = [];
+        foreach ($navAll as $p) {
+            if ($p->parent_id !== null) {
+                $byParent[$p->parent_id][] = $p;
+            }
+        }
+
+        $top = [];
+        foreach ($navAll as $p) {
+            if ($p->parent_id === null) {
+                $p->children = $byParent[$p->id] ?? [];
+                $top[] = $p;
+            }
+        }
+        $this->navPages = $top;
 
         $this->criticalCss = @file_get_contents($this->outputDir . '/theme.critical.css') ?: '';
     }

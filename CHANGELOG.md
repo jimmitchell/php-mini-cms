@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] — 2026-05-04
+
+### Added
+
+- **Sub-pages in navigation** — pages can now be associated with a single top-level parent page via a new "Parent page" select in the page editor. On desktop, sub-pages appear in a CSS-only dropdown (`:hover` / `:focus-within`) below their parent in the header nav; on mobile, they appear indented below the parent inside the existing hamburger menu. URLs stay flat (`/{slug}/`) — `parent_id` only affects nav grouping, so reparenting never breaks links. One level of nesting only; pages with sub-pages cannot themselves become sub-pages. Deleting a parent that still has sub-pages is blocked. The pages list gains a "Parent" column. Schema bumped to v16 (adds `parent_id INTEGER` + index on `pages`).
+
+---
+
 ## [1.5.3] — 2026-05-03
 
 ### Changed

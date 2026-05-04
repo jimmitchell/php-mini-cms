@@ -16,6 +16,10 @@ class Page
     public string  $updated_at   = '';
     public ?string $built_at     = null;
     public ?string $content_hash = null;
+    public ?int    $parent_id    = null;
+
+    /** @var self[] In-memory only; populated by Builder::refreshContext for nav rendering. */
+    public array $children = [];
 
     private Database $db;
 
@@ -52,6 +56,30 @@ class Page
         return $row ? self::fromRow($db, $row) : null;
     }
 
+    /**
+     * Children of $parentId, optionally filtered by status. Same ordering as findAll.
+     *
+     * @return self[]
+     */
+    public static function findChildren(Database $db, int $parentId, ?string $status = null): array
+    {
+        $order  = "ORDER BY CASE WHEN nav_order = 0 THEN 1 ELSE 0 END ASC, nav_order ASC, title ASC";
+        $sql    = "SELECT * FROM pages WHERE parent_id = :pid"
+                . ($status !== null ? " AND status = :status" : "")
+                . " $order";
+        $params = ['pid' => $parentId];
+        if ($status !== null) {
+            $params['status'] = $status;
+        }
+        return array_map(fn($row) => self::fromRow($db, $row), $db->select($sql, $params));
+    }
+
+    public static function hasChildren(Database $db, int $id): bool
+    {
+        $row = $db->selectOne("SELECT 1 FROM pages WHERE parent_id = :pid LIMIT 1", ['pid' => $id]);
+        return $row !== null;
+    }
+
     // ── Persistence ───────────────────────────────────────────────────────────
 
     public function save(): bool
@@ -62,6 +90,7 @@ class Page
             'content'   => $this->content,
             'nav_order' => $this->nav_order,
             'status'    => $this->status,
+            'parent_id' => $this->parent_id,
             'updated_at' => date('Y-m-d H:i:s'),
         ];
 
@@ -121,6 +150,9 @@ class Page
         $page->updated_at   = $row['updated_at'] ?? '';
         $page->built_at     = $row['built_at'] ?? null;
         $page->content_hash = $row['content_hash'] ?? null;
+        $page->parent_id    = isset($row['parent_id']) && $row['parent_id'] !== null
+            ? (int) $row['parent_id']
+            : null;
         return $page;
     }
 }

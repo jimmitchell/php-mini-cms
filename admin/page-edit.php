@@ -33,6 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Handle delete before any save logic.
     if ($action === 'delete') {
         if ($page && $page->id) {
+            if (Page::hasChildren($db, $page->id)) {
+                $auth->flash('Cannot delete: this page has sub-pages. Reparent or delete them first.', 'error');
+                header('Location: /admin/page-edit.php?id=' . $page->id);
+                exit;
+            }
             $activityLog->log('delete', 'page', $page->id, $page->title);
             $wasPublished = $page->status === 'published';
             $page->delete();
@@ -41,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($wasPublished) {
                 $builder->buildIndex();
                 $builder->buildSitemap();
+                $builder->rebuildPages(); // refresh nav on remaining pages
             }
             $auth->flash('Page deleted.', 'info');
             header('Location: /admin/pages.php');
@@ -53,10 +59,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $wasNew = $isNew || !$page->id;
 
+    // Snapshot nav-affecting fields before mutating $page so we can detect changes.
+    $origStatus    = $wasNew ? null : $page->status;
+    $origParent    = $wasNew ? null : $page->parent_id;
+    $origNavOrder  = $wasNew ? null : $page->nav_order;
+    $origTitle     = $wasNew ? null : $page->title;
+    $origSlug      = $wasNew ? null : $page->slug;
+
     $page->title     = trim($_POST['title']     ?? '');
     $page->slug      = trim($_POST['slug']      ?? '');
     $page->content   = $_POST['content'] ?? '';
     $page->nav_order = (int) ($_POST['nav_order'] ?? 0);
+
+    $rawParent = $_POST['parent_id'] ?? '';
+    $page->parent_id = ($rawParent === '' || $rawParent === '0') ? null : (int) $rawParent;
 
     $page->slug = Helpers::slugify($page->slug !== '' ? $page->slug : $page->title);
 
@@ -72,6 +88,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'That slug is already used by another page.';
     }
 
+    if ($page->parent_id !== null) {
+        if ($page->id !== null && $page->parent_id === $page->id) {
+            $errors[] = 'A page cannot be its own parent.';
+        } else {
+            $proposedParent = Page::findById($db, $page->parent_id);
+            if ($proposedParent === null) {
+                $errors[] = 'Selected parent page does not exist.';
+            } elseif ($proposedParent->parent_id !== null) {
+                $errors[] = 'Selected parent is itself a sub-page (only one level of nesting is allowed).';
+            } elseif ($page->id !== null && Page::hasChildren($db, $page->id)) {
+                $errors[] = 'This page has sub-pages, so it cannot itself be assigned a parent.';
+            }
+        }
+    }
+
     if (empty($errors)) {
         $wasPublished = $page->status === 'published';
         $page->status = match ($action) {
@@ -81,7 +112,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
 
         $page->save();
-        $builder->buildPage($page);
+
+        $navAffectingChange =
+               $wasNew
+            || $origStatus    !== $page->status
+            || $origParent    !== $page->parent_id
+            || $origNavOrder  !== $page->nav_order
+            || $origTitle     !== $page->title
+            || $origSlug      !== $page->slug;
+
+        if ($navAffectingChange && ($page->status === 'published' || $wasPublished)) {
+            $builder->rebuildPages(); // refreshes $navPages + clears all page hashes
+        } else {
+            $builder->buildPage($page); // content-only edit: cheap path
+        }
+
         if ($page->status === 'published' || $wasPublished) {
             $builder->buildIndex();
             $builder->buildSitemap();
@@ -123,6 +168,18 @@ $mediaItems = $db->select(
 
 $siteTitle = $db->getSetting('site_title', 'My CMS');
 $csrf      = $auth->csrfToken();
+
+// Parent-page select options: only top-level published pages, never self.
+// If this page already has children, parent must remain empty (no grandchildren).
+$cantHaveParent = $page->id !== null && Page::hasChildren($db, $page->id);
+$parentChoices  = [];
+if (!$cantHaveParent) {
+    foreach (Page::findAll($db, 'published') as $candidate) {
+        if ($candidate->parent_id !== null) continue;
+        if ($page->id !== null && $candidate->id === $page->id) continue;
+        $parentChoices[] = $candidate;
+    }
+}
 
 ?>
 <!DOCTYPE html>
@@ -219,6 +276,24 @@ $csrf      = $auth->csrfToken();
                 <!-- Nav order -->
                 <div class="panel">
                     <h2>Navigation</h2>
+
+                    <label for="parent_id">Parent page</label>
+                    <select id="parent_id" name="parent_id"<?= $cantHaveParent ? ' disabled' : '' ?>>
+                        <option value="">— None (top level) —</option>
+                        <?php foreach ($parentChoices as $c): ?>
+                        <option value="<?= $c->id ?>"<?= $page->parent_id === $c->id ? ' selected' : '' ?>>
+                            <?= Helpers::e($c->title) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="form-hint">
+                        <?php if ($cantHaveParent): ?>
+                        This page has sub-pages, so it must remain top-level.
+                        <?php else: ?>
+                        Optional. Sub-pages appear in a dropdown under their parent in site nav.
+                        <?php endif; ?>
+                    </p>
+
                     <label for="nav_order">Nav order</label>
                     <input type="number" id="nav_order" name="nav_order"
                            value="<?= $page->nav_order ?>" min="0" step="1">

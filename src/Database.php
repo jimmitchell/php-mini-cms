@@ -17,7 +17,7 @@ class Database
     private static array $settingsCache = [];
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 15;
+    private const SCHEMA_VERSION = 16;
 
     public function __construct(string $dbPath)
     {
@@ -407,6 +407,15 @@ class Database
     {
         // Retired: newsletter_subscribers table. Feature was removed before any
         // prod deploy. Slot kept so SCHEMA_VERSION stays monotonic.
+    }
+
+    private function applySchemaV16(): void
+    {
+        // parent_id: optional self-reference for one-level nav nesting.
+        // No FK clause: SQLite ALTER TABLE can't add one, and parent-with-children
+        // deletion is blocked in the admin layer where the user-facing error matters.
+        $this->run("ALTER TABLE pages ADD COLUMN parent_id INTEGER");
+        $this->run("CREATE INDEX IF NOT EXISTS idx_pages_parent_id ON pages(parent_id)");
     }
 
     /** Insert or update a single settings row. */

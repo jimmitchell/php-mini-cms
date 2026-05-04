@@ -175,9 +175,22 @@ if (!function_exists('_e')) {
             </button>
             <nav class="site-nav" id="site-nav" aria-label="Site navigation">
                 <?php foreach ($navPages as $navPage): ?>
-                <a href="<?= _e($siteUrl . '/' . $navPage->slug . '/') ?>">
-                    <?= _e($navPage->title) ?>
-                </a>
+                <div class="site-nav__item<?= !empty($navPage->children) ? ' has-children' : '' ?>">
+                    <a href="<?= _e($siteUrl . '/' . $navPage->slug . '/') ?>">
+                        <?= _e($navPage->title) ?>
+                    </a>
+                    <?php if (!empty($navPage->children)): ?>
+                    <ul class="site-nav__sub" aria-label="<?= _e($navPage->title) ?> sub-pages">
+                        <?php foreach ($navPage->children as $child): ?>
+                        <li>
+                            <a href="<?= _e($siteUrl . '/' . $child->slug . '/') ?>">
+                                <?= _e($child->title) ?>
+                            </a>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <?php endif; ?>
+                </div>
                 <?php endforeach; ?>
             </nav>
             <?php endif; ?>

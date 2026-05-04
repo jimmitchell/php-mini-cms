@@ -13,6 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     $auth->verifyCsrf($_POST['csrf_token'] ?? '');
     $page = Page::findById($db, (int) ($_POST['id'] ?? 0));
     if ($page) {
+        if (Page::hasChildren($db, $page->id)) {
+            $auth->flash('Cannot delete "' . $page->title . '": it has sub-pages.', 'error');
+            header('Location: /admin/pages.php');
+            exit;
+        }
         $wasPublished = $page->status === 'published';
         $page->delete();
         $page->status = 'draft'; // so buildPage() removes the static file
@@ -20,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
         if ($wasPublished) {
             $builder->buildIndex();
             $builder->buildSitemap();
+            $builder->rebuildPages(); // refresh nav on remaining pages
         }
     }
     header('Location: /admin/pages.php');
@@ -44,6 +50,13 @@ $counts = $db->selectOne(
 
 $siteTitle = $db->getSetting('site_title', 'My CMS');
 $csrf      = $auth->csrfToken();
+
+// Build an id => title map of all pages (any status) for the Parent column.
+// One query, no N+1; falls back to '—' if a parent isn't found.
+$parentTitles = [];
+foreach (Page::findAll($db) as $p) {
+    $parentTitles[$p->id] = $p->title;
+}
 
 ?>
 <!DOCTYPE html>
@@ -102,6 +115,7 @@ $csrf      = $auth->csrfToken();
                 <tr>
                     <th>Title</th>
                     <th>Slug</th>
+                    <th>Parent</th>
                     <th>Nav order</th>
                     <th>Status</th>
                     <th>Actions</th>
@@ -116,6 +130,11 @@ $csrf      = $auth->csrfToken();
                     </a>
                 </td>
                 <td class="meta">/<?= Helpers::e($page->slug) ?>/</td>
+                <td class="meta">
+                    <?= $page->parent_id !== null && isset($parentTitles[$page->parent_id])
+                        ? Helpers::e($parentTitles[$page->parent_id])
+                        : '&mdash;' ?>
+                </td>
                 <td class="meta"><?= $page->nav_order ?></td>
                 <td>
                     <span class="badge badge--<?= $page->status ?>">
