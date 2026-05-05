@@ -662,6 +662,28 @@ audio { width: 100%; }
     background: color-mix(in srgb, #dc2626 12%, var(--color-bg));
 }
 
+/* ── Button-style link ────────────────────────────────────────────────────── */
+.button-link {
+    display: inline-block;
+    background: var(--color-link);
+    color: #fff;
+    text-decoration: none;
+    border: none;
+    border-radius: 4px;
+    padding: .5rem 1rem;
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background .15s;
+}
+
+.button-link:hover {
+    background: color-mix(in srgb, var(--color-link) 90%, #000);
+    text-decoration: none;
+    color: #fff;
+}
+
 /* ── Post list / index ────────────────────────────────────────────────────── */
 .post-list {
     display: grid;
