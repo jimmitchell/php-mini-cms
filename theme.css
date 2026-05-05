@@ -49,7 +49,7 @@
     --color-link:       #0176d3;
     --color-header-bg:  #1a1a1a;
     --color-chrome-border: var(--color-border);
-    --max-content:      740px;
+    --max-content:      780px;
     --max-wide:         820px;
 }
 
@@ -451,9 +451,9 @@ audio { width: 100%; }
   position: relative;
   z-index: 2;
   color: var(--color-text);
-  opacity: 0.8;
+  opacity: 1;
   text-shadow: 0 1px 0 var(--color-bg);
-  font-style: italic;
+  font-style: normal;
 }
 
 .prose hr {
@@ -486,7 +486,7 @@ audio { width: 100%; }
 /* Code */
 .prose code {
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: .9em;
+    font-size: .825em;
     background: var(--color-code-bg);
     border-radius: 3px;
     padding: .1em .3em;
@@ -635,6 +635,31 @@ audio { width: 100%; }
     margin-bottom: 2em;
     text-align: center;
     font-style: italic;
+}
+
+/* ── Notices / callouts ───────────────────────────────────────────────────── */
+.notice,
+.information,
+.warning {
+    border: 1px solid;
+    border-radius: 4px;
+    padding: .75em 1em;
+    margin: 1.5em 0;
+}
+
+.notice {
+    border-color: #3b82f6;
+    background: color-mix(in srgb, #3b82f6 12%, var(--color-bg));
+}
+
+.information {
+    border-color: #eab308;
+    background: color-mix(in srgb, #eab308 18%, var(--color-bg));
+}
+
+.warning {
+    border-color: #dc2626;
+    background: color-mix(in srgb, #dc2626 12%, var(--color-bg));
 }
 
 /* ── Post list / index ────────────────────────────────────────────────────── */
