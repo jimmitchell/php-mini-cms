@@ -911,8 +911,6 @@ audio { width: 100%; }
     gap: .75rem;
 }
 
-.site-footer__feed { display: none; }
-
 .site-footer__mastodon,
 .site-footer__bluesky,
 .site-footer__github {
