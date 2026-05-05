@@ -987,11 +987,13 @@ audio { width: 100%; }
         align-items: stretch;
     }
 
-    .site-nav__sub {
+    .site-nav__sub,
+    .site-nav__item.has-children:hover > .site-nav__sub,
+    .site-nav__item.has-children:focus-within > .site-nav__sub {
         position: static;
         opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
+        visibility: inherit;
+        pointer-events: inherit;
         transform: none;
         transition: none;
         background: transparent;
