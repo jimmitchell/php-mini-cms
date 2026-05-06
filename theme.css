@@ -1108,13 +1108,13 @@ audio { width: 100%; }
 
 .gallery {
     display: grid;
-    gap: 4px;
+    gap: 6px;
     margin: 2rem 0;
     aspect-ratio: 3 / 2;
 }
 
 .gallery:has(+ .gallery) { margin-bottom: 0; }
-.gallery + .gallery { margin-top: 4px; }
+.gallery + .gallery { margin-top: 6px; }
 
 .gallery__item {
     position: relative;
