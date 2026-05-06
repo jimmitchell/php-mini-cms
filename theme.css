@@ -332,7 +332,7 @@ audio { width: 100%; }
 
 /* ── Post / page ──────────────────────────────────────────────────────────── */
 
-.page, .post { margin-top: .5rem }
+.page, .post { margin-top: .7rem }
 
 .post__header,
 .post__content {
@@ -606,11 +606,8 @@ audio { width: 100%; }
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding: 3px;
     margin-top: 2rem;
     margin-bottom: 2rem;
-    border: 1px solid var(--color-border);
-    background: rgba(255,255,255,0.1);
 }
 
 @media (min-width: 880px) {
@@ -621,9 +618,6 @@ audio { width: 100%; }
         margin-right: -2rem;
         margin-top: 2rem;
         margin-bottom: 2rem;
-        padding: 3px;
-        border: 1px solid var(--color-border);
-        background: rgba(255,255,255,0.1);
     }
 }
 
