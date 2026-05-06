@@ -1100,37 +1100,110 @@ audio { width: 100%; }
 .prose img { cursor: zoom-in; }
 
 
-/* ── Image gallery ────────────────────────────────────────────────────────── */
+/* ── Tiled gallery ────────────────────────────────────────────────────────── */
+
+/* Mondrian-style fixed templates per image count. PHP emits .gallery--tiles-N
+   and inline `style="grid-area:a"` per item. Galleries with 8+ images are split
+   into sibling .gallery blocks server-side. */
 
 .gallery {
-    position: relative;
+    display: grid;
+    gap: 4px;
     margin: 2rem 0;
-    /* height set by JS */
+    aspect-ratio: 3 / 2;
 }
 
+.gallery:has(+ .gallery) { margin-bottom: 0; }
+.gallery + .gallery { margin-top: 4px; }
+
 .gallery__item {
-    position: absolute;
+    position: relative;
     display: block;
     overflow: hidden;
-    /* top / left / width set by JS */
+    background: #eee;
+    cursor: zoom-in;
+}
+
+.gallery__item picture,
+.gallery__item img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    margin: 0;
 }
 
 .gallery__item img {
-    width: 100%;
-    height: auto;
-    display: block;
-    margin-top: 0;
-    cursor: zoom-in;
+    object-fit: cover;
     transition: opacity .15s;
-    margin-bottom: 0;
 }
 
 .gallery__item:hover img { opacity: .88; }
 
-/* Before JS runs or on mobile, stack images naturally */
+.gallery--tiles-1 {
+    grid-template-areas: "a";
+}
+
+.gallery--tiles-2 {
+    aspect-ratio: 2 / 1;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: "a b";
+}
+
+.gallery--tiles-3 {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+        "a b"
+        "a c";
+}
+
+.gallery--tiles-4 {
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+        "a b c"
+        "a d d";
+}
+
+.gallery--tiles-5 {
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+        "a b c"
+        "a d e";
+}
+
+.gallery--tiles-6 {
+    aspect-ratio: 4 / 3;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-areas:
+        "a b c"
+        "a d e"
+        "a f f";
+}
+
+.gallery--tiles-7 {
+    aspect-ratio: 4 / 3;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    grid-template-areas:
+        "a b c d"
+        "a e f g";
+}
+
 @media (max-width: 600px) {
-    .gallery         { position: static !important; height: auto !important; }
-    .gallery__item   { position: static !important; width: 100% !important; display: block; margin-bottom: 8px; }
+    .gallery {
+        aspect-ratio: auto;
+        grid-template-columns: 1fr 1fr !important;
+        grid-template-rows: none !important;
+        grid-template-areas: none !important;
+        grid-auto-rows: 1fr;
+    }
+    .gallery__item {
+        grid-area: auto !important;
+        aspect-ratio: 1 / 1;
+    }
 }
 
 /* ── Gallery lightbox ─────────────────────────────────────────────────────── */

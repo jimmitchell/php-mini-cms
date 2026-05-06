@@ -195,6 +195,20 @@ class Media
         return str_starts_with($mimeType, 'image/');
     }
 
+    /**
+     * Return the public URL of a WebP companion file if it exists alongside $filename
+     * in $mediaDir. Returns null if no sibling .webp is present.
+     */
+    public static function webpUrlFor(string $filename, string $mediaDir): ?string
+    {
+        $webpName = preg_replace('/\.[^.]+$/', '.webp', $filename);
+        if ($webpName === null || $webpName === $filename) {
+            return null;
+        }
+        $path = rtrim($mediaDir, '/\\') . '/' . $webpName;
+        return file_exists($path) ? '/media/' . rawurlencode($webpName) : null;
+    }
+
     public static function isVideo(string $mimeType): bool
     {
         return str_starts_with($mimeType, 'video/');

@@ -443,67 +443,6 @@ if (!function_exists('_e')) {
 (function () {
 'use strict';
 
-// ── Masonry layout ────────────────────────────────────────────────────────────
-var GAP = 8;
-
-function layoutGallery(gallery) {
-    var items = Array.from(gallery.querySelectorAll('.gallery__item'));
-    if (!items.length) return;
-
-    var cols    = window.innerWidth <= 600 ? 1 : 3;
-    var total   = gallery.offsetWidth;
-    var colW    = Math.floor((total - GAP * (cols - 1)) / cols);
-    var heights = new Array(cols).fill(0);
-
-    items.forEach(function (item) {
-        var shortest = heights.indexOf(Math.min.apply(null, heights));
-        item.style.position = 'absolute';
-        item.style.width    = colW + 'px';
-        item.style.left     = (shortest * (colW + GAP)) + 'px';
-        item.style.top      = heights[shortest] + 'px';
-        heights[shortest]  += item.offsetHeight + GAP;
-    });
-
-    gallery.style.position = 'relative';
-    gallery.style.height   = Math.max.apply(null, heights) + 'px';
-}
-
-function layoutAll() {
-    document.querySelectorAll('.gallery[data-gallery]').forEach(layoutGallery);
-}
-
-// Run after all gallery images are loaded.
-var galleries = document.querySelectorAll('.gallery[data-gallery]');
-galleries.forEach(function (gallery) {
-    var imgs   = Array.from(gallery.querySelectorAll('img'));
-    var loaded = 0;
-
-    function onLoad() {
-        loaded++;
-        // Re-layout on every image load so the grid grows progressively.
-        layoutGallery(gallery);
-        if (loaded === imgs.length) {
-            layoutGallery(gallery); // final pass
-        }
-    }
-
-    imgs.forEach(function (img) {
-        if (img.complete) {
-            onLoad();
-        } else {
-            img.addEventListener('load',  onLoad);
-            img.addEventListener('error', onLoad); // count errors so layout still runs
-        }
-    });
-});
-
-// Debounced resize.
-var _resizeTimer;
-window.addEventListener('resize', function () {
-    clearTimeout(_resizeTimer);
-    _resizeTimer = setTimeout(layoutAll, 120);
-}, { passive: true });
-
 // ── Gallery lightbox ──────────────────────────────────────────────────────────
 var glItems  = [];
 var glCursor = 0;

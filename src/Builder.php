@@ -80,6 +80,8 @@ class Builder
 
         $html       = $this->md->convert($post->content)->getContent();
         $html       = $this->processShortcodes($html);
+        // Contract: gallery wrappers must include data-gallery so the lightbox JS
+        // in base.php is loaded. Preserve this attribute if changing renderGallery().
         $hasGallery = str_contains($html, 'data-gallery');
         $prevPost   = Post::findPrev($this->db, $post);
         $nextPost   = Post::findNext($this->db, $post);
@@ -563,6 +565,8 @@ class Builder
 
         $html       = $this->md->convert($post->content)->getContent();
         $html       = $this->processShortcodes($html);
+        // Contract: gallery wrappers must include data-gallery so the lightbox JS
+        // in base.php is loaded. Preserve this attribute if changing renderGallery().
         $hasGallery = str_contains($html, 'data-gallery');
 
         $rendered = $this->render('post.php', [
@@ -888,6 +892,12 @@ class Builder
     /**
      * Build the HTML for a [gallery ids="…"] shortcode.
      *
+     * Renders a Mondrian-style tiled gallery: images cropped to fit pre-designed
+     * CSS Grid templates per image count. Galleries with 8+ images are split into
+     * sibling chunks (e.g. 11 → 6+5). The lightbox JS in base.php collects items
+     * across all .gallery[data-gallery] blocks on the page, so chunking is invisible
+     * to navigation.
+     *
      * @param int[] $ids  Ordered list of media IDs.
      */
     private function renderGallery(array $ids): string
@@ -897,29 +907,81 @@ class Builder
         }
 
         $media = new Media($this->db, $this->mediaDir);
-        $items = $media->findByIds($ids);
+        $items = array_values(array_filter(
+            $media->findByIds($ids),
+            fn($i) => Media::isImage($i['mime_type'])
+        ));
 
-        if (empty($items)) {
+        $n = count($items);
+        if ($n === 0) {
             return '';
         }
 
-        $x    = fn(string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $html = '<div class="gallery" data-gallery>' . "\n";
+        $html = '';
+        foreach ($this->chunkCounts($n) as $size) {
+            $chunk = array_splice($items, 0, $size);
+            $html .= $this->renderGalleryChunk($chunk);
+        }
+        return $html;
+    }
 
-        foreach ($items as $item) {
-            if (!Media::isImage($item['mime_type'])) {
-                continue;
+    /**
+     * Split N images into chunks sized between 1 and 7 (inclusive) for the
+     * available tiled-gallery templates. Aim for a balanced last chunk.
+     *
+     *   1..7   → [n]
+     *   8..14  → split into two chunks (e.g. 8→[4,4], 11→[6,5], 14→[7,7])
+     *   15+    → peel 6s until remainder ≤ 7
+     *
+     * @return int[]
+     */
+    private function chunkCounts(int $n): array
+    {
+        if ($n <= 7) {
+            return [$n];
+        }
+        if ($n <= 14) {
+            $first = (int) ceil($n / 2);
+            return [$first, $n - $first];
+        }
+        $chunks = [];
+        while ($n > 7) {
+            $chunks[] = 6;
+            $n -= 6;
+        }
+        $chunks[] = $n;
+        return $chunks;
+    }
+
+    /**
+     * Render one .gallery--tiles-N block.
+     *
+     * @param array<array<string,mixed>> $items  Image-only media records, length 1-7.
+     */
+    private function renderGalleryChunk(array $items): string
+    {
+        $count = count($items);
+        $x     = fn(string $v): string => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        $html = '<div class="gallery gallery--tiles-' . $count . '" data-gallery>' . "\n";
+
+        foreach ($items as $i => $item) {
+            $url     = '/media/' . rawurlencode($item['filename']);
+            $href    = $x($url);
+            $alt     = $x($item['original_name']);
+            $area    = chr(ord('a') + $i);
+            $webpUrl = Media::webpUrlFor($item['filename'], $this->mediaDir);
+
+            $html .= '  <a href="' . $href . '" class="gallery__item" data-gallery-item style="grid-area:' . $area . '">'
+                   . '<picture>';
+            if ($webpUrl !== null) {
+                $html .= '<source srcset="' . $x($webpUrl) . '" type="image/webp">';
             }
-            $url  = '/media/' . rawurlencode($item['filename']);
-            $alt  = $x($item['original_name']);
-            $href = $x($url);
-            $html .= '  <a href="' . $href . '" class="gallery__item" data-gallery-item>'
-                   . '<img src="' . $href . '" alt="' . $alt . '" loading="lazy">'
-                   . '</a>' . "\n";
+            $html .= '<img src="' . $href . '" alt="' . $alt . '" loading="lazy" decoding="async">'
+                   . '</picture></a>' . "\n";
         }
 
         $html .= '</div>' . "\n";
-
         return $html;
     }
 
