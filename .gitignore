@@ -16,6 +16,7 @@ composer.phar
 /index.html
 /404.html
 /feed.xml
+/feed.rss
 /feed.json
 /sitemap.xml
 /theme.min.css
