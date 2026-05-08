@@ -15,6 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fields = [
         'site_title'         => trim($_POST['site_title']         ?? ''),
         'author_name'        => trim($_POST['author_name']        ?? ''),
+        'author_bio'         => trim($_POST['author_bio']         ?? ''),
+        'author_avatar_url'  => trim($_POST['author_avatar_url']  ?? ''),
         'site_description'   => trim($_POST['site_description']   ?? ''),
         'site_url'           => rtrim(trim($_POST['site_url'] ?? ''), '/'),
         'footer_text'        => trim($_POST['footer_text']        ?? ''),
@@ -45,6 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($fields['site_url'] !== '' && !filter_var($fields['site_url'], FILTER_VALIDATE_URL)) {
         $errors[] = 'Site URL must be a valid URL (e.g. https://example.com).';
+    }
+
+    if ($fields['author_avatar_url'] !== '' && !filter_var($fields['author_avatar_url'], FILTER_VALIDATE_URL)) {
+        $errors[] = 'Author avatar URL must be a valid URL.';
     }
 
     if ($fields['timezone'] !== '' && !in_array($fields['timezone'], timezone_identifiers_list(), true)) {
@@ -86,9 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Rebuild posts, pages + index/feeds/sitemap so settings changes (custom CSS,
         // site title, footer text, etc.) are reflected everywhere immediately.
+        // Taxonomy archives are rebuilt too so byline-related changes propagate
+        // into per-term feeds (otherwise they keep stale author metadata).
         $builder->rebuildPosts();
         $builder->rebuildPages();
         $builder->rebuildSharedResources();
+        $builder->buildAllTaxonomyArchives();
 
         $activityLog->log('settings', 'settings');
         $auth->flash('Settings saved and site rebuilt.');
@@ -143,7 +152,24 @@ $flash     = $auth->getFlash();
             <input type="text" id="author_name" name="author_name"
                    value="<?= Helpers::e($_POST['author_name'] ?? $settings['author_name'] ?? '') ?>"
                    placeholder="Your real name">
-            <p class="form-hint">Used in JSON-LD structured data. Leave blank to omit the author field.</p>
+            <p class="form-hint">Used in JSON-LD structured data and as the author in feeds. Leave blank to omit the author field.</p>
+
+            <label for="author_bio">Author bio</label>
+            <textarea id="author_bio" name="author_bio" rows="3"
+                      placeholder="A short bio (≤ 280 characters recommended)"><?= Helpers::e($_POST['author_bio'] ?? $settings['author_bio'] ?? '') ?></textarea>
+            <p class="form-hint">Exposed as <code>&lt;byline:context&gt;</code> in the RSS and Atom feeds (per the <a href="https://www.bylinespec.org/spec" target="_blank" rel="noopener">Byline spec</a>). 280 characters or fewer recommended.</p>
+
+            <label for="author_avatar_url">Author avatar URL</label>
+            <?php $_avatarCurrent = $_POST['author_avatar_url'] ?? $settings['author_avatar_url'] ?? ''; ?>
+            <input type="url" id="author_avatar_url" name="author_avatar_url"
+                   value="<?= Helpers::e($_avatarCurrent) ?>"
+                   placeholder="https://example.com/avatar.jpg"
+                   style="max-width:400px">
+            <?php if ($_avatarCurrent !== ''): ?>
+            <img src="<?= Helpers::e($_avatarCurrent) ?>" alt="Avatar preview"
+                 style="display:block;width:64px;height:64px;margin-top:.5rem;object-fit:cover;border:1px solid var(--color-border);border-radius:50%">
+            <?php endif; ?>
+            <p class="form-hint">Exposed as <code>&lt;byline:avatar&gt;</code> in feeds. Upload an image to the <a href="/admin/media.php" target="_blank">Media Library</a> and paste its URL.</p>
 
             <label for="site_description">Site description</label>
             <input type="text" id="site_description" name="site_description"
@@ -211,11 +237,11 @@ $flash     = $auth->getFlash();
                    min="1" max="100" style="max-width:120px">
             <p class="form-hint">Number of posts shown on each listing page.</p>
 
-            <label for="feed_post_count">Posts in RSS feed</label>
+            <label for="feed_post_count">Posts in feeds</label>
             <input type="number" id="feed_post_count" name="feed_post_count"
                    value="<?= (int) ($_POST['feed_post_count'] ?? $settings['feed_post_count'] ?? 20) ?>"
                    min="1" max="100" style="max-width:120px">
-            <p class="form-hint">Number of posts included in <code>feed.xml</code>.</p>
+            <p class="form-hint">Number of posts included in each feed (<code>feed.xml</code>, <code>feed.rss</code>, <code>feed.json</code>).</p>
         </div>
 
         <div class="panel">

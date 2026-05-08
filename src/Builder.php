@@ -192,6 +192,15 @@ class Builder
     }
 
     /**
+     * Render and write feed.rss (RSS 2.0 with Byline spec).
+     */
+    public function buildRssFeed(): void
+    {
+        $feed = new RssFeed($this->db, $this->settings);
+        $this->writeFile($this->outputDir . '/feed.rss', $feed->render());
+    }
+
+    /**
      * Generate sitemap.xml listing all published posts and pages.
      * Skipped silently when site_url is not configured.
      */
@@ -335,6 +344,7 @@ class Builder
         $this->buildIndex();
         $this->buildFeed();
         $this->buildJsonFeed();
+        $this->buildRssFeed();
         $this->buildSitemap();
     }
 
@@ -389,6 +399,7 @@ class Builder
         $this->buildIndex();
         $this->buildFeed();
         $this->buildJsonFeed();
+        $this->buildRssFeed();
         $this->buildSitemap();
         $this->buildAllTaxonomyArchives();
     }
@@ -437,6 +448,9 @@ class Builder
 
         $jsonFeed = new JsonFeed($this->db, $this->settings);
         $this->writeFile($baseDir . '/feed.json', $jsonFeed->renderForTerm($type, $term, $posts));
+
+        $rssFeed = new RssFeed($this->db, $this->settings);
+        $this->writeFile($baseDir . '/feed.rss', $rssFeed->renderForTerm($type, $term, $posts));
     }
 
     /**
@@ -519,6 +533,7 @@ class Builder
                     $this->removeFile($dir . '/index.html');
                     $this->removeFile($dir . '/feed.xml');
                     $this->removeFile($dir . '/feed.json');
+                    $this->removeFile($dir . '/feed.rss');
                     $entries = is_dir($dir) ? scandir($dir) : false;
                     if ($entries !== false && count($entries) === 2) {
                         @rmdir($dir);
@@ -540,6 +555,7 @@ class Builder
                     $this->removeFile($dir . '/index.html');
                     $this->removeFile($dir . '/feed.xml');
                     $this->removeFile($dir . '/feed.json');
+                    $this->removeFile($dir . '/feed.rss');
                     $entries = is_dir($dir) ? scandir($dir) : false;
                     if ($entries !== false && count($entries) === 2) {
                         @rmdir($dir);

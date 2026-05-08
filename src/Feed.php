@@ -46,7 +46,7 @@ class Feed
         $feedId = $siteUrl ?: 'urn:uuid:' . sha1($title);
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $xml .= '<feed xmlns="http://www.w3.org/2005/Atom">' . "\n";
+        $xml .= '<feed xmlns="http://www.w3.org/2005/Atom" xmlns:byline="https://bylinespec.org/1.0">' . "\n";
         $xml .= '  <title>' . $this->x($title) . '</title>' . "\n";
         if ($desc !== '') {
             $xml .= '  <subtitle>' . $this->x($desc) . '</subtitle>' . "\n";
@@ -56,6 +56,8 @@ class Feed
         $xml .= '  <id>' . $this->x($feedId . '/feed.xml') . '</id>' . "\n";
         $xml .= '  <updated>' . $feedUpdated . '</updated>' . "\n";
         $xml .= '  <generator uri="https://github.com/jimmitchell/clodd-cms" version="' . (defined('CMS_VERSION') ? CMS_VERSION : '1.0.0') . '">Clodd CMS</generator>' . "\n";
+        $xml .= $this->atomAuthorXml();
+        $xml .= Byline::channelXml($this->settings);
 
         foreach ($posts as $post) {
             $tz      = $this->settings['timezone'] ?? '';
@@ -77,6 +79,7 @@ class Feed
             $xml .= '    <published>' . $this->atom($post['published_at']) . '</published>' . "\n";
             $xml .= '    <updated>' . $this->atom($post['updated_at'] ?? $post['published_at']) . '</updated>' . "\n";
             $xml .= '    <content type="html"><![CDATA[' . $html . ']]></content>' . "\n";
+            $xml .= Byline::authorRefXml($this->settings);
             $xml .= '  </entry>' . "\n";
         }
 
@@ -111,13 +114,15 @@ class Feed
         $feedId = $siteUrl ?: 'urn:uuid:' . sha1($siteTitle);
 
         $xml  = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-        $xml .= '<feed xmlns="http://www.w3.org/2005/Atom">' . "\n";
+        $xml .= '<feed xmlns="http://www.w3.org/2005/Atom" xmlns:byline="https://bylinespec.org/1.0">' . "\n";
         $xml .= '  <title>' . $this->x($title) . '</title>' . "\n";
         $xml .= '  <link href="' . $this->x($termUrl) . '" rel="alternate" type="text/html"/>' . "\n";
         $xml .= '  <link href="' . $this->x($feedUrl) . '" rel="self" type="application/atom+xml"/>' . "\n";
         $xml .= '  <id>' . $this->x($feedId . '/' . $type . '/' . $term['slug'] . '/feed.xml') . '</id>' . "\n";
         $xml .= '  <updated>' . $feedUpdated . '</updated>' . "\n";
         $xml .= '  <generator uri="https://github.com/jimmitchell/clodd-cms" version="' . (defined('CMS_VERSION') ? CMS_VERSION : '1.0.0') . '">Clodd CMS</generator>' . "\n";
+        $xml .= $this->atomAuthorXml();
+        $xml .= Byline::channelXml($this->settings);
 
         foreach ($posts as $post) {
             $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug, $this->settings['timezone'] ?? '') . '/';
@@ -130,12 +135,37 @@ class Feed
             $xml .= '    <published>' . $this->atom($post->published_at) . '</published>' . "\n";
             $xml .= '    <updated>' . $this->atom($post->updated_at ?? $post->published_at) . '</updated>' . "\n";
             $xml .= '    <content type="html"><![CDATA[' . $html . ']]></content>' . "\n";
+            $xml .= Byline::authorRefXml($this->settings);
             $xml .= '  </entry>' . "\n";
         }
 
         $xml .= '</feed>' . "\n";
 
         return $xml;
+    }
+
+    /**
+     * Channel-level Atom <author> block. Empty when author_name is not set.
+     */
+    private function atomAuthorXml(): string
+    {
+        $name = trim((string) ($this->settings['author_name'] ?? ''));
+        if ($name === '') {
+            return '';
+        }
+        $email = trim((string) ($this->settings['reply_email'] ?? ''));
+        $uri   = rtrim((string) ($this->settings['site_url'] ?? ''), '/');
+
+        $out  = '  <author>' . "\n";
+        $out .= '    <name>' . $this->x($name) . '</name>' . "\n";
+        if ($uri !== '') {
+            $out .= '    <uri>' . $this->x($uri) . '</uri>' . "\n";
+        }
+        if ($email !== '') {
+            $out .= '    <email>' . $this->x($email) . '</email>' . "\n";
+        }
+        $out .= '  </author>' . "\n";
+        return $out;
     }
 
     /** XML-encode a plain string. */

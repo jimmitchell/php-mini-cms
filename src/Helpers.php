@@ -103,4 +103,21 @@ class Helpers
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
+
+    /**
+     * Build a Mastodon profile URL from a handle in the form "@user@instance".
+     * Returns null if the handle is empty or malformed.
+     */
+    public static function mastodonProfileUrl(string $handle): ?string
+    {
+        $stripped = ltrim($handle, '@');
+        if ($stripped === '' || substr_count($stripped, '@') !== 1) {
+            return null;
+        }
+        [$user, $instance] = explode('@', $stripped, 2);
+        if ($user === '' || $instance === '') {
+            return null;
+        }
+        return 'https://' . $instance . '/@' . $user;
+    }
 }

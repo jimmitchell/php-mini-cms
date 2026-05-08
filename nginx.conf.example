@@ -195,6 +195,11 @@ server {
         add_header X-Content-Type-Options "nosniff" always;
     }
 
+    location = /feed.rss {
+        add_header Content-Type           "application/rss+xml; charset=utf-8";
+        add_header X-Content-Type-Options "nosniff" always;
+    }
+
     # Deny hidden files
     location ~ /\. {
         deny all;

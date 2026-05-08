@@ -33,6 +33,11 @@ $extraFeedLinks = [
         'href'  => $termFeedBase . '/feed.xml',
     ],
     [
+        'type'  => 'application/rss+xml',
+        'title' => ($settings['site_title'] ?? 'My CMS') . ' — ' . $label . ': ' . $term['name'],
+        'href'  => $termFeedBase . '/feed.rss',
+    ],
+    [
         'type'  => 'application/feed+json',
         'title' => ($settings['site_title'] ?? 'My CMS') . ' — ' . $label . ': ' . $term['name'],
         'href'  => $termFeedBase . '/feed.json',
