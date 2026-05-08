@@ -1427,6 +1427,7 @@ audio { width: 100%; }
     padding: 1rem 1.1rem;
     margin-bottom: .65rem;
     transition: border-color .15s;
+    border-radius: 4px;
 }
 
 .wm-reply:hover { border-color: #d1d5db; }
