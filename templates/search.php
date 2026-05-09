@@ -57,8 +57,9 @@ ob_start();
         .then(function (data) {
             var ql      = q.toLowerCase();
             var results = data.filter(function (item) {
-                return item.title.toLowerCase().indexOf(ql) !== -1
-                    || item.excerpt.toLowerCase().indexOf(ql) !== -1;
+                return (item.title || '').toLowerCase().indexOf(ql) !== -1
+                    || (item.excerpt || '').toLowerCase().indexOf(ql) !== -1
+                    || (item.is_aside && (item.body_text || '').toLowerCase().indexOf(ql) !== -1);
             });
 
             if (results.length === 0) {
@@ -68,6 +69,15 @@ ob_start();
             }
 
             resultEl.innerHTML = results.map(function (item) {
+                if (item.is_aside) {
+                    return '<article class="post-card post-card--note">'
+                        + (item.date
+                            ? '<time class="post-card__date"><a href="' + escHtml(item.url) + '">' + escHtml(item.date) + '</a></time>'
+                            : '')
+                        + '<p class="post-card__body">' + escHtml(item.body_text || '') + '</p>'
+                        + '<a href="' + escHtml(item.url) + '" class="post-card__more">Read more →</a>'
+                        + '</article>';
+                }
                 return '<article class="post-card">'
                     + '<h2 class="post-card__title"><a href="' + escHtml(item.url) + '">'
                     + escHtml(item.title) + '</a></h2>'

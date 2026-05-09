@@ -15,6 +15,7 @@ function slugify(text) {
 (function initSlugField() {
     const titleInput = document.querySelector('[data-slug-source]');
     const slugInput  = document.getElementById('slug');
+    const kindSelect = document.getElementById('post_kind');
     if (!titleInput || !slugInput) return;
 
     // Only auto-update if the slug hasn't been manually edited yet.
@@ -23,10 +24,44 @@ function slugify(text) {
     slugInput.addEventListener('input', () => { userEditedSlug = true; });
 
     titleInput.addEventListener('input', () => {
+        // Asides slug from the post id, not the title — leave the slug input alone.
+        if (kindSelect && kindSelect.value === 'aside') return;
         if (!userEditedSlug) {
             slugInput.value = slugify(titleInput.value);
         }
     });
+})();
+
+// ── Post kind toggle (Standard / Aside) ───────────────────────────────────────
+
+(function initPostKindToggle() {
+    const kindSelect = document.getElementById('post_kind');
+    const titleInput = document.getElementById('title');
+    const slugInput  = document.getElementById('slug');
+    if (!kindSelect) return;
+
+    function apply() {
+        const isAside = kindSelect.value === 'aside';
+
+        document.querySelectorAll('[data-kind-only]').forEach(el => {
+            el.hidden = el.dataset.kindOnly !== (isAside ? 'aside' : 'standard');
+        });
+
+        if (titleInput) {
+            titleInput.required = !isAside;
+        }
+        if (slugInput) {
+            slugInput.readOnly = isAside;
+            if (isAside) {
+                slugInput.tabIndex = -1;
+            } else {
+                slugInput.removeAttribute('tabindex');
+            }
+        }
+    }
+
+    kindSelect.addEventListener('change', apply);
+    apply();
 })();
 
 // ── Slug uniqueness check ─────────────────────────────────────────────────────

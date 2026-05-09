@@ -17,7 +17,7 @@ class Database
     private static array $settingsCache = [];
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 16;
+    private const SCHEMA_VERSION = 17;
 
     public function __construct(string $dbPath)
     {
@@ -416,6 +416,15 @@ class Database
         // deletion is blocked in the admin layer where the user-facing error matters.
         $this->run("ALTER TABLE pages ADD COLUMN parent_id INTEGER");
         $this->run("CREATE INDEX IF NOT EXISTS idx_pages_parent_id ON pages(parent_id)");
+    }
+
+    private function applySchemaV17(): void
+    {
+        // post_kind: WordPress-style post format. Currently 'standard' or 'aside'.
+        // Aside = titleless note: rendered with body+date on lists, no h1 on single,
+        // slug stores the autoincrement id, feed entries omit <title>.
+        $this->run("ALTER TABLE posts ADD COLUMN post_kind TEXT NOT NULL DEFAULT 'standard'");
+        $this->run("CREATE INDEX IF NOT EXISTS idx_posts_post_kind ON posts(post_kind)");
     }
 
     /** Insert or update a single settings row. */

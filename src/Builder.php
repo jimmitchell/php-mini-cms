@@ -151,6 +151,7 @@ class Builder
             $slice    = array_slice($allPosts, ($p - 1) * $perPage, $perPage);
             $rendered = $this->render('index.php', [
                 'posts'       => $slice,
+                'postHtml'    => $this->renderAsideHtmlMap($slice),
                 'currentPage' => $p,
                 'totalPages'  => $pages,
                 'totalPosts'  => $total,
@@ -266,15 +267,21 @@ class Builder
 
         $data = [];
         foreach ($posts as $post) {
-            $excerpt  = $post->effectiveExcerpt();
-            $data[] = [
-                'title'   => $post->title,
-                'url'     => $siteUrl . '/' . Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug, $this->settings['timezone'] ?? '') . '/',
-                'excerpt' => $excerpt !== null ? strip_tags($excerpt) : '',
-                'date'    => $post->published_at
+            $excerpt = $post->effectiveExcerpt();
+            $isAside = $post->isAside();
+            $entry = [
+                'title'    => $post->title,
+                'url'      => $siteUrl . '/' . Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug, $this->settings['timezone'] ?? '') . '/',
+                'excerpt'  => $excerpt !== null ? strip_tags($excerpt) : '',
+                'date'     => $post->published_at
                     ? Helpers::formatDate($post->published_at, 'M j, Y', $locale, $tz)
                     : '',
+                'is_aside' => $isAside,
             ];
+            if ($isAside) {
+                $entry['body_text'] = Post::plaintextFromMarkdown($post->content);
+            }
+            $data[] = $entry;
         }
 
         $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -283,6 +290,24 @@ class Builder
             return;
         }
         $this->writeFile($this->outputDir . '/search.json', $json);
+    }
+
+    /**
+     * Pre-render Markdown bodies for any aside posts in $posts, keyed by post id.
+     * Standard posts are skipped — list templates use the excerpt for them.
+     *
+     * @param Post[] $posts
+     * @return array<int,string>
+     */
+    private function renderAsideHtmlMap(array $posts): array
+    {
+        $map = [];
+        foreach ($posts as $post) {
+            if ($post->isAside() && $post->id !== null) {
+                $map[$post->id] = $this->md->convert($post->content)->getContent();
+            }
+        }
+        return $map;
     }
 
     /**
@@ -470,6 +495,7 @@ class Builder
                 'type'        => $type,
                 'term'        => $term,
                 'posts'       => $slice,
+                'postHtml'    => $this->renderAsideHtmlMap($slice),
                 'currentPage' => $p,
                 'totalPages'  => $totalPages,
                 'totalPosts'  => $total,
@@ -617,6 +643,12 @@ class Builder
      */
     private function buildOgImage(Post $post): string
     {
+        // Asides have no title; OG cards rendered from a missing title look broken.
+        // Skip image generation for asides — social previews fall back to the site OG.
+        if ($post->isAside()) {
+            return '';
+        }
+
         $datePath = Post::datePath($post->published_at ?? date('Y-m-d H:i:s'), $post->slug, $this->settings['timezone'] ?? '');
         $ogPath   = $this->outputDir . '/posts/' . $datePath . '/og.png';
         $siteUrl  = rtrim($this->settings['site_url'] ?? '', '/');

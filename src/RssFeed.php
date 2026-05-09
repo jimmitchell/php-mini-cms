@@ -36,7 +36,7 @@ class RssFeed
         $homeUrl  = $siteUrl . '/';
 
         $posts = $this->db->select(
-            "SELECT id, title, slug, content, excerpt, published_at, updated_at
+            "SELECT id, title, slug, content, excerpt, published_at, updated_at, post_kind
                FROM posts
               WHERE status = 'published'
               ORDER BY published_at DESC
@@ -54,8 +54,9 @@ class RssFeed
             $tz      = $this->settings['timezone'] ?? '';
             $postUrl = $siteUrl . '/' . Post::datePath($post['published_at'], $post['slug'], $tz) . '/';
             $html    = $this->converter->convert($post['content'])->getContent();
+            $isAside = ($post['post_kind'] ?? 'standard') === 'aside';
             $xml    .= $this->itemXml(
-                title:       $post['title'],
+                title:       $isAside ? null : $post['title'],
                 url:         $postUrl,
                 publishedAt: $post['published_at'],
                 html:        $html
@@ -94,7 +95,7 @@ class RssFeed
             $postUrl = $siteUrl . '/' . Post::datePath($post->published_at, $post->slug, $this->settings['timezone'] ?? '') . '/';
             $html    = $this->converter->convert($post->content)->getContent();
             $xml    .= $this->itemXml(
-                title:       $post->title,
+                title:       $post->isAside() ? null : $post->title,
                 url:         $postUrl,
                 publishedAt: $post->published_at,
                 html:        $html
@@ -146,12 +147,14 @@ class RssFeed
         return $xml;
     }
 
-    private function itemXml(string $title, string $url, ?string $publishedAt, string $html): string
+    private function itemXml(?string $title, string $url, ?string $publishedAt, string $html): string
     {
         $authorName = trim((string) ($this->settings['author_name'] ?? ''));
 
         $xml  = '    <item>' . "\n";
-        $xml .= '      <title>' . $this->x($title) . '</title>' . "\n";
+        if ($title !== null && $title !== '') {
+            $xml .= '      <title>' . $this->x($title) . '</title>' . "\n";
+        }
         $xml .= '      <link>' . $this->x($url) . '</link>' . "\n";
         $xml .= '      <guid isPermaLink="true">' . $this->x($url) . '</guid>' . "\n";
         if ($publishedAt !== null && $publishedAt !== '') {

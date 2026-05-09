@@ -31,7 +31,7 @@ class Feed
         $desc     = $this->settings['site_description'] ?? '';
 
         $posts = $this->db->select(
-            "SELECT id, title, slug, content, excerpt, published_at, updated_at
+            "SELECT id, title, slug, content, excerpt, published_at, updated_at, post_kind
                FROM posts
               WHERE status = 'published'
               ORDER BY published_at DESC
@@ -72,8 +72,12 @@ class Feed
                     . ' alt="" style="width:1px;height:1px;border:0;" />';
             }
 
+            $isAside = ($post['post_kind'] ?? 'standard') === 'aside';
+
             $xml .= '  <entry>' . "\n";
-            $xml .= '    <title>' . $this->x($post['title']) . '</title>' . "\n";
+            $xml .= $isAside
+                ? '    <title/>' . "\n"
+                : '    <title>' . $this->x($post['title']) . '</title>' . "\n";
             $xml .= '    <link href="' . $this->x($postUrl) . '" rel="alternate" type="text/html"/>' . "\n";
             $xml .= '    <id>' . $this->x($postUrl) . '</id>' . "\n";
             $xml .= '    <published>' . $this->atom($post['published_at']) . '</published>' . "\n";
@@ -129,7 +133,9 @@ class Feed
             $html    = $this->converter->convert($post->content)->getContent();
 
             $xml .= '  <entry>' . "\n";
-            $xml .= '    <title>' . $this->x($post->title) . '</title>' . "\n";
+            $xml .= $post->isAside()
+                ? '    <title/>' . "\n"
+                : '    <title>' . $this->x($post->title) . '</title>' . "\n";
             $xml .= '    <link href="' . $this->x($postUrl) . '" rel="alternate" type="text/html"/>' . "\n";
             $xml .= '    <id>' . $this->x($postUrl) . '</id>' . "\n";
             $xml .= '    <published>' . $this->atom($post->published_at) . '</published>' . "\n";

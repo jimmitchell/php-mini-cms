@@ -72,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $snapSlug        = $post?->slug;
     $snapPublishedAt = $post?->published_at;
     $snapExcerpt     = $post?->excerpt;
+    $snapPostKind    = $post?->post_kind ?? 'standard';
     $wasPublished    = $post?->status === 'published';
 
     // Populate from form.
@@ -79,25 +80,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $post = new Post($db);
     }
 
-    $post->title   = trim($_POST['title']   ?? '');
-    $post->slug    = trim($_POST['slug']    ?? '');
-    $post->content = $_POST['content'] ?? '';
-    $post->excerpt = trim($_POST['excerpt'] ?? '') ?: null;
+    $post->post_kind = ($_POST['post_kind'] ?? 'standard') === 'aside' ? 'aside' : 'standard';
+    $post->title     = trim($_POST['title']   ?? '');
+    $post->slug      = trim($_POST['slug']    ?? '');
+    $post->content   = $_POST['content'] ?? '';
+    $post->excerpt   = trim($_POST['excerpt'] ?? '') ?: null;
 
-    $post->slug = Helpers::slugify($post->slug !== '' ? $post->slug : $post->title);
+    if ($post->isAside()) {
+        // Asides use the numeric post id as their slug; finalized after save() below.
+        if (!ctype_digit($post->slug)) {
+            $post->slug = '';
+        }
+    } else {
+        $post->slug = Helpers::slugify($post->slug !== '' ? $post->slug : $post->title);
+        // A purely numeric slug would collide with the aside numbering space.
+        if (ctype_digit($post->slug)) {
+            $post->slug .= '-post';
+        }
+    }
 
     // Validation.
-    if ($post->title === '') {
+    if ($post->title === '' && !$post->isAside()) {
         $errors[] = 'Title is required.';
     }
-    if ($post->slug === '' || $post->slug === 'untitled') {
+    if (!$post->isAside() && ($post->slug === '' || $post->slug === 'untitled')) {
         $errors[] = 'A valid slug is required.';
     }
 
-    // Check slug uniqueness (allow saving over itself).
-    $existing = Post::findBySlug($db, $post->slug);
-    if ($existing && $existing->id !== $post->id) {
-        $errors[] = 'That slug is already used by another post.';
+    // Check slug uniqueness for standard posts. Asides skip this — their slug is
+    // the autoincrement id, which is unique by construction.
+    if (!$post->isAside() && $post->slug !== '') {
+        $existing = Post::findBySlug($db, $post->slug);
+        if ($existing && $existing->id !== $post->id) {
+            $errors[] = 'That slug is already used by another post.';
+        }
     }
 
     if (empty($errors)) {
@@ -152,6 +168,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $wasNew = $isNew || !$post->id;
         $post->save();
+
+        // Asides slug = autoincrement id. Re-save once the id is known.
+        if ($post->isAside() && $post->slug !== (string) $post->id) {
+            $post->slug = (string) $post->id;
+            $post->save();
+        }
 
         // Save category and tag associations.
         $categoryIds = array_values(array_filter(array_map('intval', $_POST['category_ids'] ?? [])));
@@ -239,12 +261,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Index and sitemap only change when fields they display change.
             // Feeds always need rebuilding — they include full post content.
+            // Asides always trigger a shared rebuild because the home/list pages
+            // render their full body, so any content edit must propagate.
             $sharedMetaChanged = !$wasPublished
                 || $action === 'unpublish'
                 || $post->title        !== $snapTitle
                 || $post->slug         !== $snapSlug
                 || $post->published_at !== $snapPublishedAt
                 || $post->excerpt      !== $snapExcerpt
+                || $post->post_kind    !== $snapPostKind
+                || $post->isAside()
                 || !empty($addedCategoryIds)
                 || !empty($removedCategoryIds);
             if ($sharedMetaChanged) {
@@ -365,11 +391,10 @@ if ($post->published_at) {
 
             <!-- Left: main content -->
             <div class="editor-main">
-                <label for="title">Title</label>
+                <label for="title">Title <span data-kind-only="aside" hidden style="font-weight:400;color:var(--color-muted)">(optional for notes)</span></label>
                 <input type="text" id="title" name="title"
                        value="<?= Helpers::e($post->title) ?>"
                        placeholder="Post title"
-                       required
                        data-slug-source>
 
                 <label for="slug">Slug</label>
@@ -387,9 +412,11 @@ if ($post->published_at) {
                            value="<?= Helpers::e($post->slug) ?>"
                            placeholder="auto-generated"
                            aria-describedby="slug-hint"
+                           <?= $post->isAside() ? 'readonly tabindex="-1"' : '' ?>
                            style="flex:1">
                 </div>
-                <p class="form-hint" id="slug-hint">Leave blank to auto-generate from title. Only lowercase letters, numbers, and hyphens.</p>
+                <p class="form-hint" id="slug-hint" data-kind-only="standard"<?= $post->isAside() ? ' hidden' : '' ?>>Leave blank to auto-generate from title. Only lowercase letters, numbers, and hyphens.</p>
+                <p class="form-hint" data-kind-only="aside"<?= $post->isAside() ? '' : ' hidden' ?>>Notes use the post id as their slug — assigned automatically on save.</p>
 
                 <label for="content" style="margin-top:1.25rem">Content</label>
                 <textarea id="content" name="content"><?= Helpers::e($post->content) ?></textarea>
@@ -410,6 +437,13 @@ if ($post->published_at) {
                     <div style="margin-bottom:.75rem">
                         <span class="badge badge--<?= Helpers::e($post->status) ?>"><?= Helpers::e($post->status) ?></span>
                     </div>
+
+                    <label for="post_kind" style="margin-top:0">Post kind</label>
+                    <select id="post_kind" name="post_kind" aria-describedby="post-kind-hint">
+                        <option value="standard"<?= $post->post_kind === 'aside' ? '' : ' selected' ?>>Standard</option>
+                        <option value="aside"<?= $post->post_kind === 'aside' ? ' selected' : '' ?>>Aside (note)</option>
+                    </select>
+                    <p class="form-hint" id="post-kind-hint">Asides are titleless notes shown in full on the home page.</p>
 
                     <?php if ($hasMastodon && $post->tooted_at === null): ?>
                     <?php $mastodonDisabled = $post->status === 'published'; ?>

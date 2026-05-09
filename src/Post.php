@@ -25,6 +25,7 @@ class Post
     public int     $bluesky_skip  = 0;
     public ?string $og_image_hash      = null;
     public ?string $webmentions_sent_at = null;
+    public string  $post_kind    = 'standard';
 
     /** @var array<array<string,mixed>>  [['id'=>int,'name'=>string,'slug'=>string,'description'=>string], ...] */
     public array $categories = [];
@@ -132,6 +133,7 @@ class Post
             'published_at'  => $this->published_at,
             'mastodon_skip' => $this->mastodon_skip,
             'bluesky_skip'  => $this->bluesky_skip,
+            'post_kind'     => $this->post_kind,
             'updated_at'    => date('Y-m-d H:i:s'),
         ];
 
@@ -341,7 +343,7 @@ class Post
     /**
      * Strip common Markdown syntax and HTML tags, returning normalized plain text.
      */
-    private static function plaintextFromMarkdown(string $md): string
+    public static function plaintextFromMarkdown(string $md): string
     {
         $text = strip_tags($md);
         $text = preg_replace('/^#{1,6}\h+/m', '', $text);              // headings
@@ -481,8 +483,14 @@ class Post
         $post->bluesky_skip  = (int) ($row['bluesky_skip']  ?? 0);
         $post->og_image_hash       = $row['og_image_hash']       ?? null;
         $post->webmentions_sent_at = $row['webmentions_sent_at'] ?? null;
+        $post->post_kind           = $row['post_kind']           ?? 'standard';
 
         return $post;
+    }
+
+    public function isAside(): bool
+    {
+        return $this->post_kind === 'aside';
     }
 
     /**

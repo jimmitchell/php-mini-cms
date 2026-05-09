@@ -146,18 +146,73 @@ function postToStruct(Post $post, string $siteUrl, string $timezone = ''): array
     $url    = rtrim($siteUrl, '/') . '/' . Post::datePath($pubAt, $post->slug, $timezone) . '/';
 
     return [
-        'postid'      => (string) $post->id,
-        'userid'      => '1',
-        'title'       => $post->title,
-        'description' => $post->content,
-        'mt_excerpt'  => $post->excerpt ?? '',
-        'wp_slug'     => $post->slug,
-        'dateCreated' => new \CMS\DateTimeValue(XmlRpc::isoDate($pubAt)),
-        'link'        => $url,
-        'permaLink'   => $url,
-        'categories'  => array_column($post->categories, 'name'),
-        'post_status' => $post->status,
+        'postid'         => (string) $post->id,
+        'userid'         => '1',
+        'title'          => $post->title,
+        'description'    => $post->content,
+        'mt_excerpt'     => $post->excerpt ?? '',
+        'wp_slug'        => $post->slug,
+        'dateCreated'    => new \CMS\DateTimeValue(XmlRpc::isoDate($pubAt)),
+        'link'           => $url,
+        'permaLink'      => $url,
+        'categories'     => array_column($post->categories, 'name'),
+        'post_status'    => $post->status,
+        'wp_post_format' => $post->post_kind,
     ];
+}
+
+/**
+ * Pick the post_kind from an incoming struct (MetaWeblog or WordPress).
+ * Returns 'aside' when the struct carries that format; otherwise 'standard'.
+ */
+function xmlrpc_kind_from_struct(array $struct): string
+{
+    $raw = strtolower(trim((string) ($struct['wp_post_format'] ?? $struct['post_format'] ?? '')));
+    return $raw === 'aside' ? 'aside' : 'standard';
+}
+
+/**
+ * Resolve a unique slug for a standard (non-aside) post by slugifying $raw and
+ * appending a numeric suffix on collision. Numeric-only slugs are reserved for
+ * asides, so a standard post that would slugify to digits gets a "-post" suffix.
+ */
+function xmlrpc_resolve_standard_slug(Post $post, string $raw): string
+{
+    global $db;
+
+    $base = Helpers::slugify($raw);
+    if ($base === '') {
+        $base = 'post';
+    }
+    if (ctype_digit($base)) {
+        $base .= '-post';
+    }
+    $candidate = $base;
+    $suffix    = 2;
+    while (true) {
+        $existing = Post::findBySlug($db, $candidate);
+        if ($existing === null || $existing->id === $post->id) {
+            return $candidate;
+        }
+        $candidate = $base . '-' . $suffix++;
+    }
+}
+
+/**
+ * After a post has been saved (id is known), give an aside its numeric slug.
+ * Idempotent: only writes when the slug is empty or stale.
+ */
+function xmlrpc_finalize_aside_slug(Post $post): void
+{
+    if (!$post->isAside() || $post->id === null) {
+        return;
+    }
+    $target = (string) $post->id;
+    if ($post->slug === $target) {
+        return;
+    }
+    $post->slug = $target;
+    $post->save();
 }
 
 /**
@@ -166,7 +221,8 @@ function postToStruct(Post $post, string $siteUrl, string $timezone = ''): array
  */
 function applyStruct(Post $post, array $struct, bool $publish, string $timezone): void
 {
-    global $db;
+    // Post kind (WordPress post_format). 'aside' = titleless note.
+    $post->post_kind = xmlrpc_kind_from_struct($struct);
 
     // Title
     if (isset($struct['title'])) {
@@ -185,23 +241,20 @@ function applyStruct(Post $post, array $struct, bool $publish, string $timezone)
     }
 
     // Slug
-    $rawSlug = trim((string) ($struct['wp_slug'] ?? ''));
-    if ($rawSlug === '' && $post->slug === '') {
-        $rawSlug = $post->title;
-    }
-    if ($rawSlug !== '') {
-        $base = Helpers::slugify($rawSlug);
-        // Collision check: find a unique slug for a different post.
-        $candidate = $base;
-        $suffix    = 2;
-        while (true) {
-            $existing = Post::findBySlug($db, $candidate);
-            if ($existing === null || $existing->id === $post->id) {
-                break;
-            }
-            $candidate = $base . '-' . $suffix++;
+    if ($post->isAside()) {
+        // Asides use the numeric post id as their slug. Defer to xmlrpc_finalize_aside_slug()
+        // after save(), since the id may not exist yet on a new post.
+        if (!ctype_digit($post->slug)) {
+            $post->slug = '';
         }
-        $post->slug = $candidate;
+    } else {
+        $rawSlug = trim((string) ($struct['wp_slug'] ?? ''));
+        if ($rawSlug === '' && ($post->slug === '' || ctype_digit($post->slug))) {
+            $rawSlug = $post->title;
+        }
+        if ($rawSlug !== '') {
+            $post->slug = xmlrpc_resolve_standard_slug($post, $rawSlug);
+        }
     }
 
     // post_status field overrides $publish for draft detection.
@@ -576,7 +629,7 @@ function wpPostToStruct(Post $post, string $siteUrl, string $timezone = ''): arr
         'post_author'       => '1',
         'comment_status'    => 'closed',
         'ping_status'       => 'closed',
-        'post_format'       => 'standard',
+        'post_format'       => $post->post_kind,
         'post_thumbnail'    => '',
         'terms'             => array_merge(
             array_map(fn($c) => [
@@ -602,7 +655,7 @@ function wpPostToStruct(Post $post, string $siteUrl, string $timezone = ''): arr
  */
 function applyWpPostStruct(Post $post, array $struct, string $timezone): void
 {
-    global $db;
+    $post->post_kind = xmlrpc_kind_from_struct($struct);
 
     if (isset($struct['post_title'])) {
         $post->title = trim((string) $struct['post_title']);
@@ -617,23 +670,19 @@ function applyWpPostStruct(Post $post, array $struct, string $timezone): void
         $post->excerpt = $ex !== '' ? $ex : null;
     }
 
-    // Slug — auto-generate from title when absent; collision-check same as applyStruct().
-    $rawSlug = trim((string) ($struct['post_name'] ?? ''));
-    if ($rawSlug === '' && $post->slug === '') {
-        $rawSlug = $post->title;
-    }
-    if ($rawSlug !== '') {
-        $base      = Helpers::slugify($rawSlug);
-        $candidate = $base;
-        $suffix    = 2;
-        while (true) {
-            $existing = Post::findBySlug($db, $candidate);
-            if ($existing === null || $existing->id === $post->id) {
-                break;
-            }
-            $candidate = $base . '-' . $suffix++;
+    // Slug — asides defer to xmlrpc_finalize_aside_slug() (numeric id after save).
+    if ($post->isAside()) {
+        if (!ctype_digit($post->slug)) {
+            $post->slug = '';
         }
-        $post->slug = $candidate;
+    } else {
+        $rawSlug = trim((string) ($struct['post_name'] ?? ''));
+        if ($rawSlug === '' && ($post->slug === '' || ctype_digit($post->slug))) {
+            $rawSlug = $post->title;
+        }
+        if ($rawSlug !== '') {
+            $post->slug = xmlrpc_resolve_standard_slug($post, $rawSlug);
+        }
     }
 
     // Date
@@ -808,11 +857,12 @@ switch ($method) {
         $post = new Post($db);
         applyStruct($post, $struct, $publish, $timezone);
 
-        if ($post->title === '') {
+        if ($post->title === '' && !$post->isAside()) {
             xmlrpc_fault(400, 'Title is required.');
         }
 
         $post->save();
+        xmlrpc_finalize_aside_slug($post);
         xmlrpc_save_terms($post, $struct);
         syndicatePost($post);
         rebuildPost($post);
@@ -833,11 +883,12 @@ switch ($method) {
 
         applyStruct($post, $struct, $publish, $timezone);
 
-        if ($post->title === '') {
+        if ($post->title === '' && !$post->isAside()) {
             xmlrpc_fault(400, 'Title is required.');
         }
 
         $post->save();
+        xmlrpc_finalize_aside_slug($post);
         xmlrpc_save_terms($post, $struct);
         syndicatePost($post);
         rebuildPost($post, $wasPublished);
@@ -1044,7 +1095,7 @@ switch ($method) {
     // ── wp.getPostFormats(blogid, username, password[, filter]) ───────────────
     case 'wp.getPostFormats':
         xmlrpc_auth($params, 1, 2);
-        echo XmlRpc::encodeResponse(['standard' => 'Standard']);
+        echo XmlRpc::encodeResponse(['standard' => 'Standard', 'aside' => 'Aside']);
         break;
 
     // ── wp.getTaxonomies(blogid, username, password) ──────────────────────────
@@ -1250,10 +1301,11 @@ switch ($method) {
         } else {
             $post = new Post($db);
             applyWpPostStruct($post, $struct, $timezone);
-            if ($post->title === '') {
+            if ($post->title === '' && !$post->isAside()) {
                 xmlrpc_fault(400, 'Title is required.');
             }
             $post->save();
+            xmlrpc_finalize_aside_slug($post);
             xmlrpc_save_terms($post, $struct);
             syndicatePost($post);
             rebuildPost($post);
@@ -1290,10 +1342,11 @@ switch ($method) {
         }
         $wasPublished = $post->status === 'published';
         applyWpPostStruct($post, $struct, $timezone);
-        if ($post->title === '') {
+        if ($post->title === '' && !$post->isAside()) {
             xmlrpc_fault(400, 'Title is required.');
         }
         $post->save();
+        xmlrpc_finalize_aside_slug($post);
         xmlrpc_save_terms($post, $struct);
         syndicatePost($post);
         rebuildPost($post, $wasPublished);

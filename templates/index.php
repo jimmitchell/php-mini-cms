@@ -23,6 +23,17 @@ ob_start();
 
     <?php foreach ($posts as $post): ?>
     <?php $postUrl = rtrim($siteUrl, '/') . '/' . CMS\Post::datePath($post->published_at, $post->slug, $settings['timezone'] ?? '') . '/'; ?>
+    <?php if ($post->isAside()): ?>
+    <article class="post-card post-card--note h-entry">
+        <?php if ($post->published_at): ?>
+        <time class="post-card__date dt-published" datetime="<?= date('Y-m-d\TH:i:s\Z', strtotime($post->published_at)) ?>">
+            <a class="u-url" href="<?= htmlspecialchars($postUrl) ?>"><?= Helpers::formatDate($post->published_at, 'l, F j, Y', $settings['locale'] ?? '', $settings['timezone'] ?? '') ?></a>
+        </time>
+        <?php endif; ?>
+        <div class="post-card__body prose e-content"><?= $postHtml[$post->id] ?? '' ?></div>
+        <a href="<?= htmlspecialchars($postUrl) ?>" class="post-card__more">Read more →</a>
+    </article>
+    <?php else: ?>
     <article class="post-card h-entry">
         <h2 class="post-card__title">
             <a href="<?= htmlspecialchars($postUrl) ?>" class="u-url p-name"><?= htmlspecialchars($post->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a>
@@ -38,6 +49,7 @@ ob_start();
         <?php endif; ?>
         <a href="<?= htmlspecialchars($postUrl) ?>" class="post-card__more">Read more →</a>
     </article>
+    <?php endif; ?>
     <?php endforeach; ?>
 
     <?php endif; ?>

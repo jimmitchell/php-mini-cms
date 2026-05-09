@@ -748,6 +748,35 @@ audio { width: 100%; }
     padding-top: .75rem;
 }
 
+/* ── Note (titleless aside) — list cards ──────────────────────────────────── */
+
+/* Notes share the .post-card frame with standard posts. The body element
+   replaces .post-card__excerpt and renders full Markdown via .prose. */
+.post-card__body {
+    color: var(--color-text);
+    font-size: .95rem;
+    flex: 1;
+}
+
+.post-card__body > :first-child { margin-top: 0; }
+.post-card__body > :last-child  { margin-bottom: 0; }
+
+.post-card--note .post-card__date a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.post-card--note .post-card__date a:hover { text-decoration: underline; }
+
+/* On the single-post page, .post--note hides nothing extra (the h1, author,
+   and reading time are already omitted server-side); just tighten spacing
+   where the byline used to be. */
+.post.post--note .post__header { margin-bottom: 1rem; }
+
+/* The " · " separator before .post__date assumes the author byline precedes
+   it. For notes the author is omitted, so the leading bullet would dangle. */
+.post.post--note .post__date::before { content: none; }
+
 .post-list__empty {
     color: var(--color-muted);
     font-style: italic;

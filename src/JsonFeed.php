@@ -31,7 +31,7 @@ class JsonFeed
         $desc    = $this->settings['site_description'] ?? '';
 
         $posts = $this->db->select(
-            "SELECT id, title, slug, content, excerpt, published_at, updated_at
+            "SELECT id, title, slug, content, excerpt, published_at, updated_at, post_kind
                FROM posts
               WHERE status = 'published'
               ORDER BY published_at DESC
@@ -54,15 +54,18 @@ class JsonFeed
         foreach ($posts as $post) {
             $postUrl = $siteUrl . '/' . Post::datePath($post['published_at'], $post['slug'], $this->settings['timezone'] ?? '') . '/';
             $html    = $this->converter->convert($post['content'])->getContent();
+            $isAside = ($post['post_kind'] ?? 'standard') === 'aside';
 
             $item = [
                 'id'             => $postUrl,
                 'url'            => $postUrl,
-                'title'          => $post['title'],
                 'content_html'   => $html,
                 'date_published' => $this->rfc3339($post['published_at']),
                 'date_modified'  => $this->rfc3339($post['updated_at'] ?? $post['published_at']),
             ];
+            if (!$isAside) {
+                $item['title'] = $post['title'];
+            }
 
             if (!empty($post['excerpt'])) {
                 $item['summary'] = $post['excerpt'];
@@ -115,11 +118,13 @@ class JsonFeed
             $item = [
                 'id'             => $postUrl,
                 'url'            => $postUrl,
-                'title'          => $post->title,
                 'content_html'   => $html,
                 'date_published' => $this->rfc3339($post->published_at),
                 'date_modified'  => $this->rfc3339($post->updated_at ?? $post->published_at),
             ];
+            if (!$post->isAside()) {
+                $item['title'] = $post->title;
+            }
 
             if (!empty($post->excerpt)) {
                 $item['summary'] = $post->excerpt;
