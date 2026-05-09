@@ -43,6 +43,7 @@
     --color-text:       #1a1a1a;
     --color-muted:      #6b7280;
     --color-border:     #e5e7eb;
+    --color-border-hover: #d1d5db;
     --color-bg:         #ffffff;
     --color-chrome-bg:  #f3f4f6;
     --color-code-bg:    #f3f4f6;
@@ -60,6 +61,7 @@
         --color-text:       #e5e7eb;
         --color-muted:      #9ca3af;
         --color-border:     #374151;
+        --color-border-hover: #4b5563;
         --color-bg:         #181818;
         --color-chrome-bg:  #121212;
         --color-code-bg:    #2a2a2a;
@@ -74,6 +76,7 @@
     --color-text:          #e5e7eb;
     --color-muted:         #9ca3af;
     --color-border:        #374151;
+    --color-border-hover:  #4b5563;
     --color-bg:            #181818;
     --color-chrome-bg:     #0e0e0e;
     --color-code-bg:       #2a2a2a;
@@ -474,6 +477,15 @@ audio { width: 100%; }
     margin-bottom: 1.5em;
 }
 
+@media (max-width: 600px) {
+    .prose table {
+        min-width: 300px;
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
 .prose th,
 .prose td {
     padding: .5em .75em;
@@ -701,9 +713,8 @@ audio { width: 100%; }
 }
 
 .post-card:hover {
-    border-color: #d1d5db;
+    border-color: var(--color-border-hover);
     box-shadow: 0 4px 12px rgba(0,0,0,.08);
-    transform: scale(1.015);
 }
 
 .post-card__title {
@@ -839,6 +850,7 @@ audio { width: 100%; }
     display: flex;
     gap: 2rem;
     margin-top: 3rem;
+    margin-bottom: .5rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--color-border);
     line-height: 1.3;
