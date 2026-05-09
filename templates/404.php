@@ -19,8 +19,23 @@ ob_start();
     <div class="error-page__actions">
         <a href="<?= htmlspecialchars(rtrim($siteUrl, '/') . '/') ?>" class="btn">← Go home</a>
         <a href="<?= htmlspecialchars(rtrim($siteUrl, '/') . '/search/') ?>" class="btn">Search →</a>
+        <a id="wayback-link" class="btn" href="#" target="_blank" rel="noopener noreferrer" hidden>Wayback Machine ↗</a>
     </div>
 </div>
+<script>
+(function () {
+    var link = document.getElementById('wayback-link');
+    if (!link) return;
+    var api = 'https://archive.org/wayback/available?url=' + encodeURIComponent(location.href);
+    fetch(api).then(function (r) { return r.ok ? r.json() : null; }).then(function (data) {
+        var snap = data && data.archived_snapshots && data.archived_snapshots.closest;
+        if (snap && snap.available && snap.url) {
+            link.href = snap.url.replace(/^http:/, 'https:');
+            link.hidden = false;
+        }
+    }).catch(function () {});
+}());
+</script>
 <?php
 $bodyContent = ob_get_clean();
 $is404Page   = true;
