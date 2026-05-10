@@ -70,21 +70,22 @@ class Bluesky
 
     /**
      * Compose post text within Bluesky's 300-grapheme limit.
-     * Layout: title\n\nexcerpt\n\nurl
+     * Layout: any non-empty subset of {title, excerpt, url} joined by blank lines.
      */
     private function buildText(string $title, string $excerpt, string $url): string
     {
-        // Reserve space for title, url, and four newline chars.
-        $reserved = mb_strlen($title) + mb_strlen($url) + 4;
-        $budget   = max(0, 300 - $reserved);
+        $fixedParts = (int) ($title !== '') + (int) ($url !== '');
+        $hasExcerpt = $excerpt !== '';
+        $separators = max(0, $fixedParts + (int) $hasExcerpt - 1) * 2;
+        $reserved   = mb_strlen($title) + mb_strlen($url) + $separators;
+        $budget     = max(0, 300 - $reserved);
 
-        if (mb_strlen($excerpt) > $budget) {
+        if ($hasExcerpt && mb_strlen($excerpt) > $budget) {
             $excerpt = rtrim(mb_substr($excerpt, 0, $budget - 1)) . '…';
         }
 
-        return $excerpt !== ''
-            ? $title . "\n\n" . $excerpt . "\n\n" . $url
-            : $title . "\n\n" . $url;
+        $parts = array_filter([$title, $excerpt, $url], static fn(string $p): bool => $p !== '');
+        return implode("\n\n", $parts);
     }
 
     /**
@@ -93,6 +94,9 @@ class Bluesky
      */
     private function buildFacets(string $text, string $url): array
     {
+        if ($url === '') {
+            return [];
+        }
         $byteStart = strpos($text, $url);
         if ($byteStart === false) {
             return [];

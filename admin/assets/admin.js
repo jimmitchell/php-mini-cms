@@ -223,6 +223,81 @@ function setAction(action) {
     });
 })();
 
+// ── Aside syndication length heads-up ────────────────────────────────────────
+// For aside (note) posts, the full content is syndicated natively to Mastodon
+// and Bluesky with no link back. Show a live counter so the author knows when
+// the note will be truncated on either platform.
+
+(function initAsideLengthHint() {
+    const status     = document.getElementById('aside-length-status');
+    const kindSelect = document.getElementById('post_kind');
+    const textarea   = document.getElementById('content');
+    if (!status || !kindSelect || !textarea) return;
+
+    const MASTODON_LIMIT = 500;
+    const BLUESKY_LIMIT  = 300;
+
+    const segmenter = (typeof Intl !== 'undefined' && Intl.Segmenter)
+        ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+        : null;
+
+    function plaintextFromMarkdown(md) {
+        let t = md;
+        t = t.replace(/<[^>]+>/g, '');                      // HTML tags
+        t = t.replace(/^#{1,6}[ \t]+/gm, '');               // headings
+        t = t.replace(/(\*{1,3}|_{1,3})([\s\S]+?)\1/g, '$2'); // bold/italic
+        t = t.replace(/~~([\s\S]+?)~~/g, '$1');             // strikethrough
+        t = t.replace(/`+[^`]*`+/g, '');                    // inline code
+        t = t.replace(/!\[[^\]]*\]\([^\)]*\)/g, '');        // images
+        t = t.replace(/\[([^\]]+)\]\([^\)]*\)/g, '$1');     // links
+        return t.trim();
+    }
+
+    function graphemeCount(s) {
+        if (segmenter) {
+            let n = 0;
+            for (const _ of segmenter.segment(s)) n++;
+            return n;
+        }
+        return [...s].length;
+    }
+
+    function getContent() {
+        return (window._editor && typeof window._editor.value === 'function')
+            ? window._editor.value()
+            : textarea.value;
+    }
+
+    function update() {
+        if (kindSelect.value !== 'aside') return;
+        const text   = plaintextFromMarkdown(getContent());
+        const chars  = [...text].length;     // code points — matches PHP mb_strlen
+        const graphs = graphemeCount(text);
+
+        const overBsky = graphs > BLUESKY_LIMIT;
+        const overMast = chars  > MASTODON_LIMIT;
+
+        let msg = `Bluesky ${graphs}/${BLUESKY_LIMIT} · Mastodon ${chars}/${MASTODON_LIMIT}`;
+        if (overBsky || overMast) {
+            const services = [overBsky && 'Bluesky', overMast && 'Mastodon']
+                .filter(Boolean).join(' and ');
+            msg += ` — will be truncated on ${services}`;
+            status.style.color = 'var(--color-danger, #c0392b)';
+        } else {
+            status.style.color = '';
+        }
+        status.textContent = msg;
+    }
+
+    kindSelect.addEventListener('change', update);
+    if (window._editor && window._editor.codemirror) {
+        window._editor.codemirror.on('change', update);
+    } else {
+        textarea.addEventListener('input', update);
+    }
+    update();
+})();
+
 // ── Update-button dirty tracking ─────────────────────────────────────────────
 // Enables #update-btn (present only on published posts/pages) once any
 // change has been made, so it stays disabled until there is something to save.

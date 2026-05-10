@@ -648,13 +648,19 @@ if ($status === 'published') {
     $hasBluesky         = $blueskyHandle !== '' && $blueskyAppPassword !== '';
 
     if (($hasMastodon && $post->mastodon_skip === 0) || ($hasBluesky && $post->bluesky_skip === 0)) {
-        $postUrl = rtrim($db->getSetting('site_url', ''), '/')
-                 . '/' . \CMS\Post::datePath($post->published_at, $post->slug, $cfgTz) . '/';
+        // POSSE: asides syndicate as native-looking notes — no title, no link back.
+        if ($post->isAside()) {
+            $postUrl = '';
+            $excerpt = trim(\CMS\Post::plaintextFromMarkdown($post->content));
+        } else {
+            $postUrl = rtrim($db->getSetting('site_url', ''), '/')
+                     . '/' . \CMS\Post::datePath($post->published_at, $post->slug, $cfgTz) . '/';
 
-        $effective = $post->effectiveExcerpt();
-        $excerpt   = $effective !== null
-            ? strip_tags($effective)
-            : \CMS\Helpers::truncate($post->content, 280);
+            $effective = $post->effectiveExcerpt();
+            $excerpt   = $effective !== null
+                ? strip_tags($effective)
+                : \CMS\Helpers::truncate($post->content, 280);
+        }
 
         if ($hasMastodon && $post->mastodon_skip === 0 && $post->tooted_at === null) {
             $mastodon = new \CMS\Mastodon($mastodonInstance, $mastodonToken);

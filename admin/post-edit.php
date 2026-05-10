@@ -421,6 +421,10 @@ if ($post->published_at) {
                 <label for="content" style="margin-top:1.25rem">Content</label>
                 <textarea id="content" name="content"><?= Helpers::e($post->content) ?></textarea>
 
+                <p class="form-hint" id="aside-length-hint" data-kind-only="aside"<?= $post->isAside() ? '' : ' hidden' ?>>
+                    <span id="aside-length-status"></span>
+                </p>
+
                 <label for="excerpt">Excerpt <span style="font-weight:400;color:var(--color-muted)">(optional)</span></label>
                 <textarea id="excerpt" name="excerpt" style="min-height:80px"
                           aria-describedby="excerpt-hint"><?= Helpers::e($post->excerpt ?? '') ?></textarea>
