@@ -113,6 +113,27 @@ server {
         add_header Referrer-Policy        "strict-origin-when-cross-origin"  always;
     }
 
+    # ── Long-running import endpoints ─────────────────────────────────────────
+    # WXR import + media re-hosting can run for many minutes when downloading
+    # remote images. Default fastcgi_read_timeout (60s) cuts these off long
+    # before completion. This regex location matches before the prefix-based
+    # /admin/ block, so it must repeat the admin security headers (nginx does
+    # not inherit add_header into a sibling location).
+    location ~ ^/admin/(import|import-media)\.php$ {
+        include        fastcgi_params;
+        fastcgi_pass   unix:/run/php/php8.3-fpm.sock;
+        fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param  HTTPS           on;
+        fastcgi_read_timeout 3600s;
+        fastcgi_send_timeout 3600s;
+        add_header X-Frame-Options          "SAMEORIGIN"    always;
+        add_header X-Content-Type-Options   "nosniff"       always;
+        add_header X-XSS-Protection         "1; mode=block" always;
+        add_header Referrer-Policy          "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy       "geolocation=()" always;
+        add_header Content-Security-Policy  "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'" always;
+    }
+
     # ── Admin panel — PHP-FPM ─────────────────────────────────────────────────
     location /admin/ {
         index index.php;

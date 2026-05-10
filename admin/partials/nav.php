@@ -11,6 +11,8 @@ $navItems = [
     '/admin/categories.php' => ['label' => 'Categories', 'icon' => 'fa-tag'],
     '/admin/tags.php'       => ['label' => 'Tags',       'icon' => 'fa-tags'],
     '/admin/media.php'      => ['label' => 'Media',      'icon' => 'fa-picture-o'],
+    '/admin/import.php'      => ['label' => 'Import',    'icon' => 'fa-upload'],
+    '/admin/import-media.php' => ['label' => 'Import media', 'icon' => 'fa-cloud-download'],
     '/admin/export.php'      => ['label' => 'Export',    'icon' => 'fa-download'],
     '/admin/settings.php'   => ['label' => 'Settings',  'icon' => 'fa-cog'],
     '/admin/micropub.php'   => ['label' => 'Micropub',  'icon' => 'fa-cloud-upload'],

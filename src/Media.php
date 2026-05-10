@@ -99,6 +99,139 @@ class Media
         ];
     }
 
+    // ── Ingest from a URL ─────────────────────────────────────────────────────
+
+    /**
+     * Download a remote image into the media library.
+     *
+     * Streams the response to a temp file via cURL (PHP RAM stays flat regardless
+     * of image size), validates MIME against the same allowlist as upload(), then
+     * reuses the existing safeFilename() + generateWebp() helpers. Dedups across
+     * calls via media.source_url.
+     *
+     * @return array{id:int,filename:string,url:string,reused:bool}
+     * @throws RuntimeException on fetch / validation / I/O failure
+     */
+    public function ingestFromUrl(string $url, int $timeout = 30): array
+    {
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        if ($scheme !== 'http' && $scheme !== 'https') {
+            throw new RuntimeException("Unsupported URL scheme: {$url}");
+        }
+
+        // Cross-run dedup: same URL referenced from many posts is fetched once.
+        $existing = $this->db->selectOne(
+            "SELECT id, filename FROM media WHERE source_url = :u LIMIT 1",
+            ['u' => $url]
+        );
+        if ($existing !== null) {
+            return [
+                'id'       => (int) $existing['id'],
+                'filename' => (string) $existing['filename'],
+                'url'      => '/media/' . rawurlencode((string) $existing['filename']),
+                'reused'   => true,
+            ];
+        }
+
+        $tmp = tempnam(sys_get_temp_dir(), 'cms_media_');
+        if ($tmp === false) {
+            throw new RuntimeException('Could not create temp file for download.');
+        }
+
+        $fp = fopen($tmp, 'wb');
+        if ($fp === false) {
+            @unlink($tmp);
+            throw new RuntimeException('Could not open temp file for writing.');
+        }
+
+        $version = defined('CMS_VERSION') ? (string) CMS_VERSION : 'dev';
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL            => $url,
+            CURLOPT_FILE           => $fp,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_TIMEOUT        => $timeout,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_USERAGENT      => 'clodd-cms/' . $version,
+            // Aborts early when the server sends Content-Length larger than the cap.
+            CURLOPT_MAXFILESIZE    => $this->maxBytes,
+        ]);
+
+        $ok      = curl_exec($ch);
+        $errCode = curl_errno($ch);
+        $errMsg  = curl_error($ch);
+        $http    = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        fclose($fp);
+
+        if ($errCode !== 0 || $ok === false) {
+            @unlink($tmp);
+            throw new RuntimeException("Fetch failed (curl {$errCode}: {$errMsg}) for {$url}");
+        }
+        if ($http >= 400) {
+            @unlink($tmp);
+            throw new RuntimeException("HTTP {$http} for {$url}");
+        }
+
+        // Post-download size check (covers servers that don't set Content-Length).
+        $size = filesize($tmp) ?: 0;
+        if ($size === 0) {
+            @unlink($tmp);
+            throw new RuntimeException("Empty response body for {$url}");
+        }
+        if ($size > $this->maxBytes) {
+            $mb = round($this->maxBytes / 1_048_576);
+            @unlink($tmp);
+            throw new RuntimeException("Downloaded file exceeds {$mb} MB cap: {$url}");
+        }
+
+        // MIME via fileinfo (don't trust Content-Type header).
+        $mimeType = (new \finfo(FILEINFO_MIME_TYPE))->file($tmp);
+        if (!is_string($mimeType) || !array_key_exists($mimeType, self::ALLOWED_MIME)) {
+            @unlink($tmp);
+            throw new RuntimeException("Disallowed MIME '" . ($mimeType ?: 'unknown') . "' for {$url}");
+        }
+
+        // Derive a friendly original_name from the URL path.
+        $urlPath      = parse_url($url, PHP_URL_PATH) ?: '';
+        $urlBasename  = $urlPath !== '' ? basename($urlPath) : '';
+        $originalName = $urlBasename !== '' ? $urlBasename : 'image.' . self::ALLOWED_MIME[$mimeType];
+
+        $safeName = $this->safeFilename($originalName, self::ALLOWED_MIME[$mimeType]);
+        $destPath = $this->storageDir . '/' . $safeName;
+
+        // rename() is atomic when src and dest are on the same filesystem; falls
+        // back to copy+unlink across filesystems (sys temp vs. project storage).
+        if (!@rename($tmp, $destPath)) {
+            if (!@copy($tmp, $destPath)) {
+                @unlink($tmp);
+                throw new RuntimeException('Could not move downloaded file into media storage.');
+            }
+            @unlink($tmp);
+        }
+
+        $ext = self::ALLOWED_MIME[$mimeType];
+        if (in_array($ext, ['jpg', 'jpeg', 'png'], true)) {
+            $this->generateWebp($destPath);
+        }
+
+        $id = $this->db->insert('media', [
+            'filename'      => $safeName,
+            'original_name' => $originalName,
+            'mime_type'     => $mimeType,
+            'size'          => $size,
+            'source_url'    => $url,
+        ]);
+
+        return [
+            'id'       => $id,
+            'filename' => $safeName,
+            'url'      => '/media/' . rawurlencode($safeName),
+            'reused'   => false,
+        ];
+    }
+
     // ── Delete ────────────────────────────────────────────────────────────────
 
     /**
@@ -212,6 +345,79 @@ class Media
     public static function isVideo(string $mimeType): bool
     {
         return str_starts_with($mimeType, 'video/');
+    }
+
+    /**
+     * Extract distinct external <img> source URLs from HTML.
+     * "External" = absolute http(s) URL whose host differs from $siteUrl's host
+     * (or any non-empty absolute URL when $siteUrl is empty). Already-local
+     * paths starting with "/" are skipped, as are data: URIs.
+     *
+     * @return string[]  unique URLs in first-seen order
+     */
+    public static function extractExternalImageUrls(string $html, string $siteUrl = ''): array
+    {
+        if ($html === '' || stripos($html, '<img') === false) {
+            return [];
+        }
+
+        $siteHost = $siteUrl !== '' ? (string) (parse_url($siteUrl, PHP_URL_HOST) ?: '') : '';
+
+        if (!preg_match_all('/<img\b[^>]*\bsrc\s*=\s*(["\'])(.*?)\1/is', $html, $matches)) {
+            return [];
+        }
+
+        $urls = [];
+        foreach ($matches[2] as $src) {
+            $src = trim(html_entity_decode($src, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if ($src === '' || $src[0] === '/' || str_starts_with($src, 'data:')) {
+                continue;
+            }
+            $scheme = parse_url($src, PHP_URL_SCHEME);
+            if ($scheme !== 'http' && $scheme !== 'https') {
+                continue;
+            }
+            if ($siteHost !== '') {
+                $host = (string) (parse_url($src, PHP_URL_HOST) ?: '');
+                if (strcasecmp($host, $siteHost) === 0) {
+                    continue;
+                }
+            }
+            $urls[$src] = true;
+        }
+
+        return array_keys($urls);
+    }
+
+    /**
+     * Rewrite img-src URLs in HTML using a map of old→new.
+     * Only matches inside <img src="..."> attributes (won't touch links or
+     * unrelated occurrences elsewhere in the body).
+     *
+     * @param array<string,string> $urlMap  externalUrl → localPath
+     */
+    public static function rewriteImageUrls(string $html, array $urlMap): string
+    {
+        if ($html === '' || empty($urlMap)) {
+            return $html;
+        }
+
+        return (string) preg_replace_callback(
+            '/(<img\b[^>]*\bsrc\s*=\s*(["\']))(.*?)(\2)/is',
+            static function (array $m) use ($urlMap): string {
+                $decoded = html_entity_decode($m[3], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $replacement = $urlMap[$decoded] ?? null;
+                if ($replacement === null) {
+                    // Try the raw (un-decoded) URL too.
+                    $replacement = $urlMap[$m[3]] ?? null;
+                }
+                if ($replacement === null) {
+                    return $m[0];
+                }
+                return $m[1] . htmlspecialchars($replacement, ENT_QUOTES, 'UTF-8') . $m[4];
+            },
+            $html
+        );
     }
 
     public static function formatBytes(int $bytes): string

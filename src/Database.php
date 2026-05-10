@@ -17,7 +17,7 @@ class Database
     private static array $settingsCache = [];
 
     // Increment this whenever the schema changes.
-    private const SCHEMA_VERSION = 17;
+    private const SCHEMA_VERSION = 19;
 
     public function __construct(string $dbPath)
     {
@@ -425,6 +425,22 @@ class Database
         // slug stores the autoincrement id, feed entries omit <title>.
         $this->run("ALTER TABLE posts ADD COLUMN post_kind TEXT NOT NULL DEFAULT 'standard'");
         $this->run("CREATE INDEX IF NOT EXISTS idx_posts_post_kind ON posts(post_kind)");
+    }
+
+    private function applySchemaV18(): void
+    {
+        // import_guid: WXR <guid> from imported posts; used to dedup re-imports.
+        $this->run("ALTER TABLE posts ADD COLUMN import_guid TEXT");
+        $this->run("CREATE INDEX IF NOT EXISTS idx_posts_import_guid ON posts(import_guid)");
+    }
+
+    private function applySchemaV19(): void
+    {
+        // source_url: external URL a media item was downloaded from. Lets the
+        // image-rehosting tool dedup across runs (same URL referenced from many
+        // posts is fetched once) and supports safe re-runs after partial failures.
+        $this->run("ALTER TABLE media ADD COLUMN source_url TEXT");
+        $this->run("CREATE INDEX IF NOT EXISTS idx_media_source_url ON media(source_url)");
     }
 
     /** Insert or update a single settings row. */

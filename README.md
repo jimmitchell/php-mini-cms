@@ -29,6 +29,8 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Incoming webmentions** — display likes, reposts, and replies on posts via webmention.io; client-side fetch with avatar grid for reactions and threaded reply cards
 - **Outgoing webmentions** — CLI script (`bin/send-webmentions.php`) discovers endpoints and sends pings for all external links in published posts; safe to schedule via cron
 - **WordPress XML export** — download all posts (with categories, tags, and optional drafts) as a WXR file importable via WordPress Tools → Import
+- **WordPress XML import** — upload a WXR file (e.g. a Micro.blog export) to bulk-create posts; titleless items can land as `aside` notes; categories and tags are auto-created; re-imports are deduped by `<guid>`; syndication is suppressed for the entire backlog so importing years of posts won't flood Mastodon or Bluesky
+- **Media re-hosting** — scan every post for external `<img>` URLs, download each into the local media library, and rewrite the post HTML to point at `/media/` paths; idempotent (re-runs skip what's already local); also available as a checkbox during WXR import
 - **MarsEdit support** — full WordPress XML-RPC API at `/admin/xmlrpc.php`; write and publish from MarsEdit with post and page management
 - **Micropub / iA Writer support** — W3C Micropub endpoint at `/micropub.php`; bearer-token auth, JSON / form / multipart payloads, inline photo uploads, automatic endpoint discovery via `<link rel="micropub">`. Works with iA Writer, Quill, Drafts, and other Micropub clients
 - **Google Analytics** — optional GA4 integration; add a measurement ID in Settings to inject the tracking script
@@ -161,6 +163,8 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 | Categories | `/admin/categories.php` | Create, edit, and delete post categories |
 | Tags | `/admin/tags.php` | Create, edit, bulk-add, and delete post tags |
 | Media | `/admin/media.php` | Upload (drag-and-drop), library, copy URL to clipboard |
+| Import | `/admin/import.php` | Upload a WordPress XML (WXR) file; titleless items can land as asides; categories/tags auto-created; syndication suppressed; re-imports deduped by `<guid>` |
+| Import media | `/admin/import-media.php` | Scan every post for external `<img>` URLs, download to local media library, rewrite post HTML to `/media/` paths; idempotent |
 | Settings | `/admin/settings.php` | Site identity, content options, social/analytics credentials, custom CSS |
 | Account | `/admin/account.php` | Change admin password; set up, manage, or disable TOTP 2FA |
 | Logs | `/admin/login-log.php` | Login attempt history and admin activity log |

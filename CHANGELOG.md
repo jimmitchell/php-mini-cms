@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.0] — 2026-05-10
+
+### Added
+
+- **WordPress XML import** — new `/admin/import.php` accepts a WordPress eXtended RSS (WXR) file and inserts each `<item>` as a post. Built for migrating from Micro.blog (titleless short-form notes) but works with any WXR export. Per-import dropdown selects how items become posts: **Auto** (aside if `<title>` is empty, else standard), **All asides**, or **All standard**. Items with `<wp:status>` of `publish` map to `published`; `draft`/`future`/`pending`/`private` map to `draft`; `trash` is skipped. Non-`post` types (pages, attachments) are skipped. Categories and tags from `<category>` elements are auto-created (matched on `nicename` slug) and attached. Imported posts always set `mastodon_skip = 1` and `bluesky_skip = 1` so syndication never fires for backlog. Re-uploads are safe — items are deduped by `<guid>` against the new `posts.import_guid` column. The whole import runs in one SQLite transaction; site rebuild deferred to a single pass at the end. Schema bumped to v18.
+- **Media re-hosting** — new `/admin/import-media.php` scans every post for external `<img>` URLs, downloads each into `content/media/`, and rewrites the post HTML to point at local `/media/` paths. Designed for the Micro.blog migration (`https://*.micro.blog/uploads/...` images keep loading even if the source goes away) but works on any externally-hosted images. Idempotent — re-runs only fetch what's missing, deduped via the new `media.source_url` column. WXR import gains a "Download remote images locally" checkbox that runs the same fetch/rewrite per imported post inline. cURL streams to a temp file (PHP RAM stays flat regardless of image size), MIME is validated via `finfo` against the existing media allowlist, and JPEG/PNG downloads get a WebP companion. Failures are logged and the original URL is left in place; re-running retries only those. Schema bumped to v19.
+- **Long-running import nginx location** — `nginx.conf.example` adds a regex location for `/admin/(import|import-media).php` with `fastcgi_read_timeout` / `fastcgi_send_timeout` of 3600s, so a large media re-host run isn't cut off by the default 60s proxy timeout. Repeats the existing admin CSP and security headers (nginx does not inherit `add_header` into sibling locations).
+
+---
+
 ## [1.7.0] — 2026-05-10
 
 ### Added
