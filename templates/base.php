@@ -620,7 +620,7 @@ document.addEventListener('keydown', function (e) {
     }
 
     if (_wmCached) {
-        try { renderMentions(JSON.parse(_wmCached)); } catch (e) { /* ignore stale cache */ }
+        try { renderMentions(_wmCached); } catch (e) { /* ignore stale cache */ }
     } else {
         fetch('https://webmention.io/api/mentions.jf2?target=' + encodeURIComponent(target) + '&per-page=100')
             .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
