@@ -295,10 +295,16 @@ function syndicatePost(Post $post): void
         return;
     }
 
-    $postUrl = rtrim($siteUrl, '/') . '/' . Post::datePath($post->published_at, $post->slug, $timezone) . '/';
-    $excerpt = ($post->effectiveExcerpt() !== null)
-        ? strip_tags($post->effectiveExcerpt())
-        : Helpers::truncate($post->content, 280);
+    // POSSE: asides syndicate as native-looking notes — no title, no link back.
+    if ($post->isAside()) {
+        $postUrl = '';
+        $excerpt = trim(Post::plaintextFromMarkdown($post->content));
+    } else {
+        $postUrl = rtrim($siteUrl, '/') . '/' . Post::datePath($post->published_at, $post->slug, $timezone) . '/';
+        $excerpt = ($post->effectiveExcerpt() !== null)
+            ? strip_tags($post->effectiveExcerpt())
+            : Helpers::truncate($post->content, 280);
+    }
 
     if ($hasMastodon && $post->tooted_at === null && $post->mastodon_skip === 0) {
         $mastodon = new Mastodon($mastodonInstance, $mastodonToken);

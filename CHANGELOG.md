@@ -11,6 +11,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] — 2026-05-10
+
+### Added
+
+- **Aside notes** — new `post_kind` column (`'standard'` or `'aside'`) lets MarsEdit and other clients publish WordPress-style titleless notes. List views render the full Markdown body inside the existing `.post-card` frame; single-aside pages drop the title, byline, reading time, and term pills, keep the date and syndication links, and emit a proper IndieWeb h-entry without `p-name`. Slug stores the autoincrement id so URLs stay `/YYYY/MM/DD/{id}/`. Atom emits an empty `<title/>`; RSS and JSON Feed omit the title element entirely. OG image generation is skipped (nothing to render). Schema bumped to v17.
+- **POSSE for asides** — asides syndicate to Mastodon and Bluesky as native-looking notes: full plaintext content, no title, no link back to the site. `buildText` joins any non-empty subset of {title, excerpt, url} so omitted parts don't leave stray newlines, and Bluesky skips facet construction when the URL is empty. The post editor gains a live counter under aside content showing Bluesky grapheme and Mastodon character counts, with a truncation warning when either limit is exceeded.
+- **Wayback Machine 404 fallback** — the 404 page queries the Wayback availability API for the requested URL and reveals a link to the closest archived snapshot when one exists.
+- **Byline spec in feeds** — new RSS 2.0 feed at `/feed.rss` with [Byline](https://bylinespec.org/1.0) elements at channel and item level; the same elements are injected into the existing Atom feed. Byline-aware readers can now render author name, bio, avatar, and verified Mastodon/Bluesky/GitHub links from any subscription. Adds optional `author_bio` and `author_avatar_url` settings; mirrors RSS to per-term taxonomy archives; updates nginx and HTML `<head>` for content-type and discovery.
+- **Mondrian-style gallery** — the `[gallery ids="..."]` shortcode now emits curated CSS Grid templates per image count (1–7), with images cropped to fit cells via `object-fit: cover`. Galleries of 8+ images are chunked into sibling blocks (e.g. 11 → 6+5) that visually merge into one continuous tile field. The JS masonry layout is removed; the existing lightbox is unchanged.
+- **Callout styles** — three callout classes (blue notice, yellow information, red warning) using `color-mix` to derive a soft tinted background from each border colour.
+- **`.button-link` class** — style links as primary-action buttons matching the search form's blue fill, white text, and darken-on-hover behaviour.
+- **Footer feed link** — RSS feed link in the site footer, styled to match the social icons.
+
+### Changed
+
+- **Theme** — theme-aware post-card hover border; rounded corners on webmention reply cards and post cards; gallery gaps 4px → 6px; image figure borders removed; tighter borders and margins on callouts and image figures; reduced mobile top margin on site main; tightened content spacing throughout.
+
+### Fixed
+
+- **Webmention cache** — render cached webmentions without a redundant `JSON.parse` that could double-decode already-parsed payloads.
+- **Mobile nav** — submenu no longer blocks clicks on content below the header.
+- **404 Wayback link** — hidden via inline style so the `.btn` class can't override its default state.
+
+---
+
 ## [1.6.0] — 2026-05-04
 
 ### Added

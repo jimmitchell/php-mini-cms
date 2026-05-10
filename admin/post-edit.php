@@ -217,11 +217,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Syndicate to Mastodon and/or Bluesky on first publish (unless opted out).
         if ($isFirstPublish || $isFirstBluesky) {
-            $postUrl       = rtrim($db->getSetting('site_url', ''), '/') . '/' . Post::datePath($post->published_at, $post->slug, $cfgTz) . '/';
-            $effectiveExcerpt = $post->effectiveExcerpt();
-            $excerpt       = $effectiveExcerpt !== null
-                ? strip_tags($effectiveExcerpt)
-                : Helpers::truncate($post->content, 280);
+            // POSSE: asides syndicate as native-looking notes — no title, no link back.
+            if ($post->isAside()) {
+                $postUrl = '';
+                $excerpt = trim(Post::plaintextFromMarkdown($post->content));
+            } else {
+                $postUrl = rtrim($db->getSetting('site_url', ''), '/') . '/' . Post::datePath($post->published_at, $post->slug, $cfgTz) . '/';
+                $effectiveExcerpt = $post->effectiveExcerpt();
+                $excerpt = $effectiveExcerpt !== null
+                    ? strip_tags($effectiveExcerpt)
+                    : Helpers::truncate($post->content, 280);
+            }
 
             if ($isFirstPublish) {
                 $mastodon = new Mastodon($mastodonInstance, $mastodonToken);

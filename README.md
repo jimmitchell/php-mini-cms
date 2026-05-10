@@ -11,19 +11,21 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Static output** — generates plain HTML files; public pages need no PHP at serve time
 - **Markdown editor** — EasyMDE with GitHub-flavored Markdown, footnotes, and server-side syntax highlighting (xcode-dark palette)
 - **Posts & pages** — separate content types; pages can appear in site navigation, with optional one-level sub-pages that render as a desktop dropdown and indented mobile menu items
+- **Aside notes** — titleless short-form posts (`post_kind = aside`) for IndieWeb-style notes; render the full Markdown body in place of title/excerpt on listings, drop the title and term pills on single pages, and emit a proper h-entry without `p-name`. URLs use the autoincrement post id (`/YYYY/MM/DD/{id}/`)
 - **Date-based post URLs** — posts live at `/YYYY/MM/DD/{slug}/` for clean, chronological permalinks
 - **Draft preview** — preview any saved draft (or published post) in the full public theme by clicking **Preview** in the post editor sidebar; opens in a new tab without publishing or triggering a site rebuild
 - **Scheduling** — set a future publish date; posts promote automatically on next admin load
 - **Categories & tags** — full taxonomy system; posts can belong to multiple categories and tags; archive pages generated at `/category/{slug}/` and `/tag/{slug}/`; tag input is a pill-style picker with autocomplete against existing tags
 - **Media library** — drag-and-drop uploads with MIME validation; images, video, and audio supported (50 MB limit)
-- **Image galleries** — select multiple images in the post editor and insert a `[gallery]` shortcode; renders as a responsive masonry grid (3 columns desktop, 1 column mobile) with a looping lightbox
-- **Atom feed** — generated automatically at `/feed.xml`
+- **Image galleries** — select multiple images in the post editor and insert a `[gallery]` shortcode; renders as a Mondrian-style tiled CSS Grid (curated layouts per image count 1–7; larger sets chunk into stacked sibling blocks that visually merge into one continuous tile field) with a looping lightbox
+- **Atom feed** — generated automatically at `/feed.xml`; embeds [Byline](https://bylinespec.org/1.0) elements so feed readers can show your name, bio, avatar, and verified social links
+- **RSS feed** — `/feed.rss` (RSS 2.0) with the same Byline embedding; mirrored to per-term taxonomy archives
 - **JSON Feed** — generated automatically at `/feed.json` (JSON Feed 1.1); linked in `<head>` for feed reader discovery
 - **OG images** — auto-generated 1200×630 PNG per post (requires GD + FreeType)
 - **JSON-LD structured data** — `BlogPosting` schema.org markup in every post's `<head>` for richer search results; author name configurable in Settings
 - **Reading time** — estimated minutes-to-read displayed inline with the post date
 - **Microformats2 (h-entry)** — posts and index items carry MF2 classes for IndieWeb parsers and readers
-- **Mastodon & Bluesky** — optional auto-post on first publish; the URL of the remote post is stored and displayed as an "Also on:" link at the bottom of each post; per-post skip checkbox for each platform
+- **Mastodon & Bluesky** — optional auto-post on first publish; the URL of the remote post is stored and displayed as an "Also on:" link at the bottom of each post; per-post skip checkbox for each platform. Aside notes use [POSSE](https://indieweb.org/POSSE) — they syndicate as native-looking notes (full plaintext body, no title, no link back), with a live Bluesky-grapheme/Mastodon-character counter and over-limit warning under the editor
 - **Incoming webmentions** — display likes, reposts, and replies on posts via webmention.io; client-side fetch with avatar grid for reactions and threaded reply cards
 - **Outgoing webmentions** — CLI script (`bin/send-webmentions.php`) discovers endpoints and sends pings for all external links in published posts; safe to schedule via cron
 - **WordPress XML export** — download all posts (with categories, tags, and optional drafts) as a WXR file importable via WordPress Tools → Import
@@ -34,6 +36,7 @@ A lightweight flat-file CMS with a PHP/SQLite admin panel and a fully static HTM
 - **Custom CSS** — paste override styles directly in Settings; injected as a `<style>` block on every public page after the main stylesheet
 - **Dark / light mode** — system-preference aware with manual toggle; no flash on load
 - **Search** — client-side full-text search of posts at `/search/`; no server-side PHP required
+- **404 page** — themed Not Found page that queries the [Wayback Machine](https://archive.org/web/) availability API for the requested URL and reveals a link to the closest archived snapshot when one exists
 - **Favicon** — SVG favicon matching the site theme color
 - **Collapsible admin sidebar** — sidebar collapses to icon-only mode to maximize editor space; preference stored in localStorage
 - **Activity log** — every content and settings change is recorded with action, object, and IP; viewable in Admin → Logs
@@ -134,7 +137,7 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 
 | Panel | Settings |
 |-------|----------|
-| Site identity | Title, author name, description, URL, footer text, timezone, locale |
+| Site identity | Title, author name, author bio, author avatar URL, description, URL, footer text, timezone, locale |
 | Content | Posts per page, feed post count |
 | Mastodon | Handle, instance URL, access token |
 | Bluesky | Profile URL, handle, app password |
@@ -189,7 +192,20 @@ Each published post generates:
 - `posts/YYYY/MM/DD/{slug}/index.html` — the post page, served at `/YYYY/MM/DD/{slug}/`
 - `posts/YYYY/MM/DD/{slug}/og.png` — Open Graph image (if GD is available)
 
-The paginated index (`index.html`, `page/2/index.html`, …) and `feed.xml` are rebuilt on publish and when settings change.
+The paginated index (`index.html`, `page/2/index.html`, …) and all three feeds (`feed.xml`, `feed.rss`, `feed.json`) are rebuilt on publish and when settings change.
+
+### Aside notes
+
+Asides are titleless short-form posts intended for IndieWeb-style notes. In the post editor, set **Post kind** to *Aside*; the title field becomes optional, the slug is hidden (it's auto-assigned from the post id on save), and a live character counter appears under the content showing both Bluesky-grapheme and Mastodon-character counts.
+
+On the public site, asides:
+
+- Use the URL `/YYYY/MM/DD/{id}/` (numeric id, not a slug)
+- Render the full Markdown body in place of title + excerpt on listings, the home page, taxonomy archives, and search results — sharing the same `.post-card` frame as standard posts
+- Drop the title, byline, reading time, and term pills on their single page; keep the date and syndication links; emit a proper IndieWeb `h-entry` without `p-name`
+- Skip OG image generation (no headline to render)
+- Are emitted with an empty `<title/>` in Atom and the title element omitted entirely in RSS and JSON Feed
+- Syndicate to Mastodon and Bluesky as native-looking notes — see [POSSE for asides](#posse-for-asides) below
 
 ### Pages
 
@@ -236,7 +252,7 @@ The post editor toolbar includes embed buttons (YouTube, Vimeo, GitHub Gist, Mas
 
 ### Image Galleries
 
-You can insert a masonry image gallery into any post directly from the post editor:
+You can insert a tiled image gallery into any post directly from the post editor:
 
 1. Open a post in **Admin → Post editor**
 2. In the **Insert media** sidebar panel, click **Select for gallery**
@@ -250,15 +266,11 @@ The shortcode format is:
 [gallery ids="8,5,1,6"]
 ```
 
-IDs correspond to media library records and are stored in the order you selected them, which controls the left-to-right display order.
+IDs correspond to media library records and are stored in the order you selected them, which controls the display order.
 
-**Display:**
-- Desktop (> 600 px): 3-column masonry grid with equal 8 px gutters
-- Mobile (≤ 600 px): single-column stacked layout
+**Display:** Mondrian-style tiled layout using CSS Grid. Each image count from 1 to 7 has its own curated grid template; images are cropped to fit cells via `object-fit: cover`. Galleries of 8 or more images are chunked into stacked sibling blocks (e.g. 11 → 6+5) that visually merge into one continuous tile field thanks to identical 6 px gaps between siblings. No JavaScript layout step — the grid is fully server-rendered.
 
-**Lightbox:** clicking any gallery image opens a full-screen lightbox. Prev/Next buttons and ← → arrow keys navigate through the gallery with looping (wraps from last image back to first and vice versa). Click the backdrop or press Escape to close.
-
-The gallery JavaScript (masonry layout + lightbox) is injected inline only on post pages that contain a gallery shortcode — pages without a gallery load no extra script.
+**Lightbox:** clicking any gallery image opens a full-screen lightbox. Prev/Next buttons and ← → arrow keys navigate through the gallery with looping (wraps from last image back to first and vice versa). Click the backdrop or press Escape to close. The lightbox JavaScript is injected inline only on post pages that contain a gallery — pages without a gallery load no extra script.
 
 ---
 
@@ -313,9 +325,21 @@ A magnifying-glass icon in the site header links to the search page. Results dis
 
 ---
 
-## Atom Feed
+## Feeds
 
-The feed is generated at `/feed.xml` and includes the most recent N posts (configurable in Settings, default 20). It is rebuilt whenever a post is published/unpublished or settings are saved.
+Three feed formats are generated and rebuilt whenever a post is published/unpublished or settings are saved:
+
+| Path | Format | Notes |
+|------|--------|-------|
+| `/feed.xml` | Atom 1.0 | Linked from `<head>` for reader discovery; embeds Byline elements |
+| `/feed.rss` | RSS 2.0 | Embeds Byline elements; mirrored to each `/category/{slug}/feed.rss` and `/tag/{slug}/feed.rss` |
+| `/feed.json` | JSON Feed 1.1 | Linked from `<head>` |
+
+All three include the most recent N posts (configurable in **Settings → Content**, default 20). Asides are emitted with empty/omitted titles so feed readers render them as bare-content notes rather than headlined articles.
+
+### Byline
+
+Both the Atom and RSS feeds embed [Byline 1.0](https://bylinespec.org/1.0) elements at channel and item level, so Byline-aware readers can render your name, bio, avatar, and verified Mastodon / Bluesky / GitHub links from any subscription. The values are sourced from `author_name`, `author_bio`, `author_avatar_url`, and the existing Mastodon/Bluesky/GitHub settings.
 
 ---
 
@@ -346,6 +370,10 @@ Both platforms are independent — you can enable one, both, or neither.
 Set your GitHub profile URL in **Settings → GitHub** (e.g. `https://github.com/username`). When set, a GitHub icon link appears in the site footer between the Bluesky icon and the RSS icon, with `rel="me noopener"` for IndieAuth compatibility.
 
 When a post is syndicated, the URL of the Mastodon toot or Bluesky post is stored and displayed at the bottom of the public post page. Pills appear in this order: **Mastodon**, **Bluesky**, **Email**, then the Tinylytics Kudo button.
+
+### POSSE for asides
+
+Aside notes (`post_kind = aside`) follow the [POSSE](https://indieweb.org/POSSE) pattern: they syndicate as native-looking notes — full plaintext body, no title, no link back to your site. The post editor shows a live counter under the content field with both Bluesky grapheme and Mastodon character counts and a warning when either limit is exceeded. The same behavior applies whether the aside is published from the admin UI, MarsEdit (XML-RPC), or a Micropub client.
 
 ### Email Reply
 
@@ -516,7 +544,8 @@ Log entries older than 90 days are pruned automatically on a ~1% probabilistic c
 /tag/{slug}/                → tag/{slug}/index.html
 /search/                    → search/index.html        (client-side search page)
 /search.json                → search index (title, excerpt, date, URL for all published posts)
-/feed.xml                   → Atom 1.0 feed
+/feed.xml                   → Atom 1.0 feed (with Byline)
+/feed.rss                   → RSS 2.0 feed (with Byline)
 /feed.json                  → JSON Feed 1.1
 /media/{filename}           → content/media/ alias
 /theme.css                  → public stylesheet
@@ -569,7 +598,8 @@ clodd-cms/
 │   ├── ActivityLog.php     # Admin activity logger
 │   ├── Auth.php            # Login, session, CSRF, rate limiting, TOTP 2FA
 │   ├── Bluesky.php         # Bluesky AT Protocol API client
-│   ├── Builder.php         # Static site build engine
+│   ├── Builder.php         # Static site build engine (incl. Mondrian gallery rendering)
+│   ├── Byline.php          # Byline 1.0 element builder shared by Atom and RSS feeds
 │   ├── Database.php        # PDO/SQLite wrapper + schema migrations
 │   ├── Feed.php            # Atom 1.0 feed generator
 │   ├── Helpers.php
@@ -578,9 +608,10 @@ clodd-cms/
 │   ├── JsonFeed.php        # JSON Feed 1.1 generator
 │   ├── Mastodon.php        # Mastodon API client
 │   ├── Media.php
-│   ├── OgImage.php         # GD + FreeType OG image generator
+│   ├── OgImage.php         # GD + FreeType OG image generator (skipped for asides)
 │   ├── Page.php
-│   ├── Post.php
+│   ├── Post.php            # Post model (incl. post_kind: standard | aside)
+│   ├── RssFeed.php         # RSS 2.0 feed generator (root + per-term archives)
 │   ├── Webmention.php      # Outgoing webmention discovery and sending
 │   └── XmlRpc.php
 ├── templates/              # Public HTML templates
