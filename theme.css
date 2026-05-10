@@ -777,6 +777,17 @@ audio { width: 100%; }
    it. For notes the author is omitted, so the leading bullet would dangle. */
 .post.post--note .post__date::before { content: none; }
 
+/* Standard posts let prose images bleed past the content column with negative
+   margins. Notes live inside a padded .post-card (lists) or a tighter single
+   layout, so that overflow breaks the frame — keep their images contained. */
+.post-card--note .prose img:not(.gallery img),
+.post.post--note .prose img:not(.gallery img) {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
 .post-list__empty {
     color: var(--color-muted);
     font-style: italic;
