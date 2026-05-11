@@ -157,7 +157,14 @@ $flashType = $flash['type']    ?? 'success';
             <tr>
                 <td>
                     <a href="/admin/post-edit.php?id=<?= $post->id ?>">
-                        <?= Helpers::e($post->title) ?>
+                        <?php if ($post->isAside()): ?>
+                            <span class="badge badge--kind-aside">Aside</span>
+                        <?php endif; ?>
+                        <?php if (trim($post->title) !== ''): ?>
+                            <?= Helpers::e($post->title) ?>
+                        <?php else: ?>
+                            <em class="post-untitled"><?= Helpers::e(Helpers::truncate($post->content, 80)) ?></em>
+                        <?php endif; ?>
                     </a>
                 </td>
                 <td>

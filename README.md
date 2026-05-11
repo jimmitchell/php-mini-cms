@@ -156,7 +156,7 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 |------|------|-------------|
 | Login | `/admin/` | Two-step login: password then TOTP code (if 2FA is enabled) |
 | Dashboard | `/admin/dashboard.php` | Stats, scheduled posts due soon, full site rebuild |
-| Posts | `/admin/posts.php` | List with status filter tabs, title search, inline delete |
+| Posts | `/admin/posts.php` | List with status filter tabs, title search, inline delete; aside posts get an `Aside` kind badge and titleless posts show a truncated content stand-in where the title would go |
 | Post editor | `/admin/post-edit.php` | Title, slug (with real-time uniqueness check), Markdown editor, status, schedule date, categories, tags, image gallery insert; keyboard shortcuts: **Ctrl/Cmd+S** save, **Ctrl/Cmd+Shift+P** publish; **Preview** button opens a read-only themed preview in a new tab without publishing |
 | Pages | `/admin/pages.php` | List with inline delete |
 | Page editor | `/admin/page-edit.php` | Same as post editor + nav order field; slug field also has real-time uniqueness check |

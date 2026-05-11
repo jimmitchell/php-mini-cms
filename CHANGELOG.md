@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.1] — 2026-05-11
+
+### Changed
+
+- **Admin post listing** — aside posts now show a violet `Aside` badge before the title so post kind is visible at a glance; standard posts stay unbadged. Posts with an empty title (typical for asides published from MarsEdit or imported from Micro.blog) render the first ~80 characters of stripped content in italic muted text where the title would go, instead of an empty link.
+
+---
+
 ## [1.8.0] — 2026-05-10
 
 ### Added
