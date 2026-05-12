@@ -51,7 +51,7 @@
     --color-header-bg:  #1a1a1a;
     --color-chrome-border: var(--color-border);
     --max-content:      700px;
-    --max-wide:         820px;
+    --max-wide:         760px;
 }
 
 /* ── Dark mode tokens ──────────────────────────────────────────────────────── */
