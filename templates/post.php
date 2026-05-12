@@ -59,7 +59,7 @@ ob_start();
         <time class="u-update" datetime="<?= date('Y-m-d\TH:i:s\Z', strtotime($post->updated_at)) ?>" hidden></time>
         <?php endif; ?>
         <?php endif; ?>
-        <?php if (!$isAside):
+        <?php
             $terms = [];
             foreach ($post->categories as $cat) {
                 $terms[] = ['url' => '/category/' . rawurlencode($cat['slug']) . '/', 'label' => $cat['name'], 'type' => 'category'];
@@ -80,7 +80,6 @@ ob_start();
                    class="term term--<?= $term['type'] ?> p-category"><?= htmlspecialchars($term['label'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a></li>
             <?php endforeach; ?>
         </ul>
-        <?php endif; ?>
         <?php endif; ?>
     </header>
 
