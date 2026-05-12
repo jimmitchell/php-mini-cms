@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.1] — 2026-05-11
+
+### Fixed
+
+- **Full site rebuild no longer times out** — the dashboard's **Rebuild entire site** button used to hold the FastCGI request open for the entire rebuild, which on larger sites exceeded the default `fastcgi_read_timeout` (60s) and surfaced as an nginx 504. The handler now flashes "Rebuild started", sends the redirect, and calls `ignore_user_abort(true); set_time_limit(0); session_write_close(); fastcgi_finish_request();` before invoking `Builder::buildAll()`, so nginx returns the response instantly while the build continues in the background. Completion is recorded in the activity log as before. The long-running regex location in both nginx configs now also matches `dashboard.php` with `fastcgi_read_timeout 3600s` as a safety net for SAPIs without `fastcgi_finish_request()`.
+
+---
+
 ## [1.9.0] — 2026-05-11
 
 ### Changed

@@ -9,10 +9,24 @@ use CMS\Helpers;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'rebuild') {
     $auth->verifyCsrf($_POST['csrf_token'] ?? '');
+
+    // Full rebuild can take many minutes on large sites — long enough that
+    // nginx's fastcgi_read_timeout would otherwise cut the response off.
+    // Send the redirect immediately, then keep building after FastCGI hangs
+    // up so the user gets instant feedback. Completion is recorded in the
+    // activity log.
+    $auth->flash('Full site rebuild started — this may take several minutes. Check the activity log to confirm completion.');
+    header('Location: /admin/dashboard.php');
+
+    ignore_user_abort(true);
+    set_time_limit(0);
+    session_write_close();
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+
     $builder->buildAll();
     $activityLog->log('rebuild', 'site');
-    $auth->flash('Full site rebuild complete.');
-    header('Location: /admin/dashboard.php');
     exit;
 }
 
