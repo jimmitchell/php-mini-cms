@@ -6,18 +6,21 @@ $currentUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
 $navItems = [
     '/admin/analytics.php'  => ['label' => 'Analytics',  'icon' => 'fa-bar-chart'],
     '/admin/dashboard.php'  => ['label' => 'Dashboard',  'icon' => 'fa-tachometer'],
-    '/admin/posts.php'      => ['label' => 'Posts',       'icon' => 'fa-file-text-o'],
+    '/admin/posts.php'      => ['label' => 'Posts',      'icon' => 'fa-file-text-o'],
     '/admin/pages.php'      => ['label' => 'Pages',      'icon' => 'fa-files-o'],
     '/admin/categories.php' => ['label' => 'Categories', 'icon' => 'fa-tag'],
     '/admin/tags.php'       => ['label' => 'Tags',       'icon' => 'fa-tags'],
     '/admin/media.php'      => ['label' => 'Media',      'icon' => 'fa-picture-o'],
-    '/admin/import.php'      => ['label' => 'Import',    'icon' => 'fa-upload'],
-    '/admin/import-media.php' => ['label' => 'Import media', 'icon' => 'fa-cloud-download'],
-    '/admin/export.php'      => ['label' => 'Export',    'icon' => 'fa-download'],
-    '/admin/settings.php'   => ['label' => 'Settings',  'icon' => 'fa-cog'],
-    '/admin/micropub.php'   => ['label' => 'Micropub',  'icon' => 'fa-cloud-upload'],
-    '/admin/account.php'    => ['label' => 'Account',   'icon' => 'fa-user'],
-    '/admin/login-log.php'  => ['label' => 'Logs',      'icon' => 'fa-list'],
+    '/admin/tools.php'      => [
+        'label' => 'Tools',
+        'icon'  => 'fa-wrench',
+        'match' => ['/admin/import.php', '/admin/import-media.php', '/admin/export.php'],
+    ],
+    '/admin/settings.php'   => [
+        'label' => 'Settings',
+        'icon'  => 'fa-cog',
+        'match' => ['/admin/micropub.php', '/admin/account.php', '/admin/login-log.php'],
+    ],
 ];
 ?>
 <link rel="stylesheet" href="/admin/assets/font-awesome.min.css">
@@ -37,9 +40,10 @@ $navItems = [
     </div>
     <ul class="admin-nav__links">
         <?php foreach ($navItems as $href => $item): ?>
+        <?php $isActive = $currentUri === $href || in_array($currentUri, $item['match'] ?? [], true); ?>
         <li>
             <a href="<?= htmlspecialchars($href) ?>"
-               class="<?= $currentUri === $href ? 'active' : '' ?>"
+               class="<?= $isActive ? 'active' : '' ?>"
                data-label="<?= htmlspecialchars($item['label']) ?>">
                 <i class="fa <?= htmlspecialchars($item['icon']) ?>"></i>
                 <span class="nav-label"><?= htmlspecialchars($item['label']) ?></span>

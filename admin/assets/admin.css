@@ -710,6 +710,31 @@ code {
     font-weight: 500;
 }
 
+/* ── Page tabs (top-level page navigation, distinct from in-list filter tabs) */
+.page-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 1.25rem;
+}
+
+.page-tabs a {
+    padding: .55rem 1rem;
+    font-size: .9rem;
+    color: var(--color-muted);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color .15s, border-color .15s;
+}
+
+.page-tabs a:hover { color: var(--color-text); }
+.page-tabs a.active {
+    color: var(--color-text);
+    border-bottom-color: var(--color-primary);
+    font-weight: 500;
+}
+
 /* ── Actions column ───────────────────────────────────────────────────────── */
 .actions { display: flex; gap: .4rem; align-items: center; justify-content: flex-end; }
 th:last-child { text-align: right; }
@@ -1085,6 +1110,19 @@ th:last-child { text-align: right; }
         -webkit-overflow-scrolling: touch;
         -webkit-mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent 100%);
         mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent 100%);
+    }
+
+    .page-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent 100%);
+        mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent 100%);
+    }
+
+    .page-tabs a {
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .search-form {

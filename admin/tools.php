@@ -8,22 +8,21 @@ $auth->check();
 use CMS\Helpers;
 
 $tabs = [
-    'general'  => 'General',
-    'micropub' => 'Micropub',
-    'account'  => 'Account',
-    'logs'     => 'Logs',
+    'import'       => 'Import',
+    'import-media' => 'Import media',
+    'export'       => 'Export',
 ];
 
-$activeTab = (string) ($_GET['tab'] ?? 'general');
+$activeTab = (string) ($_GET['tab'] ?? 'import');
 if (!isset($tabs[$activeTab])) {
-    $activeTab = 'general';
+    $activeTab = 'import';
 }
 
-$basePath  = '/admin/settings.php';
-$pageTitle = 'Settings';
+$basePath  = '/admin/tools.php';
+$pageTitle = 'Tools';
 
-// Handler runs first — it may exit (redirect after POST).
-require __DIR__ . '/partials/settings/' . $activeTab . '.handler.php';
+// Handler runs first — it may exit (redirect after POST, or stream a download).
+require __DIR__ . '/partials/tools/' . $activeTab . '.handler.php';
 
 $siteTitle = $db->getSetting('site_title', 'My CMS');
 $flash     = $auth->getFlash();
@@ -36,11 +35,8 @@ $flashType = $flash['type']    ?? 'success';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= Helpers::e($tabs[$activeTab]) ?> — <?= Helpers::e($pageTitle) ?> — <?= Helpers::e($siteTitle) ?></title>
+    <title><?= Helpers::e($pageTitle) ?> — <?= Helpers::e($siteTitle) ?></title>
     <link rel="stylesheet" href="/admin/assets/admin.css">
-    <?php if ($activeTab === 'account'): ?>
-    <link rel="stylesheet" href="/admin/assets/font-awesome.min.css">
-    <?php endif; ?>
 </head>
 <body class="admin-page">
 
@@ -57,7 +53,7 @@ $flashType = $flash['type']    ?? 'success';
         <p class="alert alert--<?= Helpers::e($flashType) ?>"><?= Helpers::e($flashMsg) ?></p>
     <?php endif; ?>
 
-    <?php require __DIR__ . '/partials/settings/' . $activeTab . '.view.php'; ?>
+    <?php require __DIR__ . '/partials/tools/' . $activeTab . '.view.php'; ?>
 </main>
 
 <script src="/admin/assets/admin.js"></script>

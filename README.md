@@ -163,16 +163,12 @@ Runtime settings are stored in the SQLite `settings` table and edited through **
 | Categories | `/admin/categories.php` | Create, edit, and delete post categories |
 | Tags | `/admin/tags.php` | Create, edit, bulk-add, and delete post tags |
 | Media | `/admin/media.php` | Upload (drag-and-drop), library, copy URL to clipboard |
-| Import | `/admin/import.php` | Upload a WordPress XML (WXR) file; titleless items can land as asides; categories/tags auto-created; syndication suppressed; re-imports deduped by `<guid>` |
-| Import media | `/admin/import-media.php` | Scan every post for external `<img>` URLs, download to local media library, rewrite post HTML to `/media/` paths; idempotent |
-| Settings | `/admin/settings.php` | Site identity, content options, social/analytics credentials, custom CSS |
-| Account | `/admin/account.php` | Change admin password; set up, manage, or disable TOTP 2FA |
-| Logs | `/admin/login-log.php` | Login attempt history and admin activity log |
+| Tools | `/admin/tools.php` | Tabbed page consolidating data movement: **Import** (WordPress XML / WXR upload — titleless items can land as asides; categories/tags auto-created; syndication suppressed; re-imports deduped by `<guid>`), **Import media** (scan every post for external `<img>` URLs, download to local media library, rewrite post HTML to `/media/` paths; idempotent), **Export** (download all posts and pages as WXR) |
+| Settings | `/admin/settings.php` | Tabbed page: **General** (site identity, content options, social/analytics credentials, custom CSS), **Micropub** (generate / revoke the bearer token for the public Micropub endpoint at `/micropub.php`), **Account** (change admin password; set up, manage, or disable TOTP 2FA; manage passkeys), **Logs** (login attempt history and admin activity log) |
 | Analytics | `/admin/analytics.php` | Views/day, top pages, devices, referrers, 404 errors; 7/30/90-day range |
 | Post preview | `/admin/post-preview.php?id={id}` | Renders any saved post through the full public theme without publishing; auth-gated, search-engine blocked |
 | XML-RPC API | `/admin/xmlrpc.php` | WordPress-compatible API for MarsEdit and similar clients |
 | REST API | `/admin/api/{resource}` | HTTP Basic Auth REST API for posts, pages, media, categories, tags, and settings |
-| Micropub | `/admin/micropub.php` | Generate / revoke the bearer token for the public Micropub endpoint (`/micropub.php`) |
 
 ### Security
 
@@ -439,7 +435,7 @@ The CMS exposes a [W3C Micropub](https://www.w3.org/TR/micropub/) endpoint at `/
 
 ### Setup
 
-1. **Generate a token** — open **Admin → Micropub** and click **Generate token**. Copy the token immediately (it is not shown again). The page also triggers a static rebuild so the discovery `<link rel="micropub">` propagates into every published page.
+1. **Generate a token** — open **Settings → Micropub** and click **Generate token**. Copy the token immediately (it is not shown again). The page also triggers a static rebuild so the discovery `<link rel="micropub">` propagates into every published page.
 2. **Set Site URL** — in **Settings**, make sure `Site URL` is set to the public absolute URL of the site. Micropub clients use this URL for endpoint discovery; entering the endpoint URL directly will hang iA Writer.
 3. **Add the account in iA Writer** — Preferences → Accounts → Add Account → **Micropub**. URL is the **site root URL** (not the endpoint). When prompted, choose **Enter Token Manually** and paste the token.
 

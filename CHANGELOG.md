@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.0] — 2026-05-11
+
+### Changed
+
+- **Admin nav consolidation** — left sidebar dropped from 14 items to 9. Three data-movement pages (`import`, `import-media`, `export`) now live as tabs under a new **Tools** entry at `/admin/tools.php`. Four admin/configuration pages (`settings`, `micropub`, `account`, `login-log`) are unified as tabs under **Settings** at `/admin/settings.php` (General / Micropub / Account / Logs). Categories, Tags, Analytics, and Dashboard remain separate.
+- **Tabbed page pattern** — new `.page-tabs` style and `partials/page-tabs.php` partial provide an underlined, top-of-page tab strip distinct from the existing `.filter-tabs` used inside listing toolbars. Tabs use `?tab=<slug>` for deep-linking, bookmarks, and back-button support; the active sidebar entry highlights for any of its consolidated routes via a new `match` array in `nav.php`. Each tab partial splits into a `.handler.php` (POST handling + GET-side data prep that may exit early) and a `.view.php` (HTML body) so long-running POSTs like WXR import still send `header()` before any output.
+
+### Deprecated
+
+- **Legacy admin URLs** — the six absorbed paths (`/admin/import.php`, `/admin/import-media.php`, `/admin/export.php`, `/admin/micropub.php`, `/admin/account.php`, `/admin/login-log.php`) are replaced by three-line `Location` 301 redirect stubs that forward to the right tab on the new host. Existing bookmarks keep working.
+
+---
+
 ## [1.8.1] — 2026-05-11
 
 ### Changed
