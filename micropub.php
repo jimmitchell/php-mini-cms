@@ -125,6 +125,54 @@ function mp_resolve_post_by_url(\CMS\Database $db, string $url): ?\CMS\Post
     return \CMS\Post::findBySlug($db, (string) $slug);
 }
 
+// ── Source representation (used by GET ?q=source) ───────────────────────────
+
+/**
+ * Build the Micropub h-entry source representation of a post.
+ *
+ * Returns an associative array of property → array-of-values, matching the
+ * shape clients send on create. `category` is a flat list of category + tag
+ * names. `published` is ISO 8601 in the site's configured timezone (or UTC).
+ */
+function mp_post_source_properties(\CMS\Post $post, string $cfgTz, string $siteUrl): array
+{
+    $props = [
+        'name'        => [$post->title],
+        'content'     => [$post->content],
+        'mp-slug'     => [$post->slug],
+        'post-status' => [$post->status === 'published' ? 'published' : 'draft'],
+    ];
+
+    if ($post->excerpt !== null && $post->excerpt !== '') {
+        $props['summary'] = [$post->excerpt];
+    }
+
+    if ($post->published_at !== null && $post->published_at !== '') {
+        try {
+            $dt = new \DateTime($post->published_at, new \DateTimeZone('UTC'));
+            if ($cfgTz !== '') {
+                $dt->setTimezone(new \DateTimeZone($cfgTz));
+            }
+            $props['published'] = [$dt->format('c')];
+        } catch (\Exception) {
+            // Skip malformed dates.
+        }
+    }
+
+    $catNames = array_map(fn($c) => (string) $c['name'], $post->categories);
+    $tagNames = array_map(fn($t) => (string) $t['name'], $post->tags);
+    $allTerms = array_values(array_filter(array_merge($catNames, $tagNames), fn($n) => $n !== ''));
+    if ($allTerms !== []) {
+        $props['category'] = $allTerms;
+    }
+
+    if ($post->status === 'published' && $post->published_at !== null && $siteUrl !== '') {
+        $props['url'] = [$siteUrl . '/' . \CMS\Post::datePath($post->published_at, $post->slug, $cfgTz) . '/'];
+    }
+
+    return $props;
+}
+
 // ── GET: configuration queries ──────────────────────────────────────────────
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -142,6 +190,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if ($q === 'syndicate-to') {
         mp_json(['syndicate-to' => []]);
+    }
+
+    if ($q === 'source') {
+        $targetUrl = $_GET['url'] ?? '';
+        if (!is_string($targetUrl) || $targetUrl === '') {
+            mp_error('invalid_request', 'url is required');
+        }
+        $post = mp_resolve_post_by_url($db, $targetUrl);
+        if (!$post) {
+            mp_error('invalid_request', 'post not found for url', 404);
+        }
+
+        $cfgTz = $db->getSetting('timezone', '');
+        $all   = mp_post_source_properties($post, $cfgTz, $siteUrl);
+
+        // Optional properties[] filter — when present, omit the type wrapper.
+        $requested = $_GET['properties'] ?? null;
+        if (is_array($requested) && $requested !== []) {
+            $filtered = [];
+            foreach ($requested as $prop) {
+                if (is_string($prop) && isset($all[$prop])) {
+                    $filtered[$prop] = $all[$prop];
+                }
+            }
+            mp_json(['properties' => $filtered]);
+        }
+
+        mp_json([
+            'type'       => ['h-entry'],
+            'properties' => $all,
+        ]);
     }
 
     mp_json([]);
@@ -394,6 +473,11 @@ if ($action === 'update') {
                 }
                 break;
 
+            case 'summary':
+                $first = is_string($vals[0] ?? null) ? trim($vals[0]) : '';
+                $post->excerpt = $first !== '' ? $first : null;
+                break;
+
             case 'mp-slug':
                 $newSlug = \CMS\Helpers::slugify((string) ($vals[0] ?? ''));
                 if ($newSlug === '' || $newSlug === 'untitled') {
@@ -434,17 +518,20 @@ if ($action === 'update') {
         }
     }
 
-    // `add` for category appends; for everything else, treat as replace-like.
+    // `add` for category appends; `summary` is single-valued so add ≈ replace.
     foreach ($updateOps['add'] as $prop => $vals) {
         if ($prop === 'category') {
             $current = array_map(fn($c) => (string) $c['name'], $post->categories);
             $merged  = array_values(array_unique(array_merge($current, array_map('strval', $vals))));
             $applyCategories($merged);
             $touchedTerms = true;
+        } elseif ($prop === 'summary') {
+            $first = is_string($vals[0] ?? null) ? trim($vals[0]) : '';
+            if ($first !== '') $post->excerpt = $first;
         }
     }
 
-    // `delete` per-property: only category clearing is meaningful here.
+    // `delete` per-property: category clearing/removal and summary clearing.
     foreach ($updateOps['delete'] as $prop => $vals) {
         if ($prop === 'category') {
             // delete: [category] (empty $vals) → clear all
@@ -458,6 +545,8 @@ if ($action === 'update') {
                 $applyCategories($kept);
             }
             $touchedTerms = true;
+        } elseif ($prop === 'summary') {
+            $post->excerpt = null;
         }
     }
 
@@ -523,6 +612,7 @@ function mp_first(array $properties, string $key, string $default = ''): string
 
 $title      = trim(mp_first($properties, 'name'));
 $content    = mp_first($properties, 'content');
+$summary    = trim(mp_first($properties, 'summary'));
 $slugInput  = trim(mp_first($properties, 'mp-slug'));
 $published  = trim(mp_first($properties, 'published'));
 $postStatus = trim(mp_first($properties, 'post-status'));
@@ -618,6 +708,7 @@ $post               = new \CMS\Post($db);
 $post->title        = $title;
 $post->slug         = $slug;
 $post->content      = $content;
+$post->excerpt      = $summary !== '' ? $summary : null;
 $post->status       = $status;
 $post->published_at = $publishedAt;
 

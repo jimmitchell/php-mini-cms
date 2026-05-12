@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.10.0] — 2026-05-11
+
+### Added
+
+- **Micropub `q=source` query** — `GET /micropub.php?q=source&url=<post URL>` returns the post as an h-entry source object (`{type:["h-entry"], properties:{…}}`), enabling round-trip editing in Micropub clients that load existing posts into their editor. Supports optional `properties[]=name&properties[]=content&…` filtering, in which case the response omits the `type` wrapper and returns only `{properties:{…}}` as the spec prescribes. Returned properties: `name`, `content`, `summary`, `mp-slug`, `post-status`, `published` (ISO 8601 in the site's timezone), `category` (flat list of category + tag names), and `url` for published posts.
+- **Micropub `summary` property** — clients can now send `summary` on create and update; the value is stored as the post's `excerpt` so Mastodon/Bluesky syndication and feeds use it instead of auto-deriving via `effectiveExcerpt()`. Update supports `replace`, `add` (treated as replace since the field is single-valued), and `delete` (clears the excerpt). Also surfaced in `q=source` responses.
+
+---
+
 ## [1.9.1] — 2026-05-11
 
 ### Fixed

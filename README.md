@@ -445,11 +445,19 @@ The endpoint accepts all three Micropub content types:
 
 | Content-Type | Format |
 |--------------|--------|
-| `application/x-www-form-urlencoded` | `h=entry`, `name=…`, `content=…`, `category[]=…`, `mp-slug=…`, `published=…`, `post-status=draft\|published` |
-| `application/json` | `{type: ["h-entry"], properties: {name: […], content: […], category: […], …}}` |
+| `application/x-www-form-urlencoded` | `h=entry`, `name=…`, `content=…`, `summary=…`, `category[]=…`, `mp-slug=…`, `published=…`, `post-status=draft\|published` |
+| `application/json` | `{type: ["h-entry"], properties: {name: […], content: […], summary: […], category: […], …}}` |
 | `multipart/form-data` | Same as form-encoded plus one or many `photo` file parts (uploaded via the existing media validator and prepended to the post body as Markdown image lines) |
 
-`?q=config` returns the standard config object including the media-endpoint URL.
+A client-supplied `summary` is stored as the post's excerpt and used verbatim by Mastodon/Bluesky syndication and feeds, replacing the auto-derived fallback.
+
+### Queries
+
+| Query | Returns |
+|-------|---------|
+| `?q=config` | Configuration object including `media-endpoint` and `syndicate-to` |
+| `?q=syndicate-to` | Configured syndication targets (currently empty) |
+| `?q=source&url=<post URL>` | Full h-entry source: `{type:["h-entry"], properties:{name, content, summary, mp-slug, post-status, published, category, url}}`. Add `&properties[]=name&properties[]=content` to limit the response to specific properties (in which case the `type` wrapper is omitted). Use this to load an existing post into a client's editor for round-trip editing. |
 
 ### Update and delete
 
@@ -460,7 +468,7 @@ The endpoint also accepts the spec's `action` field for managing existing posts.
 | `delete` | form-encoded **or** JSON | `action=delete`, `url=<post URL>` |
 | `update` | **JSON only** | `{"action": "update", "url": "<post URL>", "replace": {…}, "add": {…}, "delete": {…}}` |
 
-`update` supports `replace`, `add`, and `delete` operations against `name`, `content`, `mp-slug`, `category`, and `post-status` (`draft`/`published`). `published` is frozen on existing posts. Renaming via `mp-slug` also removes the stale rendered file under the old date-path. Successful delete returns `204 No Content`; successful update returns `200 OK` with a `Location:` header pointing at the (possibly new) post URL.
+`update` supports `replace`, `add`, and `delete` operations against `name`, `content`, `summary`, `mp-slug`, `category`, and `post-status` (`draft`/`published`). `summary` is single-valued, so `add` behaves like `replace` and `delete` clears the excerpt. `published` is frozen on existing posts. Renaming via `mp-slug` also removes the stale rendered file under the old date-path. Successful delete returns `204 No Content`; successful update returns `200 OK` with a `Location:` header pointing at the (possibly new) post URL.
 
 ### Category mapping
 
