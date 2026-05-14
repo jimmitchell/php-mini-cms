@@ -710,7 +710,7 @@ audio { width: 100%; }
     flex-direction: column;
     gap: .35rem;
     transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-    border-radius: 4px;
+    border-radius: 12px;
 }
 
 .post-card:hover {
@@ -1480,7 +1480,7 @@ audio { width: 100%; }
     padding: 1rem 1.1rem;
     margin-bottom: .65rem;
     transition: border-color .15s;
-    border-radius: 4px;
+    border-radius: 12px;
 }
 
 .wm-reply:hover { border-color: #d1d5db; }
