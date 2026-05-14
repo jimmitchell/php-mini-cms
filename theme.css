@@ -677,6 +677,7 @@ audio { width: 100%; }
     border: none;
     border-radius: 4px;
     padding: .5rem 1rem;
+    margin: 3px;
     font: inherit;
     font-size: 1rem;
     line-height: 1.2;
