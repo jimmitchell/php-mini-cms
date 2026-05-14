@@ -85,18 +85,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db->upsertSetting($key, $value);
         }
 
+        // Rebuilding posts, pages, shared resources, and taxonomy archives can take
+        // many minutes — long enough that nginx's fastcgi_read_timeout would cut the
+        // response off and the admin UI would appear locked. Send the redirect
+        // immediately, then keep building after FastCGI hangs up. Completion is
+        // recorded in the activity log.
+        $auth->flash('Settings saved — site rebuild started in the background. Check the activity log to confirm completion.');
+        header('Location: /admin/settings.php?tab=general');
+
+        ignore_user_abort(true);
+        set_time_limit(0);
+        session_write_close();
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        }
+
         // Rebuild posts, pages + index/feeds/sitemap so settings changes (custom CSS,
-        // site title, footer text, etc.) are reflected everywhere immediately.
-        // Taxonomy archives are rebuilt too so byline-related changes propagate
-        // into per-term feeds (otherwise they keep stale author metadata).
+        // site title, footer text, etc.) are reflected everywhere. Taxonomy archives
+        // are rebuilt too so byline-related changes propagate into per-term feeds.
         $builder->rebuildPosts();
         $builder->rebuildPages();
         $builder->rebuildSharedResources();
         $builder->buildAllTaxonomyArchives();
 
         $activityLog->log('settings', 'settings');
-        $auth->flash('Settings saved and site rebuilt.');
-        header('Location: /admin/settings.php?tab=general');
         exit;
     }
 }
